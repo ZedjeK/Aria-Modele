@@ -24,17 +24,32 @@ $ErrorActionPreference = 'Stop'
 $racine = Split-Path -Parent $PSScriptRoot
 
 if (-not (Get-Command gh -ErrorAction SilentlyContinue)) { throw "gh est introuvable." }
-if (-not $Depot) { $Depot = "$(gh repo view --json nameWithOwner --jq .nameWithOwner)".Trim() }
-if ($Depot -notmatch '^[\w.-]+/[\w.-]+$') { throw "Dépôt introuvable. Précise-le : -Depot proprietaire/nom" }
+if (-not $Depot) {
+    # Sans -Depot, c'est le dépôt de ce script qui est visé, quel que soit le dossier d'où il est lancé.
+    Push-Location -LiteralPath $racine
+    try { $Depot = "$(gh repo view --json nameWithOwner --jq .nameWithOwner)".Trim() }
+    finally { Pop-Location }
+}
+if ($Depot -notmatch '\A[\w.-]+/[\w.-]+\z') { throw "Dépôt introuvable. Précise-le : -Depot proprietaire/nom" }
 
-# Appel en lecture : renvoie l'objet JSON, ou $null si GitHub répond par une erreur (404 compris).
+# Identifiant de l'application GitHub Actions : le check « tests » n'est accepté que s'il vient d'elle.
+$idActions = 15368
+
+# Appel en lecture : renvoie l'objet JSON, $true pour une réponse vide (204), $null pour un 404.
+# Toute autre erreur (réseau, droits, quota) arrête le script : une panne ne doit pas passer pour « rien en place ».
 function Lire([string]$chemin) {
-    # Sous PowerShell 5.1, une sortie d'erreur de gh redirigée arrêterait le script : ici, un refus est une réponse.
+    # Sous PowerShell 5.1, une sortie d'erreur de gh redirigée arrêterait le script : on la lit comme une réponse.
     $ErrorActionPreference = 'Continue'
-    $sortie = gh api $chemin 2>$null
-    if ($LASTEXITCODE -ne 0) { return $null }
-    if (-not $sortie) { return $true } # réponse vide (204) : la ressource existe
-    return ($sortie | ConvertFrom-Json)
+    $tout = @(gh api $chemin 2>&1)
+    $code = $LASTEXITCODE
+    $erreurs = @($tout | Where-Object { $_ -is [Management.Automation.ErrorRecord] } | ForEach-Object { "$_" })
+    $sortie = @($tout | Where-Object { $_ -isnot [Management.Automation.ErrorRecord] })
+    if ($code -ne 0) {
+        if (($erreurs -join ' ') -match 'HTTP 404') { return $null }
+        throw "Lecture impossible : $chemin ($($erreurs -join ' '))"
+    }
+    if ($sortie.Count -eq 0) { return $true }
+    return (($sortie -join "`n") | ConvertFrom-Json)
 }
 
 # Appel en écriture, avec un corps JSON passé par fichier.
@@ -58,14 +73,14 @@ $depotInfo = Lire "repos/$Depot"
 if ($null -eq $depotInfo) { throw "Impossible de lire le dépôt $Depot." }
 $branche = [string]$depotInfo.default_branch
 $rulesets = @(Lire "repos/$Depot/rulesets")
-$reglesBranche = @(Lire "repos/$Depot/rules/branches/$branche")
+$reglesBranche = @(Lire "repos/$Depot/rules/branches/$([uri]::EscapeDataString($branche))")
 
 New-Item -ItemType Directory -Path (Join-Path $racine '.work') -Force | Out-Null
 $avant = [ordered]@{ date = (Get-Date).ToString('s'); depot = $depotInfo; rulesets = $rulesets; regles = $reglesBranche }
 [IO.File]::WriteAllText((Join-Path $racine '.work\protection-avant.json'), ($avant | ConvertTo-Json -Depth 12), (New-Object Text.UTF8Encoding($false)))
 
 # Le check « tests » a-t-il réussi sur la branche par défaut ?
-$checks = Lire "repos/$Depot/commits/$branche/check-runs"
+$checks = Lire "repos/$Depot/commits/$([uri]::EscapeDataString($branche))/check-runs"
 $testsVerts = $false
 if ($checks -and $checks.PSObject.Properties['check_runs']) {
     $testsVerts = [bool](@($checks.check_runs | Where-Object { $_.name -eq 'tests' -and $_.conclusion -eq 'success' }).Count)
@@ -90,39 +105,70 @@ else {
 }
 
 # 2. Ruleset de la branche par défaut
-$types = @($reglesBranche | Where-Object { $_ -and $_.PSObject.Properties['type'] } | ForEach-Object { $_.type })
-$checkExige = @($reglesBranche | Where-Object { $_ -and $_.PSObject.Properties['type'] -and $_.type -eq 'required_status_checks' } |
-    ForEach-Object { $_.parameters.required_status_checks.context }) -contains 'tests'
-if ($types -contains 'deletion' -and $types -contains 'non_fast_forward' -and $checkExige) {
-    Write-Host "  déjà en place : $branche protégée, check « tests » exigé"
+$nomRuleset = "Protection de $branche"
+$corpsBranche = @{
+    name = $nomRuleset; target = 'branch'; enforcement = 'active'
+    conditions = @{ ref_name = @{ include = @('~DEFAULT_BRANCH'); exclude = @() } }
+    rules = @(
+        @{ type = 'deletion' },
+        @{ type = 'non_fast_forward' },
+        # Tout passe par une PR, fusionnée en squash. Aucune relecture exigée : le dépôt n'a qu'un auteur.
+        @{ type = 'pull_request'; parameters = @{
+                required_approving_review_count = 0
+                dismiss_stale_reviews_on_push = $false
+                require_code_owner_review = $false
+                require_last_push_approval = $false
+                required_review_thread_resolution = $false
+                allowed_merge_methods = @('squash')
+            }
+        },
+        @{ type = 'required_status_checks'; parameters = @{
+                strict_required_status_checks_policy = $false
+                required_status_checks = @(@{ context = 'tests'; integration_id = $idActions })
+            }
+        }
+    )
 }
-elseif ($types.Count -gt 0) {
-    Write-Host "  À FAIRE À LA MAIN : $branche a déjà des règles ($($types -join ', ')). Complète le ruleset existant plutôt que d'en créer un second." -ForegroundColor Yellow
+
+$regles = @($reglesBranche | Where-Object { $_ -and $_.PSObject.Properties['type'] })
+$types = @($regles | ForEach-Object { $_.type })
+$checkLie = @($regles | Where-Object { $_.type -eq 'required_status_checks' } |
+    ForEach-Object { $_.parameters.required_status_checks } |
+    Where-Object { $_.context -eq 'tests' -and $_.PSObject.Properties['integration_id'] -and $_.integration_id -eq $idActions }).Count -gt 0
+$complet = $types -contains 'deletion' -and $types -contains 'non_fast_forward' -and $types -contains 'pull_request' -and $checkLie
+# Le ruleset posé par ce script se reconnaît à son nom ; les règles venues d'ailleurs ne sont jamais modifiées.
+$notre = @($rulesets | Where-Object { $_ -and $_.PSObject.Properties['name'] -and $_.name -eq $nomRuleset -and $_.target -eq 'branch' })
+$etrangeres = @($regles | Where-Object { $notre.Count -eq 0 -or $_.ruleset_id -ne $notre[0].id } | ForEach-Object { $_.type })
+
+if ($complet) {
+    Write-Host "  déjà en place : $branche protégée, PR obligatoire, check « tests » exigé et lié à GitHub Actions"
+}
+elseif ($etrangeres.Count -gt 0) {
+    Write-Host "  À FAIRE À LA MAIN : $branche a des règles venues d'un autre ruleset ($($etrangeres -join ', ')). Complète-le plutôt que d'en créer un second." -ForegroundColor Yellow
 }
 elseif (-not $testsVerts) {
     Write-Host "  PAS ENCORE : le check « tests » n'a pas réussi sur $branche. Relance ce script après le premier passage vert." -ForegroundColor Yellow
 }
+elseif ($notre.Count -gt 0) {
+    $idRuleset = $notre[0].id
+    Prevoir "Ruleset « $nomRuleset » complété : PR obligatoire, check « tests » lié à GitHub Actions" {
+        Ecrire 'PUT' "repos/$Depot/rulesets/$idRuleset" $corpsBranche
+    }
+}
 else {
-    Prevoir "Ruleset « Protection de $branche » : suppression et réécriture interdites, check « tests » exigé" {
-        Ecrire 'POST' "repos/$Depot/rulesets" @{
-            name = "Protection de $branche"; target = 'branch'; enforcement = 'active'
-            conditions = @{ ref_name = @{ include = @('~DEFAULT_BRANCH'); exclude = @() } }
-            rules = @(
-                @{ type = 'deletion' },
-                @{ type = 'non_fast_forward' },
-                @{ type = 'required_status_checks'; parameters = @{
-                        strict_required_status_checks_policy = $false
-                        required_status_checks = @(@{ context = 'tests' })
-                    }
-                }
-            )
-        }
+    Prevoir "Ruleset « $nomRuleset » : suppression et réécriture interdites, PR obligatoire, check « tests » exigé" {
+        Ecrire 'POST' "repos/$Depot/rulesets" $corpsBranche
     }
 }
 
 # 3. Ruleset des tags de version
-if (@($rulesets | Where-Object { $_ -and $_.PSObject.Properties['target'] -and $_.target -eq 'tag' }).Count -gt 0) {
-    Write-Host "  déjà en place : un ruleset de tags existe"
+$rulesetsTags = @($rulesets | Where-Object { $_ -and $_.PSObject.Properties['target'] -and $_.target -eq 'tag' })
+if (@($rulesetsTags | Where-Object { $_.name -eq 'Tags de version' -and $_.enforcement -eq 'active' }).Count -gt 0) {
+    Write-Host "  déjà en place : ruleset « Tags de version », actif"
+}
+elseif ($rulesetsTags.Count -gt 0) {
+    $liste = ($rulesetsTags | ForEach-Object { "« $($_.name) » ($($_.enforcement))" }) -join ', '
+    Write-Host "  À FAIRE À LA MAIN : un autre ruleset de tags existe : $liste. Vérifie qu'il est actif et qu'il couvre v*." -ForegroundColor Yellow
 }
 else {
     Prevoir "Ruleset « Tags de version » : un tag v* ne peut être ni supprimé ni déplacé" {
@@ -163,10 +209,25 @@ else {
     }
 }
 
+# 7. Releases immuables et réglages Actions : lus et signalés, jamais modifiés par ce script
+$immuables = Lire "repos/$Depot/immutable-releases"
+if ($immuables -and $immuables -isnot [bool] -and $immuables.PSObject.Properties['enabled'] -and $immuables.enabled) {
+    Write-Host "  déjà en place : releases immuables"
+}
+else {
+    Write-Host "  À FAIRE À LA MAIN : activer les releases immuables, dans les réglages du dépôt." -ForegroundColor Yellow
+}
+$actions = Lire "repos/$Depot/actions/permissions"
+if ($actions -and $actions -isnot [bool] -and $actions.PSObject.Properties['sha_pinning_required'] -and $actions.sha_pinning_required) {
+    Write-Host "  déjà en place : actions épinglées par SHA exigées"
+}
+else {
+    Write-Host "  À SAVOIR : le dépôt n'exige pas que les actions soient épinglées par SHA (réglages Actions du dépôt)." -ForegroundColor Yellow
+}
+
 # ----- Plan, accord, application -----
 
 Write-Host ""
-Write-Host "À faire à la main, dans les réglages du dépôt : activer les releases immuables."
 Write-Host "État d'avant enregistré dans .work\protection-avant.json."
 Write-Host ""
 

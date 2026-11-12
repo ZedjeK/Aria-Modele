@@ -44,6 +44,16 @@ function Demander([string]$question) {
     return (Read-Host $question).Trim()
 }
 
+# La promesse et l'élément orange sont recopiés dans du Markdown, du HTML et des scripts : une ligne de texte simple.
+function Verifier-Texte([string]$quoi, [string]$valeur) {
+    if (-not $valeur) { Arreter "$quoi est vide." }
+    if ($valeur.Length -gt 200) { Arreter "$quoi dépasse 200 caractères." }
+    if ($valeur -match '[\x00-\x1F\x7F"|<>$`\\]') {
+        Arreter "$quoi contient un caractère refusé : saut de ligne, guillemet double, barre verticale, chevron, dollar, accent grave ou barre oblique inverse."
+    }
+    if ($valeur -match '\{\{|\}\}|Aria-Modele') { Arreter "$quoi contient un marqueur du modèle." }
+}
+
 # Lit un fichier texte en gardant la trace de son BOM, pour le réécrire à l'identique.
 function Lire-Texte([string]$chemin) {
     $octets = [IO.File]::ReadAllBytes($chemin)
@@ -70,6 +80,14 @@ if ($LASTEXITCODE -ne 0) { Arreter "ce dossier n'est pas un dépôt git." }
 if ($etat.Count -gt 0) {
     Arreter "l'arbre de travail n'est pas propre. Valide ou annule tes changements, puis relance."
 }
+# Un lien ou une jonction mènerait les réécritures et les suppressions hors de ce dossier.
+$liens = @(Get-ChildItem -LiteralPath $racine -Force | Where-Object Name -ne '.git' | ForEach-Object {
+        if ($_.Attributes -band [IO.FileAttributes]::ReparsePoint) { $_ }
+        elseif ($_.PSIsContainer) { Get-ChildItem -LiteralPath $_.FullName -Recurse -Force -Attributes ReparsePoint }
+    })
+if ($liens.Count -gt 0) {
+    Arreter "ce dossier contient un lien ou une jonction ($($liens[0].FullName)). Retire-le, puis relance."
+}
 
 $stacks = @(Get-ChildItem -LiteralPath $dossierStacks -Directory |
     Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName '_socle\stack.json') })
@@ -80,7 +98,7 @@ if ($stacks.Count -eq 0) {
 # ----- Questions -----
 
 if (-not $Nom) { $Nom = Demander "Nom de l'appli, sans « Aria » (exemple : Atlas)" }
-if ($Nom -cnotmatch '^[A-Z][A-Za-z0-9]{1,30}$') {
+if ($Nom -cnotmatch '\A[A-Z][A-Za-z0-9]{1,30}\z') {
     Arreter "le nom « $Nom » n'est pas valide : une majuscule, puis des lettres ou des chiffres, sans espace ni accent."
 }
 
@@ -94,10 +112,10 @@ if (-not ($stacks | Where-Object Name -eq $Stack)) {
 }
 
 if (-not $Promesse) { $Promesse = Demander "Promesse de l'appli, en une phrase" }
-if (-not $Promesse) { Arreter "la promesse est vide." }
+Verifier-Texte "la promesse" $Promesse
 
 if (-not $ElementOrange) { $ElementOrange = Demander "Élément orange du logo (exemple : une boussole)" }
-if (-not $ElementOrange) { Arreter "l'élément orange est vide." }
+Verifier-Texte "l'élément orange" $ElementOrange
 
 if (-not $DemarrageAuto) {
     $reponse = Demander "L'appli sert-elle en arrière-plan, avec démarrage automatique ? (o/N)"
@@ -191,8 +209,15 @@ $valeurs = [ordered]@{
 $binaires = '.png', '.ico', '.gz', '.dll', '.ttf', '.woff2', '.zip', '.exe', '.jpg', '.jpeg', '.syso', '.pdf'
 $moi = $PSCommandPath
 
-Get-ChildItem -LiteralPath $racine -Recurse -File -Force |
-    Where-Object { $_.FullName -notmatch '\\\.git\\' -and $binaires -notcontains $_.Extension.ToLowerInvariant() -and $_.FullName -ne $moi } |
+# Seulement les fichiers que git suit ou suivrait : ce que .gitignore écarte (.work, dépendances, sorties de build)
+# n'appartient pas au modèle et n'est pas réécrit.
+$suivis = @(git -c core.quotepath=false ls-files --cached --others --exclude-standard)
+if ($LASTEXITCODE -ne 0) { Arreter "git n'a pas pu lister les fichiers du dépôt." }
+
+$suivis | ForEach-Object { Join-Path $racine $_ } |
+    Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } |
+    ForEach-Object { Get-Item -LiteralPath $_ -Force } |
+    Where-Object { $binaires -notcontains $_.Extension.ToLowerInvariant() -and $_.FullName -ne $moi } |
     ForEach-Object {
         $lu = Lire-Texte $_.FullName
         if ($null -eq $lu) { return }

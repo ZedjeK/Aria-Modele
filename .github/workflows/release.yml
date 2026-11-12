@@ -7,8 +7,10 @@
 # Le tag doit être celui de la version affichée par tools/version.ps1, sinon le build s'arrête avant de rien publier.
 # Ne le pousse qu'une fois la version et les notes (docs/releases/<tag>.md) fusionnées dans main.
 #
-# Deux jobs : « build » ne fait que lire (tests, exe, zip, empreinte) ; « publication » est le seul qui écrit, et le
-# jeton n'est donné qu'à l'étape qui crée la release.
+# Le commit du tag doit aussi appartenir à la branche par défaut : un tag posé sur une branche non fusionnée est refusé.
+#
+# Deux jobs : « build » ne fait que lire (tests, exe, zip, empreinte) ; « publication » est le seul dont le jeton peut
+# écrire, et il n'exécute aucun code du dépôt.
 name: Release
 
 on:
@@ -31,6 +33,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          fetch-depth: 0 # tout l'historique : il faut pouvoir situer le tag par rapport à la branche par défaut
+
+      - name: Le tag est sur la branche par défaut
+        env:
+          BRANCHE: ${{ github.event.repository.default_branch }}
+        run: |
+          git merge-base --is-ancestor $env:GITHUB_SHA "origin/$env:BRANCHE"
+          if ($LASTEXITCODE -ne 0) {
+            throw "Le tag $env:GITHUB_REF_NAME pointe sur un commit qui n'est pas dans $env:BRANCHE : aucune release."
+          }
 
       # <<STACK:outils>>
 
@@ -56,6 +68,7 @@ jobs:
           path: |
             .work/release/*.zip
             .work/release/*.zip.sha256
+          include-hidden-files: true # .work commence par un point : sans cette ligne, l'action ignorerait le zip
           if-no-files-found: error
           retention-days: 7
 
