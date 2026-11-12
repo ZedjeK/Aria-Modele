@@ -1,0 +1,29 @@
+Aria {{NOM}} : composants tiers embarqués
+=========================================
+
+Ce fichier liste tout ce que l'exe embarque et qui n'a pas été écrit pour
+Aria {{NOM}}. Il est mis à jour à chaque version et joint au zip.
+
+Pour chaque composant : nom, version, source officielle, licence, et la façon
+dont il a été vérifié (empreinte SHA-256 publiée, signature, ou compilation
+depuis le code source).
+
+Polices
+-------
+
+Space Grotesk
+  Version      : à renseigner
+  Source       : https://github.com/floriankarsten/space-grotesk
+  Licence      : SIL Open Font License 1.1
+  Vérification : à renseigner
+
+IBM Plex Mono
+  Version      : à renseigner
+  Source       : https://github.com/IBM/plex
+  Licence      : SIL Open Font License 1.1
+  Vérification : à renseigner
+
+Autres composants
+-----------------
+
+(à compléter : un bloc par composant, sur le même modèle)
