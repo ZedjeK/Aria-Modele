@@ -55,9 +55,9 @@ function Nouvelle-Copie {
     return $copie
 }
 
-function Lancer-Init([string]$copie, [int]$port) {
+function Lancer-Init([string]$copie, [int]$port, [string]$promesse = 'Une appli pour essayer le modèle.') {
     & $hote -NoProfile -ExecutionPolicy Bypass -File (Join-Path $copie 'init.ps1') `
-        -Nom Essai -Stack essai -Promesse 'Une appli pour essayer le modèle.' -ElementOrange 'une clé' `
+        -Nom Essai -Stack essai -Promesse $promesse -ElementOrange 'une clé' `
         -DemarrageAuto non -Port $port | Out-Host
     return $LASTEXITCODE
 }
@@ -69,15 +69,19 @@ function Texte([string]$copie, [string]$relatif) {
 try {
     Write-Host "1. init.ps1 réussit"
     $c = Nouvelle-Copie
+    # Un fichier écarté par .gitignore : init.ps1 ne doit pas y toucher.
+    New-Item -ItemType Directory -Path (Join-Path $c '.work') | Out-Null
+    [IO.File]::WriteAllText((Join-Path $c '.work\note.txt'), 'Aria-Modele {{NOM}}')
     $code = Lancer-Init $c 8123
     Verifier ($code -eq 0) "init.ps1 se termine sans erreur"
+    Verifier ((Texte $c '.work\note.txt') -ceq 'Aria-Modele {{NOM}}') "un fichier ignoré par git n'est pas réécrit"
     Verifier (-not (Test-Path (Join-Path $c 'init.ps1'))) "init.ps1 s'est supprimé"
     Verifier (-not (Test-Path (Join-Path $c 'stacks'))) "stacks\ est supprimé"
     Verifier (-not (Test-Path (Join-Path $c 'tools\essais'))) "tools\essais\ est supprimé"
     Verifier (-not (Test-Path (Join-Path $c 'docs\PORTS.md'))) "le registre des ports n'est pas copié dans l'appli"
 
     $restes = @(Get-ChildItem -LiteralPath $c -Recurse -File -Force |
-        Where-Object { $_.FullName -notmatch '\\\.git\\' -and $_.Extension -notin '.png', '.ico' } |
+        Where-Object { $_.FullName -notmatch '\\\.(git|work)\\' -and $_.Extension -notin '.png', '.ico' } |
         Where-Object { [IO.File]::ReadAllText($_.FullName) -match '\{\{[A-Z_]+\}\}|<<STACK:|MODELE:debut|Aria-Modele' } |
         ForEach-Object { $_.FullName.Substring($c.Length + 1) })
     Verifier ($restes.Count -eq 0) "aucun marqueur ne reste ($($restes -join ', '))"
@@ -128,6 +132,27 @@ try {
     $code = Lancer-Init $c 8123
     Verifier ($code -ne 0) "init.ps1 s'arrête en erreur"
     Verifier (Test-Path (Join-Path $c 'stacks')) "rien n'a été modifié : stacks\ est toujours là"
+
+    Write-Host "4. Une promesse qui casserait un tableau ou un script est refusée"
+    $c = Nouvelle-Copie
+    $code = Lancer-Init $c 8123 'Une promesse | avec une barre verticale'
+    Verifier ($code -ne 0) "init.ps1 s'arrête en erreur"
+    Verifier (Test-Path (Join-Path $c 'stacks')) "rien n'a été modifié : stacks\ est toujours là"
+
+    Write-Host "5. Un dossier qui contient une jonction est refusé"
+    $c = Nouvelle-Copie
+    $cible = Join-Path ([IO.Path]::GetTempPath()) ('aria-modele-essai-cible-' + [guid]::NewGuid().ToString('N').Substring(0, 8))
+    New-Item -ItemType Directory -Path $cible | Out-Null
+    $copies.Add($cible)
+    [IO.File]::WriteAllText((Join-Path $cible 'temoin.txt'), 'Aria-Modele')
+    New-Item -ItemType Directory -Path (Join-Path $c '.work') | Out-Null
+    New-Item -ItemType Junction -Path (Join-Path $c '.work\lien') -Target $cible | Out-Null
+    $code = Lancer-Init $c 8123
+    Verifier ($code -ne 0) "init.ps1 s'arrête en erreur"
+    Verifier (Test-Path (Join-Path $c 'stacks')) "rien n'a été modifié : stacks\ est toujours là"
+    Verifier ((Texte $cible 'temoin.txt') -ceq 'Aria-Modele') "la cible de la jonction est intacte"
+    # La jonction est retirée avant le ménage, pour que la suppression de la copie ne la traverse pas.
+    [IO.Directory]::Delete((Join-Path $c '.work\lien'))
 }
 finally {
     foreach ($copie in $copies) {

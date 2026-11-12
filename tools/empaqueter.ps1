@@ -26,6 +26,12 @@ if (-not (Test-Path -LiteralPath $sortie) -or -not (Get-ChildItem -LiteralPath $
 }
 
 $release = Join-Path $racine '.work\release'
+# Une jonction à la place de .work ou de .work\release mènerait la suppression qui suit hors du dépôt.
+foreach ($d in (Join-Path $racine '.work'), $release) {
+    if ((Test-Path -LiteralPath $d) -and ((Get-Item -LiteralPath $d -Force).Attributes -band [IO.FileAttributes]::ReparsePoint)) {
+        throw "$d est un lien ou une jonction : rien n'est supprimé. Retire-le, puis relance."
+    }
+}
 if (Test-Path -LiteralPath $release) { Remove-Item -LiteralPath $release -Recurse -Force }
 $dossier = Join-Path $release "$nom-$version"
 New-Item -ItemType Directory -Path $dossier | Out-Null
