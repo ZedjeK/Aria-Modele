@@ -79,6 +79,7 @@ try {
     Verifier (-not (Test-Path (Join-Path $c 'stacks'))) "stacks\ est supprimé"
     Verifier (-not (Test-Path (Join-Path $c 'tools\essais'))) "tools\essais\ est supprimé"
     Verifier (-not (Test-Path (Join-Path $c 'docs\PORTS.md'))) "le registre des ports n'est pas copié dans l'appli"
+    Verifier (-not (Test-Path (Join-Path $c 'CLAUDE.md'))) "aucun CLAUDE.md dans l'appli"
 
     $restes = @(Get-ChildItem -LiteralPath $c -Recurse -File -Force |
         Where-Object { $_.FullName -notmatch '\\\.(git|work)\\' -and $_.Extension -notin '.png', '.ico' } |
@@ -88,8 +89,8 @@ try {
 
     Verifier ((Texte $c 'README.md').Contains('<h1 align="center">Aria Essai</h1>')) "le README porte le nom de l'appli"
     Verifier ((Texte $c 'README.md').Contains('Une appli pour essayer le modèle.')) "le README porte la promesse"
-    Verifier ((Texte $c 'CLAUDE.md').Contains("| Stack | Stack d'essai |")) "la fiche projet porte le nom de la stack"
-    Verifier ((Texte $c 'CLAUDE.md').Contains('| Port local (interface web) | 8123 |')) "la fiche projet porte le port"
+    Verifier ((Texte $c 'docs\FICHE.md').Contains("| Stack | Stack d'essai |")) "la fiche projet porte le nom de la stack"
+    Verifier ((Texte $c 'docs\FICHE.md').Contains('| Port local (interface web) | 8123 |')) "la fiche projet porte le port"
     Verifier ((Texte $c 'LICENSE').Contains("Copyright (c) $((Get-Date).Year) ZedjeK")) "la licence porte l'année en cours"
     Verifier ((Texte $c '.gitignore').Contains('essai-ignore/')) "le bloc de la stack est dans .gitignore"
     Verifier ((Texte $c '.gitattributes').Contains('*.essai text')) "le bloc de la stack est dans .gitattributes"

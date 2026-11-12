@@ -56,13 +56,18 @@ Supprimer ce dossier remet l'appli à neuf.
 
 - **Droits** : l'appli se lance sans droits administrateur.
 - **Connexions sortantes** : la liste complète, destination par destination.
-- **Secrets** : ce que l'appli garde, où, et comment c'est protégé.
+- **Secrets** : ce que l'appli garde, où, comment c'est protégé, et contre quoi
+  cette protection ne joue pas.
 
 Pour signaler une faille : voir [SECURITY.md](SECURITY.md).
 
 ## Limites à connaître
 
 Ce que l'appli ne fait pas.
+
+Mises à jour : l'empreinte SHA-256 vérifie que le téléchargement est intact, pas
+d'où il vient. Si le compte GitHub de l'auteur était compromis, une version
+piégée pourrait être proposée.
 
 Projet personnel, sans audit de sécurité indépendant.
 
