@@ -1,0 +1,2 @@
+      - name: Outils de la stack essai
+        run: Write-Host "rien à installer"

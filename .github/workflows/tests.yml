@@ -1,0 +1,37 @@
+# Tests : sur chaque PR vers main et sur chaque push sur main.
+#
+# Aucun filtre de chemins (paths, paths-ignore) : un workflow ignoré laisserait le check « tests » en attente et
+# bloquerait toute PR, puisque le ruleset de main l'exige.
+name: Tests
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  # Seulement sur les PR : deux fusions rapprochées n'annulent pas le run de main.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  tests: # ce nom est celui que le ruleset exige : ne jamais le renommer
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # <<STACK:outils>>
+
+      - name: Tests
+        run: ./tools/tester.ps1

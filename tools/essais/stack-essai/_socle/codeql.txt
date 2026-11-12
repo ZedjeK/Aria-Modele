@@ -1,0 +1,2 @@
+          - language: essai
+            build-mode: none

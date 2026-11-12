@@ -1,0 +1,10 @@
+# Socle commun des applis Aria
+*.exe
+/.work/
+/.build_cache/
+.env
+*.syso
+node_modules/
+dist/
+
+# <<STACK:gitignore>>
