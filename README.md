@@ -64,10 +64,11 @@ Tout est dans `%USERPROFILE%\.Aria-{{NOM}}` :
 
 - `reglages.json` : tes réglages ;
 - `journal.json` : les 500 dernières opérations ;
-- `sauvegardes\` : une copie datée avant chaque modification ;
+- `sauvegardes\` : une copie datée avant chaque modification, et la version précédente de l'appli ;
+- `secrets\` : ce que l'appli garde de secret, chiffré pour ton compte Windows (supprime la ligne si elle n'en garde pas) ;
 - `cache\` : fichiers temporaires de l'interface.
 <!-- INSTALLATION:debut -->
-- `programme\` : l'appli installée et sa version précédente.
+- `programme\` : l'appli installée.
 <!-- INSTALLATION:fin -->
 
 Supprimer ce dossier remet l'appli à neuf.
