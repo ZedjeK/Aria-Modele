@@ -17,10 +17,14 @@ public sealed class TrayIcon : IDisposable
     private readonly NotifyIcon _icon;
     private readonly ToolStripMenuItem _state;
     private readonly ToolStripMenuItem _autostart;
+    private readonly ToolStripMenuItem _update;
+    private Action? _showUpdate;
 
     public TrayIcon(Action open, Action quit)
     {
         _state = new ToolStripMenuItem("État : prêt") { Enabled = false };
+        // N'apparaît que si une nouvelle version est disponible
+        _update = new ToolStripMenuItem("Voir la mise à jour", null, (_, _) => _showUpdate?.Invoke()) { Visible = false };
         _autostart = new ToolStripMenuItem("Démarrer avec Windows");
         _autostart.Click += (_, _) => ToggleAutostart();
 
@@ -31,6 +35,7 @@ public sealed class TrayIcon : IDisposable
         menu.Items.AddRange([
             openItem,
             _state,
+            _update,
             new ToolStripSeparator(),
             _autostart,
             new ToolStripMenuItem("Quitter", null, (_, _) => quit())
@@ -55,6 +60,15 @@ public sealed class TrayIcon : IDisposable
         // L'infobulle d'une icône de notification est limitée à 127 caractères
         var tip = $"{AppIdentity.Name} : {text}";
         _icon.Text = tip.Length > 127 ? tip[..127] : tip;
+    }
+
+    /// <summary>Une nouvelle version est disponible : « Voir la mise à jour » apparaît dans le menu.</summary>
+    public void ShowUpdateAvailable(string version, Action show)
+    {
+        _showUpdate = show;
+        _update.Text = $"Voir la mise à jour ({version})";
+        _update.Visible = true;
+        SetState($"mise à jour {version} disponible");
     }
 
     private static void ToggleAutostart()

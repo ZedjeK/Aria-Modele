@@ -85,6 +85,13 @@ public sealed record AppSettings
     [JsonPropertyName("proposerInstallation")]
     public bool OfferInstall { get; init; } = true;
 
+    /// <summary>
+    /// Chercher une nouvelle version au lancement : une requête vers l'API GitHub. Décoché : plus aucune connexion
+    /// pour ça.
+    /// </summary>
+    [JsonPropertyName("chercherMisesAJour")]
+    public bool CheckUpdates { get; init; } = true;
+
     /// <summary>Valeurs ramenées dans leurs bornes : un fichier modifié à la main ne casse rien.</summary>
     public AppSettings Sanitized() => this with
     {
