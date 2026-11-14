@@ -209,7 +209,9 @@ foreach ($relatif in $fichiersSocle) {
 $portTexte = 'aucun'
 if ($Port -ne 0) { $portTexte = [string]$Port }
 $demarrage = 'non'
-if ($DemarrageAuto -eq 'oui') { $demarrage = 'oui, désactivé par défaut' }
+# {{EN_FOND}} : un booléen pour le code des stacks (icône de notification, démarrage automatique proposé)
+$enFond = 'false'
+if ($DemarrageAuto -eq 'oui') { $demarrage = 'oui, désactivé par défaut'; $enFond = 'true' }
 # Blocs du README et des notes de version : on garde celui qui correspond à la réponse, on retire l'autre.
 $installationTexte = 'non : exe portable seulement'
 $blocGarde = 'PORTABLE'
@@ -229,6 +231,7 @@ $valeurs = [ordered]@{
     '{{ANNEE}}'          = [string](Get-Date).Year
     '{{STACK}}'          = $nomStack
     '{{DEMARRAGE_AUTO}}' = $demarrage
+    '{{EN_FOND}}'        = $enFond
     '{{INSTALLATION}}'   = $installationTexte
     'Aria-Modele'        = "Aria-$Nom"
 }

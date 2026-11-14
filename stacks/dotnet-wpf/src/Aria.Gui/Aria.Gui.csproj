@@ -3,6 +3,10 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <UseWPF>true</UseWPF>
+    <!-- Windows Forms ne sert qu'à l'icône de la zone de notification (Services\TrayIcon.cs) -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <!-- Le DPI reste réglé par app.manifest : Windows Forms n'a pas de fenêtre ici -->
+    <NoWarn>$(NoWarn);WFO0003</NoWarn>
     <RootNamespace>Aria.Gui</RootNamespace>
     <AssemblyName>Aria-{{NOM}}</AssemblyName>
     <!-- « Description du fichier » dans Windows -->
@@ -36,6 +40,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Aria.Core\Aria.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Noms de Windows Forms (Application, MessageBox, Color…) : jamais importés d'office, ils se confondraient avec ceux de WPF -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
   </ItemGroup>
 
 </Project>

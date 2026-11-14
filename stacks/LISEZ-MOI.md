@@ -36,8 +36,9 @@ nom dans le socle ; un fichier absent supprime simplement la ligne.
 | `stack.json` | réglages lus par `init.ps1` : `{ "nom": "Go + Wails", "runsOn": "windows-latest" }` |
 
 Les fichiers du squelette utilisent les mêmes marqueurs que le socle : `{{NOM}}`, `{{NOM_MIN}}`, `{{PROMESSE}}`,
-`{{ELEMENT_ORANGE}}`, `{{PORT}}`, `{{ANNEE}}`, `{{STACK}}`, `{{DEMARRAGE_AUTO}}`, `{{INSTALLATION}}`. Un fichier ou un
-dossier dont le nom contient `Aria-Modele` est renommé en `Aria-<Nom>`.
+`{{ELEMENT_ORANGE}}`, `{{PORT}}`, `{{ANNEE}}`, `{{STACK}}`, `{{DEMARRAGE_AUTO}}`, `{{INSTALLATION}}`, et `{{EN_FOND}}`
+(`true` ou `false`, pour le code : l'appli sert en arrière-plan, avec icône de notification et démarrage automatique
+proposé). Un fichier ou un dossier dont le nom contient `Aria-Modele` est renommé en `Aria-<Nom>`.
 
 Les blocs entre `<!-- INSTALLATION:debut -->` et `<!-- INSTALLATION:fin -->` ne restent que si l'exe s'installe ; ceux
 entre `<!-- PORTABLE:debut -->` et `<!-- PORTABLE:fin -->`, que s'il ne s'installe pas. Les balises sont retirées dans
