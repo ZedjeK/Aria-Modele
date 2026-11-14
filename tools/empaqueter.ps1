@@ -4,8 +4,13 @@ Fait le zip de la version et son empreinte, à partir de ce que build.ps1 a pos�
 
 .DESCRIPTION
 Produit, dans .work\release\ :
-  Aria-{{NOM}}-<version>.zip          dossier racine Aria-{{NOM}}-<version>\ : l'exe, LICENCES-TIERS.txt, BUILDINFO.txt
+  Aria-{{NOM}}-<version>.zip          dossier racine Aria-{{NOM}}-<version>\ : ce que build.ps1 a produit,
+                                      LICENCES-TIERS.txt, BUILDINFO.txt et fichiers.txt
   Aria-{{NOM}}-<version>.zip.sha256   « empreinte  nom du fichier »
+
+fichiers.txt liste, un nom par ligne, tout ce que contient le dossier du zip (sauf lui-même). L'installation par l'exe
+et les mises à jour copient exactement cette liste ; un exe lancé sans ce fichier à côté de lui ne propose pas de
+s'installer.
 
 Commun à toutes les stacks. La version vient de tools\version.ps1.
 #>
@@ -54,6 +59,14 @@ $lignes = @(
 $outils = Join-Path $racine '.work\outils.txt'
 if (Test-Path -LiteralPath $outils) { $lignes += '', 'Outils :'; $lignes += Get-Content -LiteralPath $outils -Encoding UTF8 }
 [IO.File]::WriteAllLines((Join-Path $dossier 'BUILDINFO.txt'), [string[]]$lignes, (New-Object Text.UTF8Encoding($false)))
+
+# fichiers.txt : la liste de ce que livre cette version, pour l'installation et les mises à jour.
+# Seulement des fichiers à la racine du dossier : un sous-dossier ne se copierait pas.
+if (@(Get-ChildItem -LiteralPath $dossier -Directory).Count -gt 0) {
+    throw "Le dossier du zip contient un sous-dossier : l'installation par l'exe ne copie que des fichiers. Range tout à la racine de .work\sortie\."
+}
+$liste = @(Get-ChildItem -LiteralPath $dossier -File | ForEach-Object Name | Sort-Object)
+[IO.File]::WriteAllLines((Join-Path $dossier 'fichiers.txt'), [string[]]$liste, (New-Object Text.UTF8Encoding($false)))
 
 $zip = Join-Path $release "$nom-$version.zip"
 Compress-Archive -LiteralPath $dossier -DestinationPath $zip

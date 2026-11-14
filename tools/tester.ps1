@@ -128,7 +128,9 @@ try {
         $extrait = Join-Path $c '.work\extrait'
         Expand-Archive -LiteralPath $zip -DestinationPath $extrait
         $contenu = @(Get-ChildItem -LiteralPath (Join-Path $extrait 'Aria-Essai-1.2.3') -Name | Sort-Object)
-        Verifier (($contenu -join ',') -eq 'Aria-Essai.txt,BUILDINFO.txt,LICENCES-TIERS.txt') "le zip contient l'exe, BUILDINFO.txt et LICENCES-TIERS.txt ($($contenu -join ','))"
+        Verifier (($contenu -join ',') -eq 'Aria-Essai.txt,BUILDINFO.txt,fichiers.txt,LICENCES-TIERS.txt') "le zip contient l'exe, BUILDINFO.txt, fichiers.txt et LICENCES-TIERS.txt ($($contenu -join ','))"
+        $liste = @(Get-Content -LiteralPath (Join-Path $extrait 'Aria-Essai-1.2.3\fichiers.txt') -Encoding UTF8)
+        Verifier (($liste -join ',') -eq 'Aria-Essai.txt,BUILDINFO.txt,LICENCES-TIERS.txt') "fichiers.txt liste tout le zip, sauf lui-même ($($liste -join ','))"
     }
 
     Write-Host "2. Un port déjà pris est refusé"

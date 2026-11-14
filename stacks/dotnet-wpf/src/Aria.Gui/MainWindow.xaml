@@ -47,6 +47,8 @@
             <TextBlock x:Name="DossierTexte" Margin="0,8,0,0" FontFamily="{StaticResource PoliceCode}" FontSize="12" Foreground="{StaticResource TexteSecondaire}" />
             <!-- Même case que dans le menu de l'icône ; affichée seulement pour une appli qui sert en arrière-plan -->
             <CheckBox x:Name="DemarrageAuto" Margin="0,16,0,0" Content="Démarrer avec Windows" Click="OnAutostartClick" />
+            <!-- Affichée seulement pour une appli qui s'installe : réactive la proposition coupée par « Ne plus me proposer » -->
+            <CheckBox x:Name="ProposerInstallation" Margin="0,8,0,0" Content="Proposer l'installation quand l'exe est lancé hors de son dossier" Click="OnOfferInstallClick" />
           </StackPanel>
         </Border>
       </StackPanel>

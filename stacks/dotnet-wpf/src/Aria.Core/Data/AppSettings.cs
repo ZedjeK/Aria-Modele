@@ -78,6 +78,13 @@ public sealed record AppSettings
     [JsonPropertyName("fond")]
     public BackgroundSettings Background { get; init; } = BackgroundSettings.Default;
 
+    /// <summary>
+    /// Proposer de s'installer quand l'exe est lancé hors de programme\ (zip décompressé). Décoché par « Ne plus me
+    /// proposer » ; se recoche dans la fenêtre.
+    /// </summary>
+    [JsonPropertyName("proposerInstallation")]
+    public bool OfferInstall { get; init; } = true;
+
     /// <summary>Valeurs ramenées dans leurs bornes : un fichier modifié à la main ne casse rien.</summary>
     public AppSettings Sanitized() => this with
     {

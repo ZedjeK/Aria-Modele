@@ -216,10 +216,13 @@ if ($DemarrageAuto -eq 'oui') { $demarrage = 'oui, désactivé par défaut'; $en
 $installationTexte = 'non : exe portable seulement'
 $blocGarde = 'PORTABLE'
 $blocRetire = 'INSTALLATION'
+# {{INSTALLABLE}} : le même choix, en booléen pour le code des stacks
+$installable = 'false'
 if ($Installation -eq 'oui') {
     $installationTexte = "oui : l'exe propose de se ranger dans le dossier ``programme\`` du dossier de données"
     $blocGarde = 'INSTALLATION'
     $blocRetire = 'PORTABLE'
+    $installable = 'true'
 }
 
 $valeurs = [ordered]@{
@@ -233,6 +236,7 @@ $valeurs = [ordered]@{
     '{{DEMARRAGE_AUTO}}' = $demarrage
     '{{EN_FOND}}'        = $enFond
     '{{INSTALLATION}}'   = $installationTexte
+    '{{INSTALLABLE}}'    = $installable
     'Aria-Modele'        = "Aria-$Nom"
 }
 $binaires = '.png', '.ico', '.gz', '.dll', '.ttf', '.woff2', '.zip', '.exe', '.jpg', '.jpeg', '.syso', '.pdf'
