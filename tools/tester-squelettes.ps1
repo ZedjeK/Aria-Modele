@@ -111,6 +111,10 @@ try {
             foreach ($attendu in 'Aria-Essai.exe', 'BUILDINFO.txt', 'LICENCES-TIERS.txt') {
                 Verifier ($contenu -contains $attendu) "$($s.Name) : le zip contient $attendu"
             }
+            $sortie = @(Get-ChildItem -LiteralPath (Join-Path $c '.work\sortie') -Name)
+            $manquants = @($sortie | Where-Object { $contenu -notcontains $_ })
+            Verifier ($manquants.Count -eq 0) "$($s.Name) : le zip contient tout ce que build.ps1 a produit ($($manquants -join ', '))"
+            Verifier (@($contenu | Where-Object { $_ -like '*.pdb' }).Count -eq 0) "$($s.Name) : aucun fichier de débogage dans le zip"
             $exe = Get-Item -LiteralPath (Join-Path $extrait "Aria-Essai-$version\Aria-Essai.exe") -ErrorAction SilentlyContinue
             if ($exe) { Write-Host "        taille de l'exe : $([math]::Round($exe.Length / 1MB, 1)) Mo, zip : $([math]::Round((Get-Item $zip).Length / 1MB, 1)) Mo" }
         }
