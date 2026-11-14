@@ -19,17 +19,22 @@
                  Text="Le zip de la nouvelle version est téléchargé depuis sa page de release sur GitHub, et son empreinte SHA-256 est vérifiée avant toute installation. La version actuelle est gardée de côté dans les sauvegardes. L'appli redémarre ensuite." />
     </Border>
 
-    <TextBlock Margin="0,12,0,0">
-      <Hyperlink x:Name="NotesLink" Foreground="{StaticResource Cyan}" Click="OnNotes">Lire les notes de version</Hyperlink>
-    </TextBlock>
+    <!-- Liseré accentué : la version que le bouton orange installe -->
+    <HeaderedContentControl Margin="0,16,0,0" Header="NOUVELLE VERSION" Style="{StaticResource StylePanneauAccentue}">
+      <StackPanel>
+        <TextBlock x:Name="VersionText" FontFamily="{StaticResource PoliceCode}" FontSize="18" />
+        <TextBlock Margin="0,10,0,0">
+          <Hyperlink x:Name="NotesLink" Foreground="{StaticResource Cyan}" Click="OnNotes">Lire les notes de version</Hyperlink>
+        </TextBlock>
+      </StackPanel>
+    </HeaderedContentControl>
 
     <TextBlock x:Name="StatusText" Margin="0,16,0,0" TextWrapping="Wrap" Visibility="Collapsed" />
 
     <StackPanel Margin="0,20,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
-      <Button x:Name="LaterButton" Margin="0,0,12,0" Padding="16,8" Content="Plus tard"
-              Background="Transparent" BorderBrush="{StaticResource Ligne}" Foreground="{StaticResource TexteSecondaire}" Click="OnLater" />
-      <Button x:Name="InstallButton" Padding="16,8" Content="Installer la mise à jour"
-              Background="{StaticResource Orange}" Foreground="{StaticResource Fond}" FontWeight="SemiBold" Click="OnInstall" />
+      <!-- Une seule action principale (orange) ; « Plus tard » ferme, en discret -->
+      <Button x:Name="LaterButton" Margin="0,0,12,0" Content="Plus tard" Style="{StaticResource BoutonDiscret}" Click="OnLater" />
+      <Button x:Name="InstallButton" Content="Installer la mise à jour" Style="{StaticResource BoutonPrincipal}" Click="OnInstall" />
     </StackPanel>
   </StackPanel>
 </Window>

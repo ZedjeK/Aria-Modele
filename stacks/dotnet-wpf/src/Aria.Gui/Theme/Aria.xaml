@@ -1,6 +1,7 @@
 <ResourceDictionary
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:c="clr-namespace:Aria.Gui.Controls">
 
   <!-- Palette commune des applis Aria. Sens des couleurs : cyan = actif ou choisi, orange = action principale
        ou alerte, rouge = erreur, bleu = information. -->
@@ -25,25 +26,446 @@
   <SolidColorBrush x:Key="Rouge" Color="{StaticResource CouleurRouge}" />
   <SolidColorBrush x:Key="Ambre" Color="{StaticResource CouleurAmbre}" />
   <SolidColorBrush x:Key="Ligne" Color="{StaticResource CouleurLigne}" />
+  <!-- Nuances de la palette : survol (bleu nuit), contour discret, segment vide d'une jauge -->
+  <SolidColorBrush x:Key="Survol" Color="#0B1A30" />
+  <SolidColorBrush x:Key="LigneDiscrete" Color="#27406B" />
+  <SolidColorBrush x:Key="Creux" Color="#0A1730" />
 
   <!-- Polices embarquées (Assets\Fonts). Jamais Cascadia Mono. -->
   <FontFamily x:Key="PoliceInterface">pack://application:,,,/Assets/Fonts/#Space Grotesk</FontFamily>
   <FontFamily x:Key="PoliceCode">pack://application:,,,/Assets/Fonts/#IBM Plex Mono</FontFamily>
 
-  <!-- Panneau : opaque, liseré cyan fin, sans lueur intérieure. Les coins coupés viendront avec l'habillage. -->
-  <Style x:Key="StylePanneau" TargetType="Border">
-    <Setter Property="Background" Value="{StaticResource Panneau}" />
-    <Setter Property="BorderBrush" Value="{StaticResource Cyan}" />
-    <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="Padding" Value="16" />
+  <!-- ===================================================================== Textes -->
+
+  <!-- Étiquette technique : police de code, petite, discrète (texte écrit en majuscules) -->
+  <Style x:Key="StyleEtiquette" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{StaticResource PoliceCode}" />
+    <Setter Property="FontSize" Value="11" />
+    <Setter Property="Foreground" Value="{StaticResource TexteSecondaire}" />
   </Style>
 
-  <!-- Encadré bleu « À savoir » : le commentaire de l'onglet actif -->
+  <!-- Titre d'une page -->
+  <Style x:Key="StyleTitrePage" TargetType="TextBlock">
+    <Setter Property="FontSize" Value="26" />
+    <Setter Property="FontWeight" Value="Bold" />
+    <Setter Property="Foreground" Value="{StaticResource Texte}" />
+  </Style>
+
+  <!-- ===================================================================== Panneaux : coins coupés -->
+
+  <!--
+    Panneau : HeaderedContentControl, titre dans Header (en majuscules). Coins coupés (haut droit, bas gauche), fond
+    opaque (le fond animé ne passe pas au travers), liseré cyan fin, sans lueur intérieure.
+  -->
+  <ControlTemplate x:Key="ModelePanneau" TargetType="HeaderedContentControl">
+    <c:CutBorder
+      Padding="{TemplateBinding Padding}"
+      Background="{TemplateBinding Background}"
+      BorderBrush="{TemplateBinding BorderBrush}"
+      SnapsToDevicePixels="True"
+      Stroke="1"
+      StrokeOpacity="0.45">
+      <DockPanel>
+        <ContentPresenter
+          x:Name="Titre"
+          Margin="0,0,0,12"
+          ContentSource="Header"
+          DockPanel.Dock="Top"
+          TextElement.FontFamily="{StaticResource PoliceCode}"
+          TextElement.FontSize="11"
+          TextElement.Foreground="{StaticResource TexteSecondaire}" />
+        <ContentPresenter />
+      </DockPanel>
+    </c:CutBorder>
+    <ControlTemplate.Triggers>
+      <Trigger Property="HasHeader" Value="False">
+        <Setter TargetName="Titre" Property="Visibility" Value="Collapsed" />
+      </Trigger>
+    </ControlTemplate.Triggers>
+  </ControlTemplate>
+
+  <!--
+    Liseré accentué : épais et franc, titre en cyan. Il marque le panneau sur lequel agit le bouton orange de la page,
+    ou ce qu'il produit. Un seul par page ; aucun sur une page sans bouton orange.
+  -->
+  <ControlTemplate x:Key="ModelePanneauAccentue" TargetType="HeaderedContentControl">
+    <c:CutBorder
+      Padding="{TemplateBinding Padding}"
+      Background="{TemplateBinding Background}"
+      BorderBrush="{TemplateBinding BorderBrush}"
+      SnapsToDevicePixels="True"
+      Stroke="2"
+      StrokeOpacity="1">
+      <DockPanel>
+        <ContentPresenter
+          x:Name="Titre"
+          Margin="0,0,0,12"
+          ContentSource="Header"
+          DockPanel.Dock="Top"
+          TextElement.FontFamily="{StaticResource PoliceCode}"
+          TextElement.FontSize="11"
+          TextElement.Foreground="{StaticResource Cyan}" />
+        <ContentPresenter />
+      </DockPanel>
+    </c:CutBorder>
+    <ControlTemplate.Triggers>
+      <Trigger Property="HasHeader" Value="False">
+        <Setter TargetName="Titre" Property="Visibility" Value="Collapsed" />
+      </Trigger>
+    </ControlTemplate.Triggers>
+  </ControlTemplate>
+
+  <Style x:Key="StylePanneau" TargetType="HeaderedContentControl">
+    <Setter Property="Padding" Value="20,16" />
+    <Setter Property="Focusable" Value="False" />
+    <Setter Property="IsTabStop" Value="False" />
+    <Setter Property="Foreground" Value="{StaticResource Texte}" />
+    <Setter Property="Background" Value="{StaticResource Panneau}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Cyan}" />
+    <Setter Property="Template" Value="{StaticResource ModelePanneau}" />
+  </Style>
+
+  <Style x:Key="StylePanneauAccentue" BasedOn="{StaticResource StylePanneau}" TargetType="HeaderedContentControl">
+    <Setter Property="Template" Value="{StaticResource ModelePanneauAccentue}" />
+  </Style>
+
+  <!-- Encadré bleu « À savoir » : sous les sous-onglets, le commentaire de l'onglet actif. Opaque, sur le fond animé. -->
   <Style x:Key="StyleASavoir" TargetType="Border">
-    <Setter Property="Background" Value="#1A5C8BFF" />
+    <Setter Property="Background" Value="{StaticResource Panneau}" />
     <Setter Property="BorderBrush" Value="{StaticResource Bleu}" />
     <Setter Property="BorderThickness" Value="1" />
-    <Setter Property="Padding" Value="12,8" />
+    <Setter Property="Padding" Value="14,10" />
+  </Style>
+
+  <!-- Libellé de l'encadré bleu (« À SAVOIR », « MISE À JOUR ») -->
+  <Style x:Key="StyleASavoirTitre" BasedOn="{StaticResource StyleEtiquette}" TargetType="TextBlock">
+    <Setter Property="Foreground" Value="{StaticResource Bleu}" />
+    <Setter Property="Margin" Value="0,2,14,0" />
+  </Style>
+
+  <!-- ===================================================================== Boutons : en biais -->
+
+  <!--
+    Bouton qui agit : en biais. Tous les boutons ont la même forme et la même taille ; seul le remplissage change.
+      BoutonPrincipal   plein orange : l'action principale, une seule par page
+      BoutonSecondaire  contour cyan : les actions secondaires
+      BoutonDiscret     contour discret : annuler, fermer, plus tard
+  -->
+  <Style x:Key="BoutonPrincipal" TargetType="Button">
+    <Setter Property="Background" Value="{StaticResource Orange}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Orange}" />
+    <Setter Property="Foreground" Value="#1A0B00" />
+    <Setter Property="FontFamily" Value="{StaticResource PoliceInterface}" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="MinHeight" Value="40" />
+    <Setter Property="MinWidth" Value="140" />
+    <Setter Property="Padding" Value="26,0" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Button">
+          <Grid x:Name="Racine" RenderTransformOrigin="0.5,0.5" SnapsToDevicePixels="True">
+            <c:SlantBorder Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True" />
+            </c:SlantBorder>
+            <Rectangle
+              x:Name="Focus"
+              Margin="-3"
+              Stroke="{StaticResource Cyan}"
+              StrokeDashArray="2 2"
+              StrokeThickness="1"
+              Visibility="Collapsed" />
+          </Grid>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsPressed" Value="True">
+              <Setter TargetName="Racine" Property="RenderTransform">
+                <Setter.Value>
+                  <ScaleTransform ScaleX="0.97" ScaleY="0.97" />
+                </Setter.Value>
+              </Setter>
+            </Trigger>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+              <Setter TargetName="Focus" Property="Visibility" Value="Visible" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter TargetName="Racine" Property="Opacity" Value="0.4" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+    <Style.Triggers>
+      <Trigger Property="IsMouseOver" Value="True">
+        <Setter Property="Background" Value="#FFA24D" />
+        <Setter Property="BorderBrush" Value="#FFA24D" />
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+
+  <Style x:Key="BoutonSecondaire" BasedOn="{StaticResource BoutonPrincipal}" TargetType="Button">
+    <Setter Property="Background" Value="{StaticResource Panneau}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Cyan}" />
+    <Setter Property="Foreground" Value="{StaticResource Cyan}" />
+    <Style.Triggers>
+      <Trigger Property="IsMouseOver" Value="True">
+        <Setter Property="Background" Value="{StaticResource Survol}" />
+        <Setter Property="BorderBrush" Value="{StaticResource Cyan}" />
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+
+  <Style x:Key="BoutonDiscret" BasedOn="{StaticResource BoutonPrincipal}" TargetType="Button">
+    <Setter Property="Background" Value="{StaticResource Panneau}" />
+    <Setter Property="BorderBrush" Value="{StaticResource LigneDiscrete}" />
+    <Setter Property="Foreground" Value="{StaticResource TexteSecondaire}" />
+    <Style.Triggers>
+      <Trigger Property="IsMouseOver" Value="True">
+        <Setter Property="Background" Value="{StaticResource Survol}" />
+        <Setter Property="BorderBrush" Value="{StaticResource LigneDiscrete}" />
+        <Setter Property="Foreground" Value="{StaticResource Texte}" />
+      </Trigger>
+    </Style.Triggers>
+  </Style>
+
+  <!-- ===================================================================== Navigation -->
+
+  <!-- Entrée du menu latéral : barre cyan à gauche et fond teinté quand sa page est affichée -->
+  <Style x:Key="StyleMenuLateral" TargetType="RadioButton">
+    <Setter Property="GroupName" Value="Pages" />
+    <Setter Property="Height" Value="44" />
+    <Setter Property="Foreground" Value="{StaticResource TexteSecondaire}" />
+    <Setter Property="FontFamily" Value="{StaticResource PoliceInterface}" />
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="RadioButton">
+          <Grid Background="Transparent">
+            <Rectangle x:Name="Teinte" Fill="#127DF9FF" Opacity="0" />
+            <Rectangle x:Name="Barre" Width="3" HorizontalAlignment="Left" Fill="{StaticResource Cyan}" Opacity="0" />
+            <ContentPresenter Margin="22,0,12,0" HorizontalAlignment="Left" VerticalAlignment="Center" RecognizesAccessKey="True" />
+            <Rectangle
+              x:Name="Focus"
+              Margin="6,5"
+              Stroke="{StaticResource Cyan}"
+              StrokeDashArray="2 2"
+              StrokeThickness="1"
+              Visibility="Collapsed" />
+          </Grid>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter Property="Foreground" Value="{StaticResource Texte}" />
+            </Trigger>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+              <Setter TargetName="Focus" Property="Visibility" Value="Visible" />
+            </Trigger>
+            <Trigger Property="IsChecked" Value="True">
+              <Setter Property="Foreground" Value="{StaticResource Cyan}" />
+              <Setter TargetName="Barre" Property="Opacity" Value="1" />
+              <Setter TargetName="Teinte" Property="Opacity" Value="1" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!--
+    Sous-onglet : encoche (coin haut droit coupé), en haut de la zone principale, posé sur une ligne discrète.
+    Actif : contour cyan et barre épaisse dessous. Sous les sous-onglets, l'encadré bleu « À savoir ».
+  -->
+  <Style x:Key="StyleSousOnglet" TargetType="RadioButton">
+    <Setter Property="GroupName" Value="SousOnglets" />
+    <Setter Property="MinHeight" Value="40" />
+    <Setter Property="Margin" Value="0,0,6,0" />
+    <Setter Property="Padding" Value="18,0,30,0" />
+    <Setter Property="Background" Value="{StaticResource Panneau}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Ligne}" />
+    <Setter Property="Foreground" Value="{StaticResource TexteSecondaire}" />
+    <Setter Property="FontFamily" Value="{StaticResource PoliceInterface}" />
+    <Setter Property="FontSize" Value="12.5" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="RadioButton">
+          <Grid SnapsToDevicePixels="True">
+            <c:CutBorder
+              x:Name="Forme"
+              Padding="{TemplateBinding Padding}"
+              Background="{TemplateBinding Background}"
+              BorderBrush="{TemplateBinding BorderBrush}"
+              Corners="TopRight"
+              Cut="14"
+              Stroke="1">
+              <ContentPresenter VerticalAlignment="Center" RecognizesAccessKey="True" />
+            </c:CutBorder>
+            <Rectangle x:Name="Barre" Height="4" VerticalAlignment="Bottom" Fill="{StaticResource Cyan}" Visibility="Collapsed" />
+            <Rectangle
+              x:Name="Focus"
+              Margin="4"
+              Stroke="{StaticResource Cyan}"
+              StrokeDashArray="2 2"
+              StrokeThickness="1"
+              Visibility="Collapsed" />
+          </Grid>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter Property="Foreground" Value="{StaticResource Texte}" />
+            </Trigger>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+              <Setter TargetName="Focus" Property="Visibility" Value="Visible" />
+            </Trigger>
+            <Trigger Property="IsChecked" Value="True">
+              <Setter Property="Foreground" Value="{StaticResource Cyan}" />
+              <Setter TargetName="Forme" Property="BorderBrush" Value="{StaticResource Cyan}" />
+              <Setter TargetName="Forme" Property="Background" Value="{StaticResource Survol}" />
+              <Setter TargetName="Barre" Property="Visibility" Value="Visible" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- ===================================================================== Choix d'un mode : carte à onglet -->
+
+  <!--
+    Carte à onglet (c:ModeCard, un bouton radio) : le nom du mode est dans l'onglet (Header), qui se remplit en cyan
+    quand le mode est choisi. Ce n'est pas un bouton d'action.
+  -->
+  <Style TargetType="c:ModeCard">
+    <Setter Property="Background" Value="{StaticResource Panneau}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Cyan}" />
+    <Setter Property="Foreground" Value="{StaticResource Texte}" />
+    <Setter Property="FontFamily" Value="{StaticResource PoliceInterface}" />
+    <Setter Property="FontSize" Value="13" />
+    <Setter Property="Padding" Value="20,14,20,18" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="c:ModeCard">
+          <Grid SnapsToDevicePixels="True">
+            <c:TabCardFrame
+              x:Name="Cadre"
+              Background="{TemplateBinding Background}"
+              BorderBrush="{TemplateBinding BorderBrush}"
+              Stroke="1"
+              StrokeOpacity="0.45"
+              TabFill="{StaticResource Panneau}"
+              TabHeight="32"
+              TabWidth="{Binding ActualWidth, ElementName=Onglet}" />
+            <Grid>
+              <Grid.RowDefinitions>
+                <RowDefinition Height="32" />
+                <RowDefinition Height="*" />
+              </Grid.RowDefinitions>
+              <Border x:Name="Onglet" HorizontalAlignment="Left" Padding="20,0,44,0">
+                <ContentPresenter
+                  x:Name="Nom"
+                  VerticalAlignment="Center"
+                  Content="{TemplateBinding Header}"
+                  TextElement.FontWeight="Bold"
+                  TextElement.Foreground="{StaticResource Texte}" />
+              </Border>
+              <ContentPresenter
+                Grid.Row="1"
+                Margin="{TemplateBinding Padding}"
+                HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                RecognizesAccessKey="True" />
+            </Grid>
+            <Rectangle
+              x:Name="Focus"
+              Margin="-4"
+              Stroke="{StaticResource Cyan}"
+              StrokeDashArray="2 2"
+              StrokeThickness="1"
+              Visibility="Collapsed" />
+          </Grid>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Cadre" Property="BorderBrush" Value="{StaticResource Bleu}" />
+              <Setter TargetName="Cadre" Property="StrokeOpacity" Value="1" />
+            </Trigger>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+              <Setter TargetName="Focus" Property="Visibility" Value="Visible" />
+            </Trigger>
+            <Trigger Property="IsChecked" Value="True">
+              <Setter TargetName="Cadre" Property="TabFill" Value="{StaticResource Cyan}" />
+              <Setter TargetName="Cadre" Property="BorderBrush" Value="{StaticResource Cyan}" />
+              <Setter TargetName="Cadre" Property="StrokeOpacity" Value="1" />
+              <Setter TargetName="Cadre" Property="Background" Value="{StaticResource Survol}" />
+              <Setter TargetName="Nom" Property="TextElement.Foreground" Value="{StaticResource Fond}" />
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter Property="Opacity" Value="0.5" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <!-- ===================================================================== Mesure : jauge -->
+
+  <!-- Jauge en segments (c:MeasureGauge). Mesure pas encore faite : segments vides et « à tester », en discret. -->
+  <Style TargetType="c:MeasureGauge">
+    <Setter Property="Focusable" Value="False" />
+    <Setter Property="IsTabStop" Value="False" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="c:MeasureGauge">
+          <Grid>
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="Auto" MinWidth="72" />
+              <ColumnDefinition Width="*" />
+              <ColumnDefinition Width="Auto" MinWidth="72" />
+            </Grid.ColumnDefinitions>
+            <TextBlock VerticalAlignment="Center" Style="{StaticResource StyleEtiquette}" Text="{TemplateBinding Label}" />
+            <ItemsControl Grid.Column="1" VerticalAlignment="Center" Focusable="False" ItemsSource="{TemplateBinding Segments}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <UniformGrid Rows="1" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                  <Border x:Name="Segment" Height="8" Margin="0,0,3,0" Background="{StaticResource Creux}" BorderBrush="{StaticResource Ligne}" BorderThickness="1" />
+                  <DataTemplate.Triggers>
+                    <DataTrigger Binding="{Binding}" Value="True">
+                      <Setter TargetName="Segment" Property="Background" Value="{StaticResource Cyan}" />
+                      <Setter TargetName="Segment" Property="BorderBrush" Value="{StaticResource Cyan}" />
+                    </DataTrigger>
+                  </DataTemplate.Triggers>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock
+              x:Name="Mesure"
+              Grid.Column="2"
+              Margin="12,0,0,0"
+              VerticalAlignment="Center"
+              FontFamily="{StaticResource PoliceCode}"
+              FontSize="12"
+              Foreground="{StaticResource Texte}"
+              Text="{TemplateBinding DisplayText}"
+              TextAlignment="Right" />
+          </Grid>
+          <ControlTemplate.Triggers>
+            <Trigger Property="Value" Value="{x:Null}">
+              <Setter TargetName="Mesure" Property="Foreground" Value="{StaticResource TexteSecondaire}" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
   </Style>
 
 </ResourceDictionary>

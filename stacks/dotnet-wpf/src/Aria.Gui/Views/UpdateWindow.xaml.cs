@@ -28,7 +28,8 @@ public partial class UpdateWindow : Window
         _update = update;
         _exe = exe;
         InitializeComponent();
-        TitleText.Text = $"Version {update.Version.ToString(3)} disponible (tu as la {AppIdentity.Version})";
+        TitleText.Text = "Mise à jour disponible";
+        VersionText.Text = $"{AppIdentity.Version}  →  {update.Version.ToString(3)}";
     }
 
     private void OnNotes(object sender, RoutedEventArgs e)
