@@ -114,11 +114,37 @@ public static class UpdateInstaller
             try
             {
                 if (Directory.Exists(extracted)) Directory.Delete(extracted, recursive: true);
+                // Le zip téléchargé ne sert plus, que l'installation ait réussi ou non : un nouvel essai le retélécharge
+                if (IsInside(zip, work) && File.Exists(zip)) File.Delete(zip);
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException)
             {
-                // Dossier de travail resté : retiré au prochain passage
+                // Fichiers de travail restés : retirés au prochain lancement (CleanUp)
             }
         }
+    }
+
+    /// <summary>
+    /// Vide le dossier de travail des mises à jour : zip téléchargé ou dossier d'extraction laissés par une mise à jour
+    /// interrompue. À appeler au lancement ; ne lève jamais.
+    /// </summary>
+    public static void CleanUp() => CleanUp(WorkFolder);
+
+    internal static void CleanUp(string work)
+    {
+        try
+        {
+            if (Directory.Exists(work)) Directory.Delete(work, recursive: true);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            // Encore utilisé : retiré au prochain lancement
+        }
+    }
+
+    private static bool IsInside(string file, string folder)
+    {
+        var root = Path.GetFullPath(folder).TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+        return Path.GetFullPath(file).StartsWith(root, StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -178,6 +178,37 @@ public class UpdateInstallerTests
     }
 
     [Fact]
+    public void LeZipTelechargeEstRetireApresLaMiseAJour()
+    {
+        using var temp = new TemporaryFolder();
+        var exe = InstalledApp(temp.Path);
+        var work = Path.Combine(temp.Path, "travail");
+        Directory.CreateDirectory(work);
+        var zip = Path.Combine(work, $"{AppIdentity.ExeName}-0.2.0.zip");
+        File.Move(ReleaseZip(temp.Path, "nouveau "), zip);
+
+        var result = UpdateInstaller.Install(zip, exe, Path.Combine(temp.Path, "versions"), work);
+
+        Assert.True(result.Done, result.Error);
+        Assert.False(File.Exists(zip));
+        Assert.Empty(Directory.GetFileSystemEntries(work));
+    }
+
+    [Fact]
+    public void LeMenageDuLancementVideLeDossierDeTravail()
+    {
+        using var temp = new TemporaryFolder();
+        var work = Path.Combine(temp.Path, "mise-a-jour");
+        Directory.CreateDirectory(Path.Combine(work, "extrait"));
+        File.WriteAllText(Path.Combine(work, "reste.zip"), "zip d'une mise à jour interrompue");
+
+        UpdateInstaller.CleanUp(work);
+        UpdateInstaller.CleanUp(work); // une deuxième fois ne casse rien
+
+        Assert.False(Directory.Exists(work));
+    }
+
+    [Fact]
     public void UnZipSansFichiersTxtNInstalleRien()
     {
         using var temp = new TemporaryFolder();

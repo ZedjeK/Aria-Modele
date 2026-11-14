@@ -50,8 +50,10 @@ public partial class App : Application
         }
 
         var settings = AppSettingsStore.Load();
-        // Restes d'un remplacement précédent, maintenant que l'ancienne version est arrêtée
+        // Restes d'un remplacement précédent, maintenant que l'ancienne version est arrêtée, et fichiers de travail
+        // d'une mise à jour (zip téléchargé, extraction)
         SelfInstall.CleanUp();
+        UpdateInstaller.CleanUp();
 
         // Lancé à l'ouverture de session : l'icône seule, la fenêtre reste rangée jusqu'à ce qu'on l'ouvre
         var silent = AppIdentity.RunsInBackground && e.Args.Contains(Autostart.SilentArgument, StringComparer.OrdinalIgnoreCase);
