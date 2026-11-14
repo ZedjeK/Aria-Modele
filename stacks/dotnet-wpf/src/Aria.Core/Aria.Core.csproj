@@ -6,4 +6,14 @@
     <AssemblyName>Aria.Core</AssemblyName>
   </PropertyGroup>
 
+  <ItemGroup>
+    <!-- DPAPI : chiffrement des secrets lié au compte Windows de l'utilisateur (Secrets\SecretStore.cs) -->
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.15" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Les tests appellent les variantes « dossier donné » des classes, pour ne jamais toucher au vrai dossier -->
+    <InternalsVisibleTo Include="Aria.Tests" />
+  </ItemGroup>
+
 </Project>

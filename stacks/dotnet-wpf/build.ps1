@@ -1,10 +1,11 @@
 ﻿<#
 .SYNOPSIS
-Compile Aria {{NOM}} en un seul exe autonome, dans .work\sortie\.
+Compile Aria {{NOM}} en un exe autonome, dans .work\sortie\.
 
 .DESCRIPTION
-Produit Aria-{{NOM}}.exe, sans rien d'autre à installer (le runtime .NET est embarqué). Ne demande pas les droits
-administrateur et ne lance rien. Les versions des outils vont dans .work\outils.txt, que tools\empaqueter.ps1 recopie
+Produit Aria-{{NOM}}.exe, sans rien d'autre à installer (le runtime .NET est embarqué), et à côté les bibliothèques
+natives de WPF : embarquées dans l'exe, elles seraient extraites dans %TEMP% à chaque lancement. Ne demande pas les
+droits administrateur et ne lance rien. Les versions des outils vont dans .work\outils.txt, que tools\empaqueter.ps1 recopie
 dans BUILDINFO.txt.
 
     .\build.ps1
@@ -41,7 +42,7 @@ if ($code -ne 0) { throw "La compilation d'Aria {{NOM}} a échoué." }
 
 $exe = Join-Path $sortie 'Aria-{{NOM}}.exe'
 if (-not (Test-Path -LiteralPath $exe)) { throw "Aria-{{NOM}}.exe est absent de .work\sortie\ après la compilation." }
-# Seul l'exe est livré : les fichiers de débogage restent hors du zip.
+# Les fichiers de débogage restent hors du zip.
 Get-ChildItem -LiteralPath $sortie -Filter '*.pdb' | Remove-Item -Force
 
 [IO.File]::WriteAllLines((Join-Path $work 'outils.txt'), [string[]]@("SDK .NET : $sdk"), (New-Object Text.UTF8Encoding($false)))

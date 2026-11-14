@@ -12,11 +12,13 @@
     <!-- Icône de l'exe (Explorateur, barre des tâches) : à remplacer par celle de l'appli -->
     <ApplicationIcon>Assets\Aria-Modele.ico</ApplicationIcon>
 
-    <!-- Publication : un seul exe autonome, rien à installer -->
+    <!-- Publication : un exe autonome, rien à installer -->
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
     <PublishSingleFile>true</PublishSingleFile>
-    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <!-- Les bibliothèques natives de WPF restent à côté de l'exe : embarquées, elles seraient extraites dans
+         %TEMP%\.net\ à chaque lancement, et le contrat interdit d'écrire dans %TEMP%. -->
+    <IncludeNativeLibrariesForSelfExtract>false</IncludeNativeLibrariesForSelfExtract>
     <!-- Pas de compression : un exe qui se décompresse lui-même alerte souvent les antivirus (fichier plus gros, en contrepartie) -->
     <EnableCompressionInSingleFile>false</EnableCompressionInSingleFile>
   </PropertyGroup>
