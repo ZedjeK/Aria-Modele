@@ -35,3 +35,10 @@ jobs:
 
       - name: Tests
         run: ./tools/tester.ps1
+
+      # Les scripts .ps1 doivent aussi tourner sous Windows PowerShell 5.1, celui livré avec Windows.
+      # Même job : le check exigé par le ruleset garde son nom « tests ».
+      - name: Tests sous Windows PowerShell 5.1
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: ./tools/tester.ps1
