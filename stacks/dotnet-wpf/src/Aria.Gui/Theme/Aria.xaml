@@ -333,11 +333,75 @@
     </Setter>
   </Style>
 
+  <!--
+    Étape d'un assistant : la même encoche qu'un sous-onglet, mais non cliquable (elle montre où on en est). Trois
+    styles, un par état : à venir (StyleEtape), en cours (StyleEtapeActive : contour cyan et barre épaisse dessous,
+    comme un sous-onglet actif), faite (StyleEtapeFaite : texte clair et coche cyan). Les étapes se posent côte à côte
+    dans un WrapPanel ; sous elles, l'encadré bleu « À savoir » donne le commentaire de l'étape. Le bouton orange va
+    à l'action à faire maintenant, puis revient sur « Suivant » ; chaque étape a son panneau accentué.
+  -->
+  <Style x:Key="StyleEtape" TargetType="ContentControl">
+    <Setter Property="Margin" Value="0,0,6,6" />
+    <Setter Property="Padding" Value="14,0,28,0" />
+    <Setter Property="MinHeight" Value="34" />
+    <Setter Property="Focusable" Value="False" />
+    <Setter Property="IsTabStop" Value="False" />
+    <Setter Property="Background" Value="{StaticResource Panneau}" />
+    <Setter Property="BorderBrush" Value="{StaticResource Ligne}" />
+    <Setter Property="Foreground" Value="{StaticResource TexteSecondaire}" />
+    <Setter Property="FontFamily" Value="{StaticResource PoliceInterface}" />
+    <Setter Property="FontSize" Value="12" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ContentControl">
+          <Grid SnapsToDevicePixels="True">
+            <c:CutBorder
+              x:Name="Forme"
+              Padding="{TemplateBinding Padding}"
+              Background="{TemplateBinding Background}"
+              BorderBrush="{TemplateBinding BorderBrush}"
+              Corners="TopRight"
+              Cut="14"
+              Stroke="1">
+              <StackPanel VerticalAlignment="Center" Orientation="Horizontal">
+                <ContentPresenter VerticalAlignment="Center" />
+                <TextBlock x:Name="Coche" Margin="6,0,0,0" Foreground="{StaticResource Cyan}" Text="✓" Visibility="Collapsed" />
+              </StackPanel>
+            </c:CutBorder>
+            <Rectangle x:Name="Barre" Height="4" VerticalAlignment="Bottom" Fill="{StaticResource Cyan}" Visibility="Collapsed" />
+          </Grid>
+          <ControlTemplate.Triggers>
+            <Trigger Property="Tag" Value="active">
+              <Setter Property="Foreground" Value="{StaticResource Cyan}" />
+              <Setter TargetName="Forme" Property="BorderBrush" Value="{StaticResource Cyan}" />
+              <Setter TargetName="Forme" Property="Background" Value="{StaticResource Survol}" />
+              <Setter TargetName="Barre" Property="Visibility" Value="Visible" />
+            </Trigger>
+            <Trigger Property="Tag" Value="faite">
+              <Setter Property="Foreground" Value="{StaticResource Texte}" />
+              <Setter TargetName="Coche" Property="Visibility" Value="Visible" />
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="StyleEtapeActive" BasedOn="{StaticResource StyleEtape}" TargetType="ContentControl">
+    <Setter Property="Tag" Value="active" />
+  </Style>
+
+  <Style x:Key="StyleEtapeFaite" BasedOn="{StaticResource StyleEtape}" TargetType="ContentControl">
+    <Setter Property="Tag" Value="faite" />
+  </Style>
+
   <!-- ===================================================================== Choix d'un mode : carte à onglet -->
 
   <!--
     Carte à onglet (c:ModeCard, un bouton radio) : le nom du mode est dans l'onglet (Header), qui se remplit en cyan
     quand le mode est choisi. Ce n'est pas un bouton d'action.
+    Un choix exclusif seulement : pour cocher plusieurs choix, des panneaux (StylePanneau) munis d'une case à cocher.
   -->
   <Style TargetType="c:ModeCard">
     <Setter Property="Background" Value="{StaticResource Panneau}" />
