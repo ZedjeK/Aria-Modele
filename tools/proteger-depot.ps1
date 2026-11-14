@@ -98,11 +98,18 @@ $avant = [ordered]@{
 $relatifAvant = ".work\protection-avant-$($maintenant.ToString('yyyy-MM-ddTHH-mm-ss')).json"
 [IO.File]::WriteAllText((Join-Path $racine $relatifAvant), ($avant | ConvertTo-Json -Depth 12), (New-Object Text.UTF8Encoding($false)))
 
-# Le check « tests » a-t-il réussi sur la branche par défaut ?
+# Checks exigés : « tests » partout ; « squelettes » en plus sur le dépôt modèle, le seul qui a ce workflow (lu dans
+# le dépôt visé, pas dans ce dossier : le script peut viser un autre dépôt avec -Depot).
+$exiges = @('tests')
+if (Lire "repos/$Depot/contents/.github/workflows/squelettes.yml") { $exiges += 'squelettes' }
+$listeExiges = ($exiges | ForEach-Object { "« $_ »" }) -join ' et '
+
+# Ces checks ont-ils réussi sur la branche par défaut ? On n'exige jamais un check qui n'a pas encore tourné.
 $checks = Lire "repos/$Depot/commits/$([uri]::EscapeDataString($branche))/check-runs"
 $testsVerts = $false
 if ($checks -and $checks.PSObject.Properties['check_runs']) {
-    $testsVerts = [bool](@($checks.check_runs | Where-Object { $_.name -eq 'tests' -and $_.conclusion -eq 'success' }).Count)
+    $verts = @($checks.check_runs | Where-Object { $_.conclusion -eq 'success' } | ForEach-Object { $_.name })
+    $testsVerts = @($exiges | Where-Object { $verts -notcontains $_ }).Count -eq 0
 }
 
 $plan = New-Object Collections.Generic.List[object]
@@ -143,7 +150,7 @@ $corpsBranche = @{
         },
         @{ type = 'required_status_checks'; parameters = @{
                 strict_required_status_checks_policy = $false
-                required_status_checks = @(@{ context = 'tests'; integration_id = $idActions })
+                required_status_checks = @($exiges | ForEach-Object { @{ context = $_; integration_id = $idActions } })
             }
         }
     )
@@ -151,31 +158,32 @@ $corpsBranche = @{
 
 $regles = @($reglesBranche | Where-Object { $_ -and $_.PSObject.Properties['type'] })
 $types = @($regles | ForEach-Object { $_.type })
-$checkLie = @($regles | Where-Object { $_.type -eq 'required_status_checks' } |
+$lies = @($regles | Where-Object { $_.type -eq 'required_status_checks' } |
     ForEach-Object { $_.parameters.required_status_checks } |
-    Where-Object { $_.context -eq 'tests' -and $_.PSObject.Properties['integration_id'] -and $_.integration_id -eq $idActions }).Count -gt 0
+    Where-Object { $_.PSObject.Properties['integration_id'] -and $_.integration_id -eq $idActions } | ForEach-Object { $_.context })
+$checkLie = @($exiges | Where-Object { $lies -notcontains $_ }).Count -eq 0
 $complet = $types -contains 'deletion' -and $types -contains 'non_fast_forward' -and $types -contains 'pull_request' -and $checkLie
 # Le ruleset posé par ce script se reconnaît à son nom ; les règles venues d'ailleurs ne sont jamais modifiées.
 $notre = @($rulesets | Where-Object { $_ -and $_.PSObject.Properties['name'] -and $_.name -eq $nomRuleset -and $_.target -eq 'branch' })
 $etrangeres = @($regles | Where-Object { $notre.Count -eq 0 -or $_.ruleset_id -ne $notre[0].id } | ForEach-Object { $_.type })
 
 if ($complet) {
-    Write-Host "  déjà en place : $branche protégée, PR obligatoire, check « tests » exigé et lié à GitHub Actions"
+    Write-Host "  déjà en place : $branche protégée, PR obligatoire, check(s) $listeExiges exigé(s) et lié(s) à GitHub Actions"
 }
 elseif ($etrangeres.Count -gt 0) {
     Write-Host "  À FAIRE À LA MAIN : $branche a des règles venues d'un autre ruleset ($($etrangeres -join ', ')). Complète-le plutôt que d'en créer un second." -ForegroundColor Yellow
 }
 elseif (-not $testsVerts) {
-    Write-Host "  PAS ENCORE : le check « tests » n'a pas réussi sur $branche. Relance ce script après le premier passage vert." -ForegroundColor Yellow
+    Write-Host "  PAS ENCORE : le(s) check(s) $listeExiges n'ont pas tous réussi sur $branche. Relance ce script après le premier passage vert." -ForegroundColor Yellow
 }
 elseif ($notre.Count -gt 0) {
     $idRuleset = $notre[0].id
-    Prevoir "Ruleset « $nomRuleset » complété : PR obligatoire, check « tests » lié à GitHub Actions" {
+    Prevoir "Ruleset « $nomRuleset » complété : PR obligatoire, check(s) $listeExiges liés à GitHub Actions" {
         Ecrire 'PUT' "repos/$Depot/rulesets/$idRuleset" $corpsBranche
     }
 }
 else {
-    Prevoir "Ruleset « $nomRuleset » : suppression et réécriture interdites, PR obligatoire, check « tests » exigé" {
+    Prevoir "Ruleset « $nomRuleset » : suppression et réécriture interdites, PR obligatoire, check(s) $listeExiges exigé(s)" {
         Ecrire 'POST' "repos/$Depot/rulesets" $corpsBranche
     }
 }
