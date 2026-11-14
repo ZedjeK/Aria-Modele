@@ -1,0 +1,10 @@
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      nuget-mineures:
+        update-types: ["minor", "patch"]

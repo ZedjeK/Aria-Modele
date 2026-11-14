@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>Aria.Gui</RootNamespace>
+    <AssemblyName>Aria-{{NOM}}</AssemblyName>
+    <!-- « Description du fichier » dans Windows -->
+    <AssemblyTitle>Aria {{NOM}}</AssemblyTitle>
+    <!-- Droits de l'utilisateur seulement (asInvoker) et DPI par écran : voir app.manifest -->
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Icône de l'exe (Explorateur, barre des tâches) : à remplacer par celle de l'appli -->
+    <ApplicationIcon>Assets\Aria-Modele.ico</ApplicationIcon>
+
+    <!-- Publication : un seul exe autonome, rien à installer -->
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <!-- Pas de compression : un exe qui se décompresse lui-même alerte souvent les antivirus (fichier plus gros, en contrepartie) -->
+    <EnableCompressionInSingleFile>false</EnableCompressionInSingleFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Contrôles au style Windows 11 (fenêtre, barre de titre, thème sombre) -->
+    <PackageReference Include="WPF-UI" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\Aria-Modele.ico" />
+    <!-- Polices embarquées : Space Grotesk (interface), IBM Plex Mono (code) -->
+    <Resource Include="Assets\Fonts\*.ttf" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Aria.Core\Aria.Core.csproj" />
+  </ItemGroup>
+
+</Project>

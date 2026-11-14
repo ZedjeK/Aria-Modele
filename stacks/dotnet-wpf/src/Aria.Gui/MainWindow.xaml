@@ -1,0 +1,53 @@
+<ui:FluentWindow
+  x:Class="Aria.Gui.MainWindow"
+  xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+  xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+  Title="Aria {{NOM}}"
+  Width="1100"
+  Height="720"
+  MinWidth="900"
+  MinHeight="600"
+  Icon="pack://application:,,,/Assets/Aria-Modele.ico"
+  Background="{StaticResource Fond}"
+  Foreground="{StaticResource Texte}"
+  FontFamily="{StaticResource PoliceInterface}"
+  ExtendsContentIntoTitleBar="True"
+  WindowBackdropType="None"
+  WindowStartupLocation="CenterScreen">
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="*" />
+    </Grid.RowDefinitions>
+
+    <ui:TitleBar Grid.Row="0" Title="Aria {{NOM}}" />
+
+    <Grid Grid.Row="1">
+      <!-- Menu latéral à gauche, zone principale à droite. Le fond animé n'occupe que la zone principale. -->
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="212" />
+        <ColumnDefinition Width="*" />
+      </Grid.ColumnDefinitions>
+
+      <Border Grid.Column="0" Background="{StaticResource Panneau}" BorderBrush="{StaticResource Ligne}" BorderThickness="0,0,1,0">
+        <StackPanel Margin="16">
+          <TextBlock Text="Aria {{NOM}}" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource Cyan}" />
+          <TextBlock x:Name="VersionTexte" Margin="0,4,0,0" FontFamily="{StaticResource PoliceCode}" FontSize="12" Foreground="{StaticResource TexteSecondaire}" />
+        </StackPanel>
+      </Border>
+
+      <StackPanel Grid.Column="1" Margin="32">
+        <Border Style="{StaticResource StyleASavoir}">
+          <TextBlock TextWrapping="Wrap" Text="Squelette de l'appli : remplace cette page par la première vraie page." />
+        </Border>
+        <Border Margin="0,16,0,0" Style="{StaticResource StylePanneau}">
+          <StackPanel>
+            <TextBlock Text="{{PROMESSE}}" FontSize="16" TextWrapping="Wrap" />
+            <TextBlock x:Name="DossierTexte" Margin="0,8,0,0" FontFamily="{StaticResource PoliceCode}" FontSize="12" Foreground="{StaticResource TexteSecondaire}" />
+          </StackPanel>
+        </Border>
+      </StackPanel>
+    </Grid>
+  </Grid>
+</ui:FluentWindow>

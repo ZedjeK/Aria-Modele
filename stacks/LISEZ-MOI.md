@@ -2,12 +2,14 @@
 
 Un dossier par stack. `init.ps1` copie celui que tu choisis à la racine du dépôt, puis supprime `stacks/`.
 
-Aucun squelette n'est encore écrit : ils arrivent un par un, chacun éprouvé sur une appli jetable.
+Les squelettes arrivent un par un, chacun éprouvé sur une appli jetable : `.\tools\tester-squelettes.ps1` (et le
+workflow `squelettes.yml`) passe chacun par `init.ps1`, le compile et en fait le zip. Ces deux fichiers ne servent
+qu'au dépôt modèle : `init.ps1` les supprime dans l'appli créée.
 
 | Dossier | Stack | État |
 | --- | --- | --- |
 | `go-wails/` | Go, Wails v3, Svelte 5 | à écrire |
-| `dotnet-wpf/` | C# .NET 10, WPF, WPF-UI | à écrire |
+| `dotnet-wpf/` | C# .NET 10, WPF, WPF-UI | socle posé : compile, tests, exe autonome ; le contrat vient ensuite |
 | `python-fastapi/` | Python, FastAPI, exe empaqueté | à écrire |
 | `extension-mv3/` | exe Electron et son extension Manifest V3 | à écrire |
 

@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- La logique sans interface : tout ce qui se teste sans ouvrir de fenêtre. -->
+  <PropertyGroup>
+    <RootNamespace>Aria.Core</RootNamespace>
+    <AssemblyName>Aria.Core</AssemblyName>
+  </PropertyGroup>
+
+</Project>
