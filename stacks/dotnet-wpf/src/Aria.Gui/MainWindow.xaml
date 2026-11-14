@@ -2,10 +2,12 @@
   x:Class="Aria.Gui.MainWindow"
   xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
   xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+  xmlns:backdrop="clr-namespace:Aria.Gui.Backdrop"
+  xmlns:c="clr-namespace:Aria.Gui.Controls"
   xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
   Title="Aria {{NOM}}"
   Width="1100"
-  Height="720"
+  Height="740"
   MinWidth="900"
   MinHeight="600"
   Icon="pack://application:,,,/Assets/Aria-Modele.ico"
@@ -16,51 +18,143 @@
   WindowBackdropType="None"
   WindowStartupLocation="CenterScreen">
   <Grid>
+    <!-- Menu latéral à gauche (colonne 0, toute la hauteur), zone principale à droite (colonne 1) -->
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="220" />
+      <ColumnDefinition Width="*" />
+    </Grid.ColumnDefinitions>
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
       <RowDefinition Height="*" />
     </Grid.RowDefinitions>
 
-    <ui:TitleBar Grid.Row="0" Title="Aria {{NOM}}" />
+    <!--
+      Fond animé : la zone principale seulement (colonne 1), jamais sous le menu latéral. Posé avant le reste : la
+      barre de titre et les panneaux (opaques) restent par-dessus. Motif par défaut : des points qui traversent la
+      zone ; chaque appli met le sien (backdrop:BackdropHost.Pattern).
+    -->
+    <backdrop:BackdropHost x:Name="FondAnime" Grid.RowSpan="2" Grid.Column="1" />
 
-    <Grid Grid.Row="1">
-      <!-- Menu latéral à gauche, zone principale à droite. Le fond animé n'occupe que la zone principale. -->
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="212" />
-        <ColumnDefinition Width="*" />
-      </Grid.ColumnDefinitions>
-
-      <Border Grid.Column="0" Background="{StaticResource Panneau}" BorderBrush="{StaticResource Ligne}" BorderThickness="0,0,1,0">
-        <StackPanel Margin="16">
-          <TextBlock Text="Aria {{NOM}}" FontSize="18" FontWeight="SemiBold" Foreground="{StaticResource Cyan}" />
-          <TextBlock x:Name="VersionTexte" Margin="0,4,0,0" FontFamily="{StaticResource PoliceCode}" FontSize="12" Foreground="{StaticResource TexteSecondaire}" />
+    <!-- ===== Menu latéral : nom, pages, version. Opaque : le fond animé ne passe jamais dessous ===== -->
+    <Border Grid.RowSpan="2" Background="{StaticResource Panneau}" BorderBrush="{StaticResource Ligne}" BorderThickness="0,0,1,0">
+      <DockPanel>
+        <StackPanel Margin="20,22,12,24" DockPanel.Dock="Top">
+          <TextBlock FontSize="15" FontWeight="Bold" Text="ARIA" />
+          <TextBlock
+            x:Name="NomTexte"
+            Margin="0,2,0,0"
+            FontFamily="{StaticResource PoliceCode}"
+            FontSize="11"
+            Foreground="{StaticResource Cyan}" />
         </StackPanel>
-      </Border>
 
-      <StackPanel Grid.Column="1" Margin="32">
+        <StackPanel Margin="20,0,12,18" DockPanel.Dock="Bottom">
+          <TextBlock x:Name="VersionTexte" FontFamily="{StaticResource PoliceCode}" FontSize="11" Foreground="{StaticResource TexteSecondaire}" />
+          <TextBlock Margin="0,2,0,0" FontFamily="{StaticResource PoliceCode}" FontSize="11" Foreground="{StaticResource TexteSecondaire}" Text="tout en local" />
+        </StackPanel>
+
+        <!-- Pages de l'appli : une entrée par page, celle affichée est active -->
+        <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+          <StackPanel>
+            <RadioButton x:Name="PageAccueil" Content="ACCUEIL" IsChecked="True" Style="{StaticResource StyleMenuLateral}" />
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+
+    <!-- Boutons réduire, agrandir, fermer ; la bande se saisit pour déplacer la fenêtre -->
+    <ui:TitleBar Grid.Row="0" Grid.Column="1" Title="" />
+
+    <!-- ===== Zone principale ===== -->
+    <ScrollViewer Grid.Row="1" Grid.Column="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <StackPanel Margin="32,0,32,32">
+        <TextBlock Style="{StaticResource StyleTitrePage}" Text="Accueil" />
+        <TextBlock Margin="0,2,0,20" Foreground="{StaticResource TexteSecondaire}" Text="Aria {{NOM}} : {{PROMESSE}}" TextWrapping="Wrap" />
+
         <!-- Bandeau bleu (information) : n'apparaît que si une nouvelle version est disponible -->
-        <Border x:Name="MiseAJour" Margin="0,0,0,16" Style="{StaticResource StyleASavoir}" Visibility="Collapsed">
+        <Border x:Name="MiseAJour" Margin="0,0,0,18" Style="{StaticResource StyleASavoir}" Visibility="Collapsed">
           <DockPanel>
-            <Button DockPanel.Dock="Right" Padding="12,4" Content="Voir la mise à jour" Click="OnShowUpdate"
-                    Background="Transparent" BorderBrush="{StaticResource Cyan}" Foreground="{StaticResource Cyan}" />
+            <TextBlock VerticalAlignment="Center" DockPanel.Dock="Left" Style="{StaticResource StyleASavoirTitre}" Text="MISE À JOUR" />
+            <Button Margin="14,0,0,0" Click="OnShowUpdate" Content="Voir la mise à jour" DockPanel.Dock="Right" Style="{StaticResource BoutonSecondaire}" />
             <TextBlock x:Name="MiseAJourTexte" VerticalAlignment="Center" TextWrapping="Wrap" />
           </DockPanel>
         </Border>
-        <Border Style="{StaticResource StyleASavoir}">
-          <TextBlock TextWrapping="Wrap" Text="Squelette de l'appli : remplace cette page par la première vraie page." />
-        </Border>
-        <Border Margin="0,16,0,0" Style="{StaticResource StylePanneau}">
-          <StackPanel>
-            <TextBlock Text="{{PROMESSE}}" FontSize="16" TextWrapping="Wrap" />
-            <TextBlock x:Name="DossierTexte" Margin="0,8,0,0" FontFamily="{StaticResource PoliceCode}" FontSize="12" Foreground="{StaticResource TexteSecondaire}" />
-            <!-- Même case que dans le menu de l'icône ; affichée seulement pour une appli qui sert en arrière-plan -->
-            <CheckBox x:Name="DemarrageAuto" Margin="0,16,0,0" Content="Démarrer avec Windows" Click="OnAutostartClick" />
-            <!-- Affichée seulement pour une appli qui s'installe : réactive la proposition coupée par « Ne plus me proposer » -->
-            <CheckBox x:Name="ProposerInstallation" Margin="0,8,0,0" Content="Proposer l'installation quand l'exe est lancé hors de son dossier" Click="OnOfferInstallClick" />
-            <CheckBox x:Name="ChercherMisesAJour" Margin="0,8,0,0" Content="Chercher les mises à jour au lancement (une requête vers GitHub)" Click="OnCheckUpdatesClick" />
+
+        <!-- Sous-onglets de la page, en haut de la zone principale -->
+        <Border BorderBrush="{StaticResource Ligne}" BorderThickness="0,0,0,1">
+          <StackPanel Orientation="Horizontal">
+            <RadioButton x:Name="OngletApercu" Checked="OnSubTabChecked" Content="APERÇU" IsChecked="True" Style="{StaticResource StyleSousOnglet}" />
+            <RadioButton x:Name="OngletReglages" Checked="OnSubTabChecked" Content="RÉGLAGES" Style="{StaticResource StyleSousOnglet}" />
           </StackPanel>
         </Border>
+
+        <!-- Encadré bleu « À savoir » : le commentaire de l'onglet actif -->
+        <Border Margin="0,12,0,20" Style="{StaticResource StyleASavoir}">
+          <DockPanel>
+            <TextBlock DockPanel.Dock="Left" Style="{StaticResource StyleASavoirTitre}" Text="À SAVOIR" />
+            <TextBlock x:Name="ASavoirTexte" TextWrapping="Wrap" />
+          </DockPanel>
+        </Border>
+
+        <!-- ===== Onglet « Aperçu » : la seule action principale de la page et le panneau qu'elle touche ===== -->
+        <StackPanel x:Name="Apercu">
+          <!-- Liseré accentué : c'est ce panneau que le bouton orange remplit -->
+          <HeaderedContentControl Header="EXEMPLE D'ACTION" Style="{StaticResource StylePanneauAccentue}">
+            <StackPanel>
+              <TextBlock Foreground="{StaticResource TexteSecondaire}" TextWrapping="Wrap"
+                         Text="Exemple à remplacer : le bouton orange mesure la place libre sur le disque de ton dossier de données. Lecture seule, rien n'est écrit." />
+              <c:MeasureGauge x:Name="JaugeDisque" Margin="0,16,0,0" Label="DISQUE" />
+              <TextBlock x:Name="MesureTexte" Margin="0,10,0,0" FontFamily="{StaticResource PoliceCode}" FontSize="12" Foreground="{StaticResource TexteSecondaire}" TextWrapping="Wrap" />
+              <Button x:Name="MesurerBouton" Margin="0,18,0,0" HorizontalAlignment="Left" Click="OnMeasure" Content="Mesurer le disque" Style="{StaticResource BoutonPrincipal}" />
+            </StackPanel>
+          </HeaderedContentControl>
+
+          <HeaderedContentControl Margin="0,16,0,0" Header="DOSSIER DE DONNÉES" Style="{StaticResource StylePanneau}">
+            <StackPanel>
+              <TextBlock TextWrapping="Wrap" Text="Tout ce que l'appli garde est ici : réglages, journal, sauvegardes, cache." />
+              <TextBlock x:Name="DossierTexte" Margin="0,8,0,0" FontFamily="{StaticResource PoliceCode}" FontSize="12" Foreground="{StaticResource TexteSecondaire}" TextWrapping="Wrap" />
+            </StackPanel>
+          </HeaderedContentControl>
+        </StackPanel>
+
+        <!-- ===== Onglet « Réglages » : pas de bouton orange, donc aucun liseré accentué ===== -->
+        <StackPanel x:Name="Reglages" Visibility="Collapsed">
+          <HeaderedContentControl Header="DÉMARRAGE ET MISES À JOUR" Style="{StaticResource StylePanneau}">
+            <StackPanel>
+              <!-- Même case que dans le menu de l'icône ; affichée seulement pour une appli qui sert en arrière-plan -->
+              <CheckBox x:Name="DemarrageAuto" Margin="0,0,0,8" Click="OnAutostartClick" Content="Démarrer avec Windows" />
+              <!-- Affichée seulement pour une appli qui s'installe : réactive la proposition coupée par « Ne plus me proposer » -->
+              <CheckBox x:Name="ProposerInstallation" Margin="0,0,0,8" Click="OnOfferInstallClick" Content="Proposer l'installation quand l'exe est lancé hors de son dossier" />
+              <CheckBox x:Name="ChercherMisesAJour" Click="OnCheckUpdatesClick" Content="Chercher les mises à jour au lancement (une requête vers GitHub)" />
+            </StackPanel>
+          </HeaderedContentControl>
+
+          <HeaderedContentControl Margin="0,16,0,0" Header="FOND ANIMÉ" Style="{StaticResource StylePanneau}">
+            <StackPanel>
+              <CheckBox x:Name="FondActif" Click="OnBackgroundChanged" Content="Afficher le fond animé (jamais si Windows demande moins d'animations)" />
+              <TextBlock Margin="0,16,0,8" Style="{StaticResource StyleEtiquette}" Text="VITESSE" />
+              <!-- Choix d'un mode : cartes à onglet, l'onglet de la carte choisie se remplit en cyan -->
+              <UniformGrid Columns="3">
+                <c:ModeCard x:Name="VitesseLente" Margin="0,0,12,0" Checked="OnBackgroundChanged" GroupName="Vitesse" Header="LENTE">
+                  <TextBlock Foreground="{StaticResource TexteSecondaire}" Text="Un passage toutes les 14 s" TextWrapping="Wrap" />
+                </c:ModeCard>
+                <c:ModeCard x:Name="VitesseNormale" Margin="0,0,12,0" Checked="OnBackgroundChanged" GroupName="Vitesse" Header="NORMALE">
+                  <TextBlock Foreground="{StaticResource TexteSecondaire}" Text="Un passage toutes les 7 s" TextWrapping="Wrap" />
+                </c:ModeCard>
+                <c:ModeCard x:Name="VitesseRapide" Checked="OnBackgroundChanged" GroupName="Vitesse" Header="RAPIDE">
+                  <TextBlock Foreground="{StaticResource TexteSecondaire}" Text="Un passage toutes les 3,5 s" TextWrapping="Wrap" />
+                </c:ModeCard>
+              </UniformGrid>
+              <StackPanel Margin="0,16,0,0" Orientation="Horizontal">
+                <TextBlock VerticalAlignment="Center" Text="Éléments par passage : de" />
+                <ComboBox x:Name="FondMinimum" Width="80" Margin="10,0" SelectionChanged="OnBackgroundChanged" />
+                <TextBlock VerticalAlignment="Center" Text="à" />
+                <ComboBox x:Name="FondMaximum" Width="80" Margin="10,0" SelectionChanged="OnBackgroundChanged" />
+              </StackPanel>
+            </StackPanel>
+          </HeaderedContentControl>
+        </StackPanel>
       </StackPanel>
-    </Grid>
+    </ScrollViewer>
   </Grid>
 </ui:FluentWindow>

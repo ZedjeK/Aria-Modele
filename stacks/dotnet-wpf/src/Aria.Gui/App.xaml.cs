@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Windows;
+using System.Windows.Media;
 using Aria.Core;
 using Aria.Core.Data;
 using Aria.Core.Install;
@@ -8,6 +9,7 @@ using Aria.Core.Startup;
 using Aria.Core.Updates;
 using Aria.Gui.Services;
 using Aria.Gui.Views;
+using Wpf.Ui.Appearance;
 
 namespace Aria.Gui;
 
@@ -20,6 +22,8 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        // Accent de WPF-UI (cases cochées, sélections) : le cyan, couleur de ce qui est actif ou choisi
+        ApplicationAccentColorManager.Apply((Color)FindResource("CouleurCyan"), ApplicationTheme.Dark);
         // Rien ne s'arrête tout seul pendant le démarrage : la fenêtre d'installation peut s'ouvrir et se fermer
         // avant la fenêtre principale
         ShutdownMode = ShutdownMode.OnExplicitShutdown;
@@ -64,6 +68,8 @@ public partial class App : Application
             }
         }
 
+        // Le fond animé suit les réglages fond.* (actif, vitesse, nombre d'éléments)
+        BackdropService.Set(settings.Background);
         var window = new MainWindow(settings);
         SingleInstance.Listen(window, window.BringToFront);
 
@@ -71,6 +77,15 @@ public partial class App : Application
         {
             // Fermer la fenêtre ne suffit pas à arrêter l'appli : elle reste dans son icône
             _tray = new TrayIcon(window.BringToFront, Quit);
+            // Bloc « Aller à » du menu de l'icône. « Agir sans ouvrir » reste vide (donc masqué) : voir TrayIcon.AddAction
+            // et TrayIcon.AddChoices.
+            _tray.AddPage("Réglages", () =>
+            {
+                window.BringToFront();
+                window.ShowSettingsTab();
+            });
+            // Pendant une action de la fenêtre, pastille cyan : l'appli agit
+            window.WorkingChanged += text => _tray?.Update(s => s with { Working = text });
             window.Closing += (_, args) =>
             {
                 if (_quitting) return;

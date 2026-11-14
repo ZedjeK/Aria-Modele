@@ -16,13 +16,13 @@
     <TextBlock Margin="0,8,0,0" TextWrapping="Wrap"
                Text="L'appli peut se ranger dans ton dossier de données et se lancer de là. Rien n'est installé ailleurs, et rien ne change dans Windows." />
 
-    <Border Margin="0,16,0,0" Style="{StaticResource StylePanneau}">
+    <!-- Liseré accentué : c'est dans ce dossier que le bouton orange copie l'appli -->
+    <HeaderedContentControl Margin="0,16,0,0" Header="DOSSIER D'INSTALLATION" Style="{StaticResource StylePanneauAccentue}">
       <StackPanel>
-        <TextBlock Text="Dossier d'installation" Foreground="{StaticResource TexteSecondaire}" />
-        <TextBlock x:Name="DestinationText" Margin="0,4,0,0" FontFamily="{StaticResource PoliceCode}" TextWrapping="Wrap" />
+        <TextBlock x:Name="DestinationText" FontFamily="{StaticResource PoliceCode}" TextWrapping="Wrap" />
         <TextBlock x:Name="InstalledText" Margin="0,8,0,0" TextWrapping="Wrap" Visibility="Collapsed" />
       </StackPanel>
-    </Border>
+    </HeaderedContentControl>
 
     <CheckBox x:Name="ShortcutBox" Margin="0,16,0,0" Content="Créer un raccourci sur le Bureau" />
     <TextBlock x:Name="ShortcutHelp" Margin="28,2,0,0" TextWrapping="Wrap" FontSize="12" Foreground="{StaticResource TexteSecondaire}" />
@@ -34,10 +34,9 @@
     <TextBlock x:Name="StatusText" Margin="0,16,0,0" TextWrapping="Wrap" Visibility="Collapsed" />
 
     <StackPanel Margin="0,20,0,0" Orientation="Horizontal" HorizontalAlignment="Right">
-      <Button x:Name="RunButton" Margin="0,0,12,0" Padding="16,8" Content="Lancer sans installer"
-              Background="Transparent" BorderBrush="{StaticResource Cyan}" Foreground="{StaticResource Cyan}" Click="OnRunHere" />
-      <Button x:Name="InstallButton" Padding="16,8" Content="Installer"
-              Background="{StaticResource Orange}" Foreground="{StaticResource Fond}" FontWeight="SemiBold" Click="OnInstall" />
+      <!-- Une seule action principale (orange) : « Installer » ; « Lancer sans installer » est secondaire -->
+      <Button x:Name="RunButton" Margin="0,0,12,0" Content="Lancer sans installer" Style="{StaticResource BoutonSecondaire}" Click="OnRunHere" />
+      <Button x:Name="InstallButton" Content="Installer" Style="{StaticResource BoutonPrincipal}" Click="OnInstall" />
     </StackPanel>
   </StackPanel>
 </Window>
