@@ -5,6 +5,7 @@ using Aria.Core;
 using Aria.Core.Data;
 using Aria.Core.Install;
 using Aria.Core.Startup;
+using Aria.Core.Updates;
 using Aria.Gui.Services;
 using Aria.Gui.Views;
 
@@ -13,6 +14,7 @@ namespace Aria.Gui;
 public partial class App : Application
 {
     private TrayIcon? _tray;
+    private MainWindow? _window;
     private bool _quitting;
 
     protected override void OnStartup(StartupEventArgs e)
@@ -82,7 +84,39 @@ public partial class App : Application
             ShutdownMode = ShutdownMode.OnMainWindowClose;
         }
 
+        _window = window;
         if (!silent) window.Show();
+
+        // Une requête vers GitHub, seulement si le réglage le permet ; aucune installation sans accord
+        if (settings.CheckUpdates) _ = CheckForUpdateAsync();
+    }
+
+    private async Task CheckForUpdateAsync()
+    {
+        if (!Version.TryParse(AppIdentity.Version, out var current)) return;
+        var update = await UpdateChecker.CheckAsync(current);
+        if (update is null || _window is null) return;
+        var label = update.Version.ToString(3);
+        _window.ShowUpdateAvailable(label, () => OfferUpdate(update));
+        _tray?.ShowUpdateAvailable(label, () => OfferUpdate(update));
+    }
+
+    /// <summary>
+    /// Fenêtre de mise à jour. Installée : la nouvelle version est lancée là où tourne l'exe, et celle-ci s'arrête.
+    /// </summary>
+    private void OfferUpdate(UpdateInfo update)
+    {
+        if (Environment.ProcessPath is not { } exe || _window is null) return;
+        _window.BringToFront();
+        var dialog = new UpdateWindow(update, exe) { Owner = _window };
+        if (dialog.ShowDialog() != true || dialog.InstalledExe is not { } installed) return;
+
+        OperationJournal.Record("mise-a-jour",
+            $"Version {AppIdentity.Version} remplacée par la {update.Version.ToString(3)} ; l'ancienne est gardée dans les sauvegardes");
+        // La place d'exemplaire unique est rendue avant de lancer la nouvelle version, qui la prendra
+        SingleInstance.Release();
+        Process.Start(new ProcessStartInfo(installed) { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(installed)! });
+        Quit();
     }
 
     /// <summary>

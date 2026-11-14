@@ -25,11 +25,29 @@ public partial class MainWindow : FluentWindow
 
         ProposerInstallation.Visibility = AppIdentity.SelfInstalls ? Visibility.Visible : Visibility.Collapsed;
         ProposerInstallation.IsChecked = settings.OfferInstall;
+        ChercherMisesAJour.IsChecked = settings.CheckUpdates;
     }
 
-    private void OnOfferInstallClick(object sender, RoutedEventArgs e)
+    private Action? _showUpdate;
+
+    /// <summary>Une nouvelle version est disponible : le bandeau bleu apparaît.</summary>
+    public void ShowUpdateAvailable(string version, Action show)
     {
-        var updated = Settings with { OfferInstall = ProposerInstallation.IsChecked == true };
+        _showUpdate = show;
+        MiseAJourTexte.Text = $"La version {version} est disponible.";
+        MiseAJour.Visibility = Visibility.Visible;
+    }
+
+    private void OnShowUpdate(object sender, RoutedEventArgs e) => _showUpdate?.Invoke();
+
+    private void OnOfferInstallClick(object sender, RoutedEventArgs e) =>
+        SaveSettings(Settings with { OfferInstall = ProposerInstallation.IsChecked == true });
+
+    private void OnCheckUpdatesClick(object sender, RoutedEventArgs e) =>
+        SaveSettings(Settings with { CheckUpdates = ChercherMisesAJour.IsChecked == true });
+
+    private void SaveSettings(AppSettings updated)
+    {
         try
         {
             AppSettingsStore.Save(updated);
@@ -39,8 +57,9 @@ public partial class MainWindow : FluentWindow
         {
             System.Windows.MessageBox.Show($"Le réglage n'a pas pu être enregistré : {ex.Message}",
                 AppIdentity.Name, System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
-            ProposerInstallation.IsChecked = Settings.OfferInstall;
         }
+        ProposerInstallation.IsChecked = Settings.OfferInstall;
+        ChercherMisesAJour.IsChecked = Settings.CheckUpdates;
     }
 
     /// <summary>Ramène la fenêtre au premier plan : un second lancement, l'icône de notification.</summary>
