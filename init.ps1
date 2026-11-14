@@ -6,7 +6,7 @@ Transforme ce dépôt modèle en appli Aria, puis se supprime.
 À lancer une seule fois, dans le dossier du clone :
 
     .\init.ps1
-    .\init.ps1 -Nom Atlas -Stack go-wails -Promesse "..." -ElementOrange "une boussole" -DemarrageAuto non -Port 8123
+    .\init.ps1 -Nom Atlas -Stack go-wails -Promesse "..." -ElementOrange "une boussole" -DemarrageAuto non -Installation oui -Port 8123
 
 Le script choisit la stack, remplit le nom et la promesse, fusionne les blocs propres à la stack, lance les tests,
 puis se supprime. Il ne fait aucun git add, aucun commit, aucun push et aucun appel à GitHub.
@@ -15,6 +15,10 @@ Il refuse de tourner si l'arbre de travail n'est pas propre. Pour tout annuler e
 
     git restore .
     git clean -fd
+
+.PARAMETER Installation
+oui : l'exe propose de se ranger dans %USERPROFILE%\.Aria-<Nom>\programme (appli de bureau). non : exe portable
+seulement. Le README et les notes de version gardent les blocs INSTALLATION ou PORTABLE selon la réponse.
 
 .PARAMETER Port
 Port local de l'interface web. 0 : l'appli n'a pas d'interface web.
@@ -26,6 +30,7 @@ param(
     [string]$Promesse,
     [string]$ElementOrange,
     [ValidateSet('oui', 'non')][string]$DemarrageAuto,
+    [ValidateSet('oui', 'non')][string]$Installation,
     [int]$Port
 )
 
@@ -122,6 +127,11 @@ if (-not $DemarrageAuto) {
     if ($reponse -match '^[oOyY]') { $DemarrageAuto = 'oui' } else { $DemarrageAuto = 'non' }
 }
 
+if (-not $Installation) {
+    $reponse = Demander "L'exe propose-t-il de s'installer dans le dossier de données (appli de bureau) ? (O/n)"
+    if ($reponse -match '^[nN]') { $Installation = 'non' } else { $Installation = 'oui' }
+}
+
 if (-not $PSBoundParameters.ContainsKey('Port')) {
     $reponse = Demander "Port local de l'interface web (vide si l'appli n'en a pas)"
     if ($reponse) {
@@ -194,6 +204,15 @@ $portTexte = 'aucun'
 if ($Port -ne 0) { $portTexte = [string]$Port }
 $demarrage = 'non'
 if ($DemarrageAuto -eq 'oui') { $demarrage = 'oui, désactivé par défaut' }
+# Blocs du README et des notes de version : on garde celui qui correspond à la réponse, on retire l'autre.
+$installationTexte = 'non : exe portable seulement'
+$blocGarde = 'PORTABLE'
+$blocRetire = 'INSTALLATION'
+if ($Installation -eq 'oui') {
+    $installationTexte = "oui : l'exe propose de se ranger dans le dossier ``programme\`` du dossier de données"
+    $blocGarde = 'INSTALLATION'
+    $blocRetire = 'PORTABLE'
+}
 
 $valeurs = [ordered]@{
     '{{NOM_MIN}}'        = $Nom.ToLowerInvariant()
@@ -204,6 +223,7 @@ $valeurs = [ordered]@{
     '{{ANNEE}}'          = [string](Get-Date).Year
     '{{STACK}}'          = $nomStack
     '{{DEMARRAGE_AUTO}}' = $demarrage
+    '{{INSTALLATION}}'   = $installationTexte
     'Aria-Modele'        = "Aria-$Nom"
 }
 $binaires = '.png', '.ico', '.gz', '.dll', '.ttf', '.woff2', '.zip', '.exe', '.jpg', '.jpeg', '.syso', '.pdf'
@@ -224,6 +244,9 @@ $suivis | ForEach-Object { Join-Path $racine $_ } |
         $texte = $lu.Texte
         # Blocs réservés au dépôt modèle (README.md)
         $texte = [regex]::Replace($texte, '(?s)<!-- MODELE:debut -->.*?<!-- MODELE:fin -->\r?\n?', '')
+        # Installation par l'exe (README.md, notes de version) : un bloc retiré en entier, l'autre perd ses balises.
+        $texte = [regex]::Replace($texte, "(?s)<!-- ${blocRetire}:debut -->.*?<!-- ${blocRetire}:fin -->\r?\n?", '')
+        $texte = [regex]::Replace($texte, "<!-- ${blocGarde}:(debut|fin) -->\r?\n?", '')
         foreach ($cle in $valeurs.Keys) { $texte = $texte.Replace($cle, $valeurs[$cle]) }
         if ($texte -cne $lu.Texte) { Ecrire-Texte $_.FullName $texte $lu.Bom }
     }

@@ -5,10 +5,13 @@ Tests du dépôt modèle : rejoue init.ps1 sur une stack d'essai, dans un dossie
 .DESCRIPTION
 Ce fichier est celui du dépôt modèle. Dans une appli, init.ps1 le remplace par le tester.ps1 de la stack choisie.
 
-Trois scénarios, chacun dans sa propre copie du dépôt :
+Six scénarios, chacun dans sa propre copie du dépôt :
   1. init.ps1 réussit : marqueurs remplis, blocs de stack fusionnés, fichiers du modèle retirés ;
   2. un port déjà pris est refusé, sans rien modifier ;
-  3. un arbre de travail modifié est refusé, sans rien modifier.
+  3. un arbre de travail modifié est refusé, sans rien modifier ;
+  4. une promesse qui casserait un tableau ou un script est refusée ;
+  5. un dossier qui contient une jonction est refusé ;
+  6. sans installation par l'exe, le README et les notes de version gardent le bloc portable.
 
 Code de retour non nul au premier contrôle manqué.
 #>
@@ -55,10 +58,10 @@ function Nouvelle-Copie {
     return $copie
 }
 
-function Lancer-Init([string]$copie, [int]$port, [string]$promesse = 'Une appli pour essayer le modèle.') {
+function Lancer-Init([string]$copie, [int]$port, [string]$promesse = 'Une appli pour essayer le modèle.', [string]$installation = 'oui') {
     & $hote -NoProfile -ExecutionPolicy Bypass -File (Join-Path $copie 'init.ps1') `
         -Nom Essai -Stack essai -Promesse $promesse -ElementOrange 'une clé' `
-        -DemarrageAuto non -Port $port | Out-Host
+        -DemarrageAuto non -Installation $installation -Port $port | Out-Host
     return $LASTEXITCODE
 }
 
@@ -83,7 +86,7 @@ try {
 
     $restes = @(Get-ChildItem -LiteralPath $c -Recurse -File -Force |
         Where-Object { $_.FullName -notmatch '\\\.(git|work)\\' -and $_.Extension -notin '.png', '.ico' } |
-        Where-Object { [IO.File]::ReadAllText($_.FullName) -match '\{\{[A-Z_]+\}\}|<<STACK:|MODELE:debut|Aria-Modele' } |
+        Where-Object { [IO.File]::ReadAllText($_.FullName) -match '\{\{[A-Z_]+\}\}|<<STACK:|MODELE:debut|<!-- (INSTALLATION|PORTABLE):|Aria-Modele' } |
         ForEach-Object { $_.FullName.Substring($c.Length + 1) })
     Verifier ($restes.Count -eq 0) "aucun marqueur ne reste ($($restes -join ', '))"
 
@@ -91,6 +94,11 @@ try {
     Verifier ((Texte $c 'README.md').Contains('Une appli pour essayer le modèle.')) "le README porte la promesse"
     Verifier ((Texte $c 'docs\FICHE.md').Contains("| Stack | Stack d'essai |")) "la fiche projet porte le nom de la stack"
     Verifier ((Texte $c 'docs\FICHE.md').Contains('| Port local (interface web) | 8123 |')) "la fiche projet porte le port"
+    Verifier ((Texte $c 'docs\FICHE.md').Contains("| Installation par l'exe | oui :")) "la fiche projet porte l'installation par l'exe"
+    Verifier ((Texte $c 'README.md').Contains('.Aria-Essai\programme')) "le README garde le bloc d'installation"
+    Verifier (-not (Texte $c 'README.md').Contains('Choisis un dossier stable')) "le README retire le bloc portable"
+    Verifier ((Texte $c '.github\release-notes.md').Contains('choisis « Installer »')) "les notes de version gardent le bloc d'installation"
+    Verifier (-not (Texte $c '.github\release-notes.md').Contains('Choisis un dossier stable')) "les notes de version retirent le bloc portable"
     Verifier ((Texte $c 'LICENSE').Contains("Copyright (c) $((Get-Date).Year) ZedjeK")) "la licence porte l'année en cours"
     Verifier ((Texte $c '.gitignore').Contains('essai-ignore/')) "le bloc de la stack est dans .gitignore"
     Verifier ((Texte $c '.gitattributes').Contains('*.essai text')) "le bloc de la stack est dans .gitattributes"
@@ -154,6 +162,18 @@ try {
     Verifier ((Texte $cible 'temoin.txt') -ceq 'Aria-Modele') "la cible de la jonction est intacte"
     # La jonction est retirée avant le ménage, pour que la suppression de la copie ne la traverse pas.
     [IO.Directory]::Delete((Join-Path $c '.work\lien'))
+
+    Write-Host "6. Une appli sans installation par l'exe garde seulement le bloc portable"
+    $c = Nouvelle-Copie
+    $code = Lancer-Init $c 8123 -installation non
+    Verifier ($code -eq 0) "init.ps1 se termine sans erreur"
+    Verifier ((Texte $c 'docs\FICHE.md').Contains("| Installation par l'exe | non :")) "la fiche projet dit que l'exe ne s'installe pas"
+    Verifier (-not (Texte $c 'README.md').Contains('programme')) "le README retire le bloc d'installation"
+    Verifier ((Texte $c 'README.md').Contains('Choisis un dossier stable')) "le README garde le bloc portable"
+    Verifier (-not (Texte $c '.github\release-notes.md').Contains('Installer')) "les notes de version retirent le bloc d'installation"
+    Verifier ((Texte $c '.github\release-notes.md').Contains('Choisis un dossier stable')) "les notes de version gardent le bloc portable"
+    $restes = @('README.md', '.github\release-notes.md' | Where-Object { (Texte $c $_) -match '<!-- (INSTALLATION|PORTABLE):' })
+    Verifier ($restes.Count -eq 0) "aucune balise d'installation ne reste ($($restes -join ', '))"
 }
 finally {
     foreach ($copie in $copies) {
