@@ -87,7 +87,7 @@ try {
 
         & $hote -NoProfile -ExecutionPolicy Bypass -File (Join-Path $c 'init.ps1') `
             -Nom Essai -Stack $s.Name -Promesse 'Une appli pour essayer le squelette.' -ElementOrange 'une clé' `
-            -DemarrageAuto non -Installation oui -Port 0 | Out-Host
+            -DemarrageAuto oui -Installation oui -Port 0 | Out-Host
         Verifier ($LASTEXITCODE -eq 0) "$($s.Name) : init.ps1 crée l'appli et ses tests passent"
         if ($LASTEXITCODE -ne 0) { continue }
 

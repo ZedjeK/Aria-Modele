@@ -15,6 +15,14 @@ public static class AppIdentity
     public const string DataFolderName = ".Aria-{{NOM}}";
 
     /// <summary>
+    /// L'appli sert en arrière-plan : icône de notification, la croix range la fenêtre dans l'icône, démarrage
+    /// automatique proposé (désactivé par défaut). Faux : ni icône ni démarrage automatique, la croix quitte.
+    /// Réglé par init.ps1 d'après la fiche projet ; une propriété plutôt qu'une constante, pour que le code de
+    /// l'autre cas compile sans avertissement.
+    /// </summary>
+    public static bool RunsInBackground { get; } = {{EN_FOND}};
+
+    /// <summary>
     /// Dossier de données : données, réglages, journal, sauvegardes et cache, tout est là.
     /// Jamais dans %APPDATA%, %LOCALAPPDATA% ni %TEMP%.
     /// </summary>
