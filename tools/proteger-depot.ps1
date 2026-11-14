@@ -1,6 +1,7 @@
 ﻿<#
 .SYNOPSIS
-Pose les protections GitHub d'une appli Aria : fusion en squash, rulesets, signalement privé, alertes.
+Pose les protections GitHub d'une appli Aria : fusion en squash, rulesets, signalement privé, alertes et correctifs
+Dependabot, secret scanning, releases immuables, actions épinglées par SHA.
 
 .DESCRIPTION
 À lancer après le premier passage vert de la CI sur main : on n'exige jamais un check qui n'a pas encore tourné.
@@ -12,6 +13,14 @@ enregistré dans .work\protection-avant.json, pour pouvoir revenir en arrière.
     .\tools\proteger-depot.ps1 -Depot ZedjeK/Aria-Atlas
 
 Il a besoin de gh, connecté avec un compte qui administre le dépôt.
+
+Retour arrière des trois derniers réglages, si l'un d'eux gêne :
+
+    gh api -X DELETE repos/ZedjeK/Aria-Atlas/immutable-releases
+    gh api -X DELETE repos/ZedjeK/Aria-Atlas/automated-security-fixes
+    gh api -X PUT repos/ZedjeK/Aria-Atlas/actions/permissions -F enabled=true -f allowed_actions=all -F sha_pinning_required=false
+
+Les releases déjà publiées pendant que l'immuabilité était active le restent.
 #>
 [CmdletBinding()]
 param(
@@ -74,9 +83,15 @@ if ($null -eq $depotInfo) { throw "Impossible de lire le dépôt $Depot." }
 $branche = [string]$depotInfo.default_branch
 $rulesets = @(Lire "repos/$Depot/rulesets")
 $reglesBranche = @(Lire "repos/$Depot/rules/branches/$([uri]::EscapeDataString($branche))")
+$immuables = Lire "repos/$Depot/immutable-releases"
+$actions = Lire "repos/$Depot/actions/permissions"
+$correctifs = Lire "repos/$Depot/automated-security-fixes"
 
 New-Item -ItemType Directory -Path (Join-Path $racine '.work') -Force | Out-Null
-$avant = [ordered]@{ date = (Get-Date).ToString('s'); depot = $depotInfo; rulesets = $rulesets; regles = $reglesBranche }
+$avant = [ordered]@{
+    date = (Get-Date).ToString('s'); depot = $depotInfo; rulesets = $rulesets; regles = $reglesBranche
+    releasesImmuables = $immuables; actions = $actions; correctifsDependabot = $correctifs
+}
 [IO.File]::WriteAllText((Join-Path $racine '.work\protection-avant.json'), ($avant | ConvertTo-Json -Depth 12), (New-Object Text.UTF8Encoding($false)))
 
 # Le check « tests » a-t-il réussi sur la branche par défaut ?
@@ -193,6 +208,15 @@ else {
 if (Lire "repos/$Depot/vulnerability-alerts") { Write-Host "  déjà en place : alertes Dependabot" }
 else { Prevoir "Alertes Dependabot : activées" { Ecrire 'PUT' "repos/$Depot/vulnerability-alerts" $null } }
 
+# 5 bis. Correctifs de sécurité Dependabot : une PR ouverte d'office pour chaque alerte qui a un correctif.
+# Ils demandent les alertes : l'étape précédente passe avant dans le plan.
+if ($correctifs -and $correctifs -isnot [bool] -and $correctifs.PSObject.Properties['enabled'] -and $correctifs.enabled) {
+    Write-Host "  déjà en place : correctifs de sécurité Dependabot"
+}
+else {
+    Prevoir "Correctifs de sécurité Dependabot : activés" { Ecrire 'PUT' "repos/$Depot/automated-security-fixes" $null }
+}
+
 # 6. Secret scanning et push protection
 $analyse = $null
 if ($depotInfo.PSObject.Properties['security_and_analysis']) { $analyse = $depotInfo.security_and_analysis }
@@ -209,20 +233,31 @@ else {
     }
 }
 
-# 7. Releases immuables et réglages Actions : lus et signalés, jamais modifiés par ce script
-$immuables = Lire "repos/$Depot/immutable-releases"
+# 7. Releases immuables : une release publiée ne change plus de fichiers et son tag est verrouillé.
+# Le README de l'appli s'appuie dessus pour la provenance des mises à jour.
 if ($immuables -and $immuables -isnot [bool] -and $immuables.PSObject.Properties['enabled'] -and $immuables.enabled) {
     Write-Host "  déjà en place : releases immuables"
 }
 else {
-    Write-Host "  À FAIRE À LA MAIN : activer les releases immuables, dans les réglages du dépôt." -ForegroundColor Yellow
+    Prevoir "Releases immuables : activées (les releases déjà publiées ne changent pas)" {
+        Ecrire 'PUT' "repos/$Depot/immutable-releases" $null
+    }
 }
-$actions = Lire "repos/$Depot/actions/permissions"
-if ($actions -and $actions -isnot [bool] -and $actions.PSObject.Properties['sha_pinning_required'] -and $actions.sha_pinning_required) {
+
+# 8. Actions épinglées par SHA : un workflow qui appelle une action par une étiquette (v4, main) est refusé.
+if (-not ($actions -and $actions -isnot [bool] -and $actions.PSObject.Properties['enabled'])) {
+    Write-Host "  À FAIRE À LA MAIN : réglages Actions illisibles, épinglage par SHA non vérifié." -ForegroundColor Yellow
+}
+elseif ($actions.PSObject.Properties['sha_pinning_required'] -and $actions.sha_pinning_required) {
     Write-Host "  déjà en place : actions épinglées par SHA exigées"
 }
 else {
-    Write-Host "  À SAVOIR : le dépôt n'exige pas que les actions soient épinglées par SHA (réglages Actions du dépôt)." -ForegroundColor Yellow
+    # Les autres réglages Actions sont renvoyés tels qu'ils ont été lus.
+    $corpsActions = @{ enabled = [bool]$actions.enabled; sha_pinning_required = $true }
+    if ($actions.PSObject.Properties['allowed_actions'] -and $actions.allowed_actions) {
+        $corpsActions.allowed_actions = [string]$actions.allowed_actions
+    }
+    Prevoir "Actions épinglées par SHA : exigées" { Ecrire 'PUT' "repos/$Depot/actions/permissions" $corpsActions }
 }
 
 # ----- Plan, accord, application -----
