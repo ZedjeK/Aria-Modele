@@ -7,7 +7,8 @@ Dependabot, secret scanning, releases immuables, actions épinglées par SHA.
 À lancer après le premier passage vert de la CI sur main : on n'exige jamais un check qui n'a pas encore tourné.
 
 Le script lit l'état du dépôt, affiche ce qu'il changerait, et n'écrit qu'après ton accord. L'état d'avant est
-enregistré dans .work\protection-avant.json, pour pouvoir revenir en arrière.
+enregistré à chaque lancement dans un fichier daté, .work\protection-avant-<date>.json, pour pouvoir revenir en
+arrière : une relance de vérification n'écrase pas l'état d'avant un changement.
 
     .\tools\proteger-depot.ps1              affiche le plan et demande confirmation
     .\tools\proteger-depot.ps1 -Depot ZedjeK/Aria-Atlas
@@ -88,11 +89,14 @@ $actions = Lire "repos/$Depot/actions/permissions"
 $correctifs = Lire "repos/$Depot/automated-security-fixes"
 
 New-Item -ItemType Directory -Path (Join-Path $racine '.work') -Force | Out-Null
+$maintenant = Get-Date
 $avant = [ordered]@{
-    date = (Get-Date).ToString('s'); depot = $depotInfo; rulesets = $rulesets; regles = $reglesBranche
+    date = $maintenant.ToString('s'); depot = $depotInfo; rulesets = $rulesets; regles = $reglesBranche
     releasesImmuables = $immuables; actions = $actions; correctifsDependabot = $correctifs
 }
-[IO.File]::WriteAllText((Join-Path $racine '.work\protection-avant.json'), ($avant | ConvertTo-Json -Depth 12), (New-Object Text.UTF8Encoding($false)))
+# Un fichier par lancement : relancer le script pour vérifier ne doit pas écraser l'état d'avant un changement.
+$relatifAvant = ".work\protection-avant-$($maintenant.ToString('yyyy-MM-ddTHH-mm-ss')).json"
+[IO.File]::WriteAllText((Join-Path $racine $relatifAvant), ($avant | ConvertTo-Json -Depth 12), (New-Object Text.UTF8Encoding($false)))
 
 # Le check « tests » a-t-il réussi sur la branche par défaut ?
 $checks = Lire "repos/$Depot/commits/$([uri]::EscapeDataString($branche))/check-runs"
@@ -263,7 +267,7 @@ else {
 # ----- Plan, accord, application -----
 
 Write-Host ""
-Write-Host "État d'avant enregistré dans .work\protection-avant.json."
+Write-Host "État d'avant enregistré dans $relatifAvant."
 Write-Host ""
 
 if ($plan.Count -eq 0) {
