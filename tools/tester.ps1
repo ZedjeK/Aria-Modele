@@ -5,15 +5,16 @@ Tests du dépôt modèle : rejoue init.ps1 sur une stack d'essai, dans un dossie
 .DESCRIPTION
 Ce fichier est celui du dépôt modèle. Dans une appli, init.ps1 le remplace par le tester.ps1 de la stack choisie.
 
-Six scénarios, chacun dans sa propre copie du dépôt :
+Sept scénarios, chacun dans sa propre copie du dépôt :
   1. init.ps1 réussit : marqueurs remplis, blocs de stack fusionnés, fichiers du modèle retirés ;
   2. un port déjà pris est refusé, sans rien modifier ;
   3. un arbre de travail modifié est refusé, sans rien modifier ;
   4. une promesse qui casserait un tableau ou un script est refusée ;
   5. un dossier qui contient une jonction est refusé ;
-  6. sans installation par l'exe, le README et les notes de version gardent le bloc portable.
+  6. sans installation par l'exe, le README et les notes de version gardent le bloc portable ;
+  7. verifier-release.ps1 refuse une version incomplète et accepte une version complète.
 
-Code de retour non nul au premier contrôle manqué.
+Tous les scénarios tournent ; le code de retour est non nul si un seul contrôle est manqué.
 #>
 [CmdletBinding()]
 param()
@@ -174,6 +175,31 @@ try {
     Verifier ((Texte $c '.github\release-notes.md').Contains('Choisis un dossier stable')) "les notes de version gardent le bloc portable"
     $restes = @('README.md', '.github\release-notes.md' | Where-Object { (Texte $c $_) -match '<!-- (INSTALLATION|PORTABLE):' })
     Verifier ($restes.Count -eq 0) "aucune balise d'installation ne reste ($($restes -join ', '))"
+
+    Write-Host "7. verifier-release.ps1 refuse une version incomplète"
+    $c = Nouvelle-Copie
+    $code = Lancer-Init $c 8123
+    Verifier ($code -eq 0) "init.ps1 se termine sans erreur"
+    $verif = Join-Path $c 'tools\verifier-release.ps1'
+    & $hote -NoProfile -ExecutionPolicy Bypass -File $verif -Tag v1.2.3 | Out-Host
+    Verifier ($LASTEXITCODE -ne 0) "sans notes, avec fiche et licences à renseigner : refusé"
+    & $hote -NoProfile -ExecutionPolicy Bypass -File $verif -EssaiABlanc | Out-Host
+    Verifier ($LASTEXITCODE -eq 0) "l'essai à blanc liste les trous sans échouer"
+
+    # On complète tout, comme avant une vraie version.
+    $notes = (Texte $c '.github\release-notes.md').Replace('{VERSION}', '1.2.3').Replace('{REPO_URL}', 'https://github.com/ZedjeK/Aria-Essai')
+    $notes = [regex]::Replace($notes, '(?s)<!--.*?-->\r?\n?', '')
+    New-Item -ItemType Directory -Path (Join-Path $c 'docs\releases') -Force | Out-Null
+    [IO.File]::WriteAllText((Join-Path $c 'docs\releases\v1.2.3.md'), $notes)
+    [IO.File]::WriteAllText((Join-Path $c 'docs\FICHE.md'), (Texte $c 'docs\FICHE.md').Replace(': à renseigner', ': renseigné').Replace('| à renseigner', '| renseigné'))
+    $licences = [regex]::Replace((Texte $c 'LICENCES-TIERS.txt'), '(?m)^\(à compléter.*\r?\n?', '').Replace('à renseigner', 'renseigné')
+    [IO.File]::WriteAllText((Join-Path $c 'LICENCES-TIERS.txt'), $licences)
+    & $hote -NoProfile -ExecutionPolicy Bypass -File $verif -Tag v1.2.3 | Out-Host
+    Verifier ($LASTEXITCODE -eq 0) "notes, fiche et licences complètes : accepté"
+
+    [IO.File]::WriteAllText((Join-Path $c 'docs\releases\v1.2.3.md'), $notes.Replace("Décompresse d'abord", 'Décompresse'))
+    & $hote -NoProfile -ExecutionPolicy Bypass -File $verif -Tag v1.2.3 | Out-Host
+    Verifier ($LASTEXITCODE -ne 0) "des notes sans « décompresse d'abord » : refusé"
 }
 finally {
     foreach ($copie in $copies) {

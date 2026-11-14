@@ -9,14 +9,25 @@
 #
 # Le commit du tag doit aussi appartenir à la branche par défaut : un tag posé sur une branche non fusionnée est refusé.
 #
+# Les notes, la fiche projet et les licences doivent être complètes (tools/verifier-release.ps1) : sans notes de
+# version, aucune release, plus de notes générées à leur place.
+#
 # Deux jobs : « build » ne fait que lire (tests, exe, zip, empreinte) ; « publication » est le seul dont le jeton peut
 # écrire, et il n'exécute aucun code du dépôt.
+#
+# Essai à blanc, sans tag : « build » tourne sur main, liste ce qui manque encore pour sortir la version de
+# tools/version.ps1 et garde le zip 7 jours en artefact ; « publication » ne tourne pas.
+#
+#     gh workflow run Release --ref main
+#     $id = gh run list --workflow Release --limit 1 --json databaseId --jq '.[0].databaseId'
+#     gh run watch $id --exit-status
 name: Release
 
 on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -36,6 +47,7 @@ jobs:
           fetch-depth: 0 # tout l'historique : il faut pouvoir situer le tag par rapport à la branche par défaut
 
       - name: Le tag est sur la branche par défaut
+        if: github.event_name == 'push'
         env:
           BRANCHE: ${{ github.event.repository.default_branch }}
         run: |
@@ -47,11 +59,20 @@ jobs:
       # <<STACK:outils>>
 
       - name: Le tag est celui de la version
+        if: github.event_name == 'push'
         run: |
           $version = "$(./tools/version.ps1 | Select-Object -Last 1)".Trim()
           if ("v$version" -ne $env:GITHUB_REF_NAME) {
             throw "Le tag $env:GITHUB_REF_NAME ne correspond pas à la version $version donnée par tools/version.ps1."
           }
+
+      - name: Notes, fiche projet et licences complètes
+        if: github.event_name == 'push'
+        run: ./tools/verifier-release.ps1 -Tag $env:GITHUB_REF_NAME
+
+      - name: Ce qui manque encore pour sortir cette version (essai à blanc)
+        if: github.event_name == 'workflow_dispatch'
+        run: ./tools/verifier-release.ps1 -EssaiABlanc
 
       - name: Tests
         run: ./tools/tester.ps1
@@ -74,6 +95,7 @@ jobs:
 
   publication:
     needs: build
+    if: github.event_name == 'push' # jamais sur un essai à blanc
     runs-on: windows-latest
     timeout-minutes: 10
     permissions:
@@ -103,5 +125,5 @@ jobs:
           $version = $env:GITHUB_REF_NAME.TrimStart("v")
           $zip = "release/Aria-{{NOM}}-$version.zip"
           $notes = "docs/releases/$env:GITHUB_REF_NAME.md"
-          if (Test-Path $notes) { $texte = @("--notes-file", $notes) } else { $texte = @("--generate-notes") }
-          gh release create $env:GITHUB_REF_NAME $zip "$zip.sha256" --draft --verify-tag --title "Aria {{NOM}} $version" @texte
+          if (-not (Test-Path $notes)) { throw "$notes est introuvable : aucune release sans notes de version." }
+          gh release create $env:GITHUB_REF_NAME $zip "$zip.sha256" --draft --verify-tag --title "Aria {{NOM}} $version" --notes-file $notes
