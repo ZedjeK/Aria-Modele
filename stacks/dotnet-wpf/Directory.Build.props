@@ -1,0 +1,19 @@
+<Project>
+  <!-- Réglages communs à tous les projets. La version de l'appli vit ici, et nulle part ailleurs :
+       tools\version.ps1 la lit, et le tag vX.Y.Z doit lui correspondre. -->
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+    <Product>Aria {{NOM}}</Product>
+    <Authors>ZedjeK</Authors>
+    <Company>ZedjeK</Company>
+    <Copyright>© {{ANNEE}} ZedjeK</Copyright>
+    <Description>{{PROMESSE}}</Description>
+    <NeutralLanguage>fr-FR</NeutralLanguage>
+    <!-- Version affichée sans suffixe technique (« 0.1.0 » et non « 0.1.0+abc123 ») -->
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+</Project>

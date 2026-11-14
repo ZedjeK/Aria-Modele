@@ -1,0 +1,7 @@
+# .NET : sources et projets en CRLF, comme les produit Visual Studio
+*.cs       text eol=crlf
+*.xaml     text eol=crlf
+*.csproj   text eol=crlf
+*.props    text eol=crlf
+*.slnx     text eol=crlf
+*.manifest text eol=crlf

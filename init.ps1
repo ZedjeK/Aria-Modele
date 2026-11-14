@@ -49,12 +49,13 @@ function Demander([string]$question) {
     return (Read-Host $question).Trim()
 }
 
-# La promesse et l'élément orange sont recopiés dans du Markdown, du HTML et des scripts : une ligne de texte simple.
+# La promesse et l'élément orange sont recopiés dans du Markdown, du HTML, du XML, du XAML et des scripts : une ligne
+# de texte simple. « & » casserait un fichier XML (Directory.Build.props), une accolade ouvrirait une extension XAML.
 function Verifier-Texte([string]$quoi, [string]$valeur) {
     if (-not $valeur) { Arreter "$quoi est vide." }
     if ($valeur.Length -gt 200) { Arreter "$quoi dépasse 200 caractères." }
-    if ($valeur -match '[\x00-\x1F\x7F"|<>$`\\]') {
-        Arreter "$quoi contient un caractère refusé : saut de ligne, guillemet double, barre verticale, chevron, dollar, accent grave ou barre oblique inverse."
+    if ($valeur -match '[\x00-\x1F\x7F"|<>$`\\&{}]') {
+        Arreter "$quoi contient un caractère refusé : saut de ligne, guillemet double, barre verticale, chevron, dollar, accent grave, barre oblique inverse, esperluette ou accolade."
     }
     if ($valeur -match '\{\{|\}\}|Aria-Modele') { Arreter "$quoi contient un marqueur du modèle." }
 }
@@ -168,6 +169,11 @@ Get-ChildItem -LiteralPath $source -Force | Where-Object Name -ne '_socle' | For
 Remove-Item -LiteralPath $dossierStacks -Recurse -Force
 $essais = Join-Path $racine 'tools\essais'
 if (Test-Path -LiteralPath $essais) { Remove-Item -LiteralPath $essais -Recurse -Force }
+# Les tests des squelettes ne servent qu'au dépôt modèle.
+foreach ($relatif in 'tools\tester-squelettes.ps1', '.github\workflows\squelettes.yml') {
+    $chemin = Join-Path $racine $relatif
+    if (Test-Path -LiteralPath $chemin) { Remove-Item -LiteralPath $chemin -Force }
+}
 
 # ----- 2. Blocs propres à la stack -----
 

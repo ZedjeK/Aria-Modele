@@ -83,6 +83,8 @@ try {
     Verifier (-not (Test-Path (Join-Path $c 'stacks'))) "stacks\ est supprimé"
     Verifier (-not (Test-Path (Join-Path $c 'tools\essais'))) "tools\essais\ est supprimé"
     Verifier (-not (Test-Path (Join-Path $c 'docs\PORTS.md'))) "le registre des ports n'est pas copié dans l'appli"
+    Verifier (-not (Test-Path (Join-Path $c 'tools\tester-squelettes.ps1'))) "les tests des squelettes ne sont pas copiés dans l'appli"
+    Verifier (-not (Test-Path (Join-Path $c '.github\workflows\squelettes.yml'))) "le workflow des squelettes n'est pas copié dans l'appli"
     Verifier (-not (Test-Path (Join-Path $c 'CLAUDE.md'))) "aucun CLAUDE.md dans l'appli"
 
     $restes = @(Get-ChildItem -LiteralPath $c -Recurse -File -Force |
@@ -147,6 +149,10 @@ try {
     $c = Nouvelle-Copie
     $code = Lancer-Init $c 8123 'Une promesse | avec une barre verticale'
     Verifier ($code -ne 0) "init.ps1 s'arrête en erreur"
+    Verifier (Test-Path (Join-Path $c 'stacks')) "rien n'a été modifié : stacks\ est toujours là"
+    # La copie n'a pas bougé : on la réutilise pour une promesse qui casserait un fichier XML.
+    $code = Lancer-Init $c 8123 'Rapide & sans souci'
+    Verifier ($code -ne 0) "une esperluette est refusée"
     Verifier (Test-Path (Join-Path $c 'stacks')) "rien n'a été modifié : stacks\ est toujours là"
 
     Write-Host "5. Un dossier qui contient une jonction est refusé"
