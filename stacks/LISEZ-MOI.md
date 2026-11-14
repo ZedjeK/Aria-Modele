@@ -38,7 +38,12 @@ nom dans le socle ; un fichier absent supprime simplement la ligne.
 Les fichiers du squelette utilisent les mêmes marqueurs que le socle : `{{NOM}}`, `{{NOM_MIN}}`, `{{PROMESSE}}`,
 `{{ELEMENT_ORANGE}}`, `{{PORT}}`, `{{ANNEE}}`, `{{STACK}}`, `{{DEMARRAGE_AUTO}}`, `{{INSTALLATION}}`, et `{{EN_FOND}}`
 (`true` ou `false`, pour le code : l'appli sert en arrière-plan, avec icône de notification et démarrage automatique
-proposé). Un fichier ou un dossier dont le nom contient `Aria-Modele` est renommé en `Aria-<Nom>`.
+proposé) et `{{INSTALLABLE}}` (`true` ou `false` : l'exe propose de s'installer). Un fichier ou un dossier dont le
+nom contient `Aria-Modele` est renommé en `Aria-<Nom>`.
+
+`tools\empaqueter.ps1` écrit dans le zip un `fichiers.txt` : la liste de ce que livre la version. L'installation par
+l'exe et les mises à jour d'un squelette copient exactement cette liste. Tout ce que `build.ps1` pose dans
+`.work\sortie\` doit donc être à la racine de ce dossier, sans sous-dossier.
 
 Les blocs entre `<!-- INSTALLATION:debut -->` et `<!-- INSTALLATION:fin -->` ne restent que si l'exe s'installe ; ceux
 entre `<!-- PORTABLE:debut -->` et `<!-- PORTABLE:fin -->`, que s'il ne s'installe pas. Les balises sont retirées dans

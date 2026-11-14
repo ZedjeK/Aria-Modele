@@ -23,6 +23,12 @@ public static class AppIdentity
     public static bool RunsInBackground { get; } = {{EN_FOND}};
 
     /// <summary>
+    /// L'exe propose de se ranger dans le dossier programme\ du dossier de données (appli de bureau). Faux : exe
+    /// portable seulement. Réglé par init.ps1 d'après la fiche projet.
+    /// </summary>
+    public static bool SelfInstalls { get; } = {{INSTALLABLE}};
+
+    /// <summary>
     /// Dossier de données : données, réglages, journal, sauvegardes et cache, tout est là.
     /// Jamais dans %APPDATA%, %LOCALAPPDATA% ni %TEMP%.
     /// </summary>

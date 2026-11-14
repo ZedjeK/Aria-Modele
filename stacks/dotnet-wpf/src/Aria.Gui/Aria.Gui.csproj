@@ -13,6 +13,8 @@
     <AssemblyTitle>Aria {{NOM}}</AssemblyTitle>
     <!-- Droits de l'utilisateur seulement (asInvoker) et DPI par écran : voir app.manifest -->
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- Point d'entrée : Program.Main vérifie les fichiers livrés avant de démarrer WPF -->
+    <StartupObject>Aria.Gui.Program</StartupObject>
     <!-- Icône de l'exe (Explorateur, barre des tâches) : à remplacer par celle de l'appli -->
     <ApplicationIcon>Assets\Aria-Modele.ico</ApplicationIcon>
 
@@ -40,6 +42,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Aria.Core\Aria.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- App.xaml ne génère pas de Main : c'est Program.Main qui démarre l'appli -->
+    <ApplicationDefinition Remove="App.xaml" />
+    <Page Include="App.xaml" />
   </ItemGroup>
 
   <ItemGroup>
