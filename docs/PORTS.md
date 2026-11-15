@@ -11,9 +11,11 @@ reste à préciser.
 | --- | --- | --- |
 | 3000 | Aria Pilote | à préciser |
 | 8000 | Aria Vault et Aria Pilote | à préciser : cité dans les deux, conflit possible à vérifier |
+| 8080 | Aria JDR | serveur llama du MJ, lancé par le jeu pendant une partie ou une qualification, sur `127.0.0.1` seulement ; pas une interface web |
 | 8075 | Aria Studio | à préciser |
 | 8095 | Aria Studio | à préciser |
 | 8195 | Aria Studio | à préciser |
+| 8420 | Aria JDR | interface web, sur `127.0.0.1` seulement (jeton tiré à chaque lancement, `Host` et `Origin` vérifiés) ; relevé le 16 novembre 2026 |
 | 8710 | Aria Pilote | à préciser |
 | 8888 | Aria Pilote | à préciser |
 | 47823 | Aria Plume | pages HTTPS des compléments Word et Outlook, sur `127.0.0.1` et `::1` (certificat local, `Host` et `Origin` vérifiés) |
