@@ -16,3 +16,4 @@ reste à préciser.
 | 8195 | Aria Studio | à préciser |
 | 8710 | Aria Pilote | à préciser |
 | 8888 | Aria Pilote | à préciser |
+| 47823 | Aria Plume | pages HTTPS des compléments Word et Outlook, sur `127.0.0.1` et `::1` (certificat local, `Host` et `Origin` vérifiés) |
