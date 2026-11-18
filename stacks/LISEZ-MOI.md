@@ -33,7 +33,12 @@ nom dans le socle ; un fichier absent supprime simplement la ligne.
 | `dependabot.txt` | `.github\dependabot.yml` (blocs indentés de deux espaces) |
 | `outils.txt` | `tests.yml` et `release.yml` (étapes d'installation des outils, indentées de six espaces) |
 | `codeql.txt` | `codeql.yml` (une entrée de matrice, indentée de dix espaces) |
-| `stack.json` | réglages lus par `init.ps1` : `{ "nom": "Go + Wails", "runsOn": "windows-latest" }` |
+| `stack.json` | réglages lus par `init.ps1` : `{ "nom": "Go + Wails", "runsOn": "windows-latest" }`, et `nonFournis` si le squelette ne tient pas encore tout le contrat |
+
+`nonFournis` liste ce que le squelette ne tient pas encore : `installation`, `demarrageAuto` (démarrage automatique et
+icône de notification), `misesAJour`. `init.ps1` refuse de créer une appli qui demande les deux premiers, et prévient pour
+le troisième : les mises à jour intégrées sont obligatoires pour toute appli Aria, donc pas de release publique tant
+qu'elles manquent. La clé disparaît quand le squelette tient tout.
 
 Les fichiers du squelette utilisent les mêmes marqueurs que le socle : `{{NOM}}`, `{{NOM_MIN}}`, `{{PROMESSE}}`,
 `{{ELEMENT_ORANGE}}`, `{{PORT}}`, `{{ANNEE}}`, `{{STACK}}`, `{{DEMARRAGE_AUTO}}`, `{{INSTALLATION}}`, et `{{EN_FOND}}`

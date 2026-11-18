@@ -5,14 +5,15 @@ Tests du dépôt modèle : rejoue init.ps1 sur une stack d'essai, dans un dossie
 .DESCRIPTION
 Ce fichier est celui du dépôt modèle. Dans une appli, init.ps1 le remplace par le tester.ps1 de la stack choisie.
 
-Sept scénarios, chacun dans sa propre copie du dépôt :
+Huit scénarios, chacun dans sa propre copie du dépôt :
   1. init.ps1 réussit : marqueurs remplis, blocs de stack fusionnés, fichiers du modèle retirés ;
   2. un port déjà pris est refusé, sans rien modifier ;
   3. un arbre de travail modifié est refusé, sans rien modifier ;
   4. une promesse qui casserait un tableau ou un script est refusée ;
   5. un dossier qui contient une jonction est refusé ;
   6. sans installation par l'exe, le README et les notes de version gardent le bloc portable ;
-  7. verifier-release.ps1 refuse une version incomplète et accepte une version complète.
+  7. verifier-release.ps1 refuse une version incomplète et accepte une version complète ;
+  8. une stack refuse ce qu'elle ne fournit pas encore (clé nonFournis de stack.json).
 
 Tous les scénarios tournent ; le code de retour est non nul si un seul contrôle est manqué.
 #>
@@ -208,6 +209,27 @@ try {
     [IO.File]::WriteAllText((Join-Path $c 'docs\releases\v1.2.3.md'), $notes.Replace("Décompresse d'abord", 'Décompresse'))
     & $hote -NoProfile -ExecutionPolicy Bypass -File $verif -Tag v1.2.3 | Out-Host
     Verifier ($LASTEXITCODE -ne 0) "des notes sans « décompresse d'abord » : refusé"
+
+    Write-Host "8. Une stack refuse ce qu'elle ne fournit pas encore"
+    $c = Nouvelle-Copie
+    $socle = Join-Path $c 'stacks\essai\_socle\stack.json'
+    [IO.File]::WriteAllText($socle, '{ "nom": "Stack d''essai", "runsOn": "ubuntu-24.04", "nonFournis": ["installation", "misesAJour"] }')
+    Push-Location -LiteralPath $c
+    try {
+        # Le changement est validé dans le dépôt jetable : init.ps1 exige un arbre de travail propre.
+        $ErrorActionPreference = 'Continue'
+        git add -A 2>&1 | Out-Null
+        git -c user.name=essai -c user.email=essai@example.invalid -c commit.gpgsign=false commit --quiet -m nonFournis 2>&1 | Out-Null
+    }
+    finally {
+        $ErrorActionPreference = 'Stop'
+        Pop-Location
+    }
+    $code = Lancer-Init $c 8123
+    Verifier ($code -ne 0) "installation demandée à une stack qui ne la fournit pas : refusé"
+    Verifier (Test-Path (Join-Path $c 'stacks')) "rien n'a été modifié : stacks\ est toujours là"
+    $code = Lancer-Init $c 8123 -installation non
+    Verifier ($code -eq 0) "sans installation : init.ps1 se termine sans erreur"
 }
 finally {
     foreach ($copie in $copies) {
