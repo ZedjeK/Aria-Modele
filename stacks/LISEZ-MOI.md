@@ -9,7 +9,7 @@ qu'au dépôt modèle : `init.ps1` les supprime dans l'appli créée.
 | Dossier | Stack | État |
 | --- | --- | --- |
 | `go-wails/` | Go, Wails v3, Svelte 5 | à écrire |
-| `dotnet-wpf/` | C# .NET 10, WPF, WPF-UI | socle posé : compile, tests, exe autonome ; le contrat vient ensuite |
+| `dotnet-wpf/` | C# .NET 10, WPF, WPF-UI | socle et contrat posés : dossier de données, réglages, journal, secrets DPAPI, démarrage automatique, icône de notification, installation par l'exe, mises à jour intégrées, habillage |
 | `python-fastapi/` | Python 3.11, FastAPI, exe PyInstaller | socle posé : serveur local gardé par un jeton, dossier de données, réglages, journal, sauvegardes, coffre DPAPI, fond animé, instance unique, exe autonome ; le contrat vient ensuite (installation, mises à jour, démarrage automatique, icône de notification) |
 | `extension-mv3/` | exe Electron et son extension Manifest V3 | à écrire |
 
