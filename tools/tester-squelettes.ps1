@@ -85,9 +85,16 @@ try {
         Write-Host "Squelette « $($s.Name) »"
         $c = Nouvelle-Copie
 
+        # Toutes les options que le squelette fournit ; celles de nonFournis (stack.json) restent à « non ».
+        $reglagesStack = Get-Content -LiteralPath (Join-Path $s.FullName '_socle\stack.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+        $nonFournis = @()
+        if ($reglagesStack.PSObject.Properties['nonFournis']) { $nonFournis = @($reglagesStack.nonFournis | ForEach-Object { [string]$_ }) }
+        $demarrage = if ($nonFournis -contains 'demarrageAuto') { 'non' } else { 'oui' }
+        $installation = if ($nonFournis -contains 'installation') { 'non' } else { 'oui' }
+
         & $hote -NoProfile -ExecutionPolicy Bypass -File (Join-Path $c 'init.ps1') `
             -Nom Essai -Stack $s.Name -Promesse 'Une appli pour essayer le squelette.' -ElementOrange 'une clé' `
-            -DemarrageAuto oui -Installation oui -Port 0 | Out-Host
+            -DemarrageAuto $demarrage -Installation $installation -Port 0 | Out-Host
         Verifier ($LASTEXITCODE -eq 0) "$($s.Name) : init.ps1 crée l'appli et ses tests passent"
         if ($LASTEXITCODE -ne 0) { continue }
 

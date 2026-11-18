@@ -158,6 +158,20 @@ $reglages = Get-Content -LiteralPath (Join-Path $source '_socle\stack.json') -Ra
 $nomStack = $Stack
 if ($reglages.PSObject.Properties['nom']) { $nomStack = [string]$reglages.nom }
 
+# Ce que le squelette ne tient pas encore (clé nonFournis de stack.json) : init.ps1 refuse de le promettre, avant de
+# rien modifier. Les mises à jour intégrées sont obligatoires pour toute appli Aria : leur absence est signalée.
+$nonFournis = @()
+if ($reglages.PSObject.Properties['nonFournis']) { $nonFournis = @($reglages.nonFournis | ForEach-Object { [string]$_ }) }
+if ($Installation -eq 'oui' -and $nonFournis -contains 'installation') {
+    Arreter "la stack « $Stack » ne fournit pas encore l'installation par l'exe : relance avec -Installation non."
+}
+if ($DemarrageAuto -eq 'oui' -and $nonFournis -contains 'demarrageAuto') {
+    Arreter "la stack « $Stack » ne fournit pas encore le démarrage automatique ni l'icône de notification : relance avec -DemarrageAuto non."
+}
+if ($nonFournis -contains 'misesAJour') {
+    Write-Host "Attention : la stack « $Stack » ne fournit pas encore les mises à jour intégrées, obligatoires pour toute appli Aria. Pas de release publique tant qu'elles manquent." -ForegroundColor Yellow
+}
+
 $fragments = @{}
 Get-ChildItem -LiteralPath (Join-Path $source '_socle') -Filter '*.txt' | ForEach-Object {
     $fragments[$_.BaseName] = (Get-Content -LiteralPath $_.FullName -Raw -Encoding UTF8).TrimEnd("`r", "`n")
