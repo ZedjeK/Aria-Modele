@@ -2,7 +2,12 @@
 # provenance, puis crée la release en BROUILLON. Tu relis les notes, tu vérifies l'empreinte et tu publies : publier
 # est le geste qui prévient les utilisateurs, aucun workflow ne le fait à ta place.
 #
-#     git tag -a v1.2.3 -m "Version 1.2.3"; git push origin v1.2.3
+#     Set-Location C:\chemin\du\depot
+#     git switch main; git pull origin main
+#     git tag -a v1.2.3 -m "Version 1.2.3" SHA_COMPLET_DU_COMMIT_DE_FUSION; git push origin v1.2.3
+#
+# Le Set-Location et le SHA complet du commit de fusion évitent deux erreurs déjà vues : un tag posé dans le mauvais
+# dépôt (terminal resté dans un autre dossier) et un tag posé sur le commit d'avant la fusion.
 #
 # Le tag doit être celui de la version affichée par tools/version.ps1, sinon le build s'arrête avant de rien publier.
 # Ne le pousse qu'une fois la version et les notes (docs/releases/<tag>.md) fusionnées dans main.
