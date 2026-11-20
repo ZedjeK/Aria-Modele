@@ -71,7 +71,12 @@ Tout est dans `%USERPROFILE%\.Aria-{{NOM}}` :
 - `programme\` : l'appli installée.
 <!-- INSTALLATION:fin -->
 
-Supprimer ce dossier remet l'appli à neuf.
+Supprimer ce dossier efface tes réglages et tes données : l'appli repart à neuf.
+<!-- INSTALLATION:debut -->
+Si tu as installé l'appli, il contient aussi `programme\` : le supprimer la
+désinstalle. Quitte-la avant ; le raccourci du Bureau, s'il existe, se supprime
+à la main.
+<!-- INSTALLATION:fin -->
 
 ## Mises à jour
 
