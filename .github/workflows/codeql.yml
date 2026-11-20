@@ -1,4 +1,4 @@
-# CodeQL : GitHub relit le code à chaque changement et signale les failles connues (décision 9 du modèle).
+# CodeQL : GitHub relit le code à chaque changement et signale les failles connues.
 # Le langage « actions » relit les workflows eux-mêmes ; la stack ajoute le sien.
 name: CodeQL
 
