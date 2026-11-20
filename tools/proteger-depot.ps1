@@ -12,6 +12,7 @@ enregistré à chaque lancement dans un fichier daté, .work\protection-avant-<d
 arrière : une relance de vérification n'écrase pas l'état d'avant un changement.
 
     .\tools\proteger-depot.ps1              affiche le plan et demande confirmation
+    .\tools\proteger-depot.ps1 -Montrer     essai à blanc : le plan et le ruleset qui serait envoyé, sans rien écrire
     .\tools\proteger-depot.ps1 -Depot ZedjeK/Aria-Atlas
 
 Il a besoin de gh, connecté avec un compte qui administre le dépôt.
@@ -26,7 +27,9 @@ Les releases déjà publiées pendant que l'immuabilité était active le resten
 #>
 [CmdletBinding()]
 param(
-    [string]$Depot
+    [string]$Depot,
+    # Essai à blanc : le plan, et le corps du ruleset qui serait envoyé. Rien n'est demandé ni écrit sur GitHub.
+    [switch]$Montrer
 )
 
 Set-StrictMode -Version Latest
@@ -121,8 +124,9 @@ $avecCodeql = ''
 if ($codeqlPret) { $avecCodeql = ', alerte CodeQL élevée bloquante' }
 
 $plan = New-Object Collections.Generic.List[object]
-function Prevoir([string]$titre, [scriptblock]$action) {
-    $script:plan.Add([pscustomobject]@{ Titre = $titre; Action = $action })
+# $corps : ce qui serait envoyé, pour l'essai à blanc (-Montrer). Facultatif.
+function Prevoir([string]$titre, [scriptblock]$action, $corps = $null) {
+    $script:plan.Add([pscustomobject]@{ Titre = $titre; Action = $action; Corps = $corps })
 }
 
 # 1. Méthode de fusion
@@ -197,12 +201,12 @@ elseif ($notre.Count -gt 0) {
     $idRuleset = $notre[0].id
     Prevoir "Ruleset « $nomRuleset » complété : PR obligatoire, check(s) $listeExiges liés à GitHub Actions$avecCodeql" {
         Ecrire 'PUT' "repos/$Depot/rulesets/$idRuleset" $corpsBranche
-    }
+    } $corpsBranche
 }
 else {
     Prevoir "Ruleset « $nomRuleset » : suppression et réécriture interdites, PR obligatoire, check(s) $listeExiges exigé(s)$avecCodeql" {
         Ecrire 'POST' "repos/$Depot/rulesets" $corpsBranche
-    }
+    } $corpsBranche
 }
 
 if (-not $codeqlPret) {
@@ -328,6 +332,16 @@ Write-Host "Ce script va faire $($plan.Count) changement(s) sur $Depot :"
 $n = 0
 foreach ($etape in $plan) { $n++; Write-Host "  $n. $($etape.Titre)" }
 Write-Host ""
+if ($Montrer) {
+    foreach ($etape in $plan) {
+        if ($null -eq $etape.Corps) { continue }
+        Write-Host "Ce qui serait envoyé pour : $($etape.Titre)"
+        Write-Host ($etape.Corps | ConvertTo-Json -Depth 10)
+        Write-Host ""
+    }
+    Write-Host "Essai à blanc : rien n'a été modifié." -ForegroundColor Cyan
+    exit 0
+}
 $reponse = (Read-Host "Appliquer ? (o/N)").Trim()
 if ($reponse -notmatch '^[oO]') {
     Write-Host "Rien n'a été modifié."
