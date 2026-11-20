@@ -118,6 +118,7 @@ try {
     Verifier ((Texte $c '.github\workflows\codeql.yml').Contains('language: essai')) "le langage de la stack est dans codeql.yml"
     Verifier ((Texte $c 'LICENCES-TIERS.txt').Contains("Composant d'essai")) "les composants de la stack sont dans LICENCES-TIERS.txt"
     Verifier (Test-Path (Join-Path $c '.github\pull_request_template.md')) "le modèle de PR est copié dans l'appli"
+    Verifier ((Texte $c '.github\release.yml').Contains('title: Nouveautés')) "les catégories des notes générées sont copiées dans l'appli"
     Verifier ((Texte $c '.github\ISSUE_TEMPLATE\bug.yml').Contains("Version d'Aria Essai")) "le formulaire de bug porte le nom de l'appli"
     Verifier ((Texte $c '.github\ISSUE_TEMPLATE\config.yml').Contains('ZedjeK/Aria-Essai/security/advisories/new')) "les issues renvoient au signalement privé de l'appli"
     Verifier (Test-Path (Join-Path $c 'Aria-Essai.txt')) "un fichier nommé Aria-Modele est renommé"
