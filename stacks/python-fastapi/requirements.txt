@@ -1,5 +1,5 @@
 # Exécution
-fastapi>=0.129
+fastapi>=0.162.5
 uvicorn>=0.41
 # Tests (TestClient de FastAPI) et construction de l'exe
 httpx>=0.28.1
