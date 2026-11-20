@@ -8,7 +8,7 @@
 
   <ItemGroup>
     <!-- DPAPI : chiffrement des secrets lié au compte Windows de l'utilisateur (Secrets\SecretStore.cs) -->
-    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.15" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="11.0.0" />
   </ItemGroup>
 
   <ItemGroup>
