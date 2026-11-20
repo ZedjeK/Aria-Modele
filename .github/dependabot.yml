@@ -15,3 +15,30 @@ updates:
       mises-a-jour-mineures:
         update-types: ["minor", "patch"]
   # <<STACK:dependabot>>
+  # <!-- MODELE:debut -->
+  # Dépôt modèle seulement : les dépendances des squelettes (stacks\). init.ps1 retire ces blocs dans l'appli créée,
+  # qui garde celui de sa stack. Les actions recopiées dans les _socle\outils.txt ne sont pas lues par Dependabot :
+  # tools\tester.ps1 vérifie qu'elles gardent le SHA des workflows.
+  - package-ecosystem: "nuget"
+    directories:
+      - "/stacks/dotnet-wpf/src/*"
+      - "/stacks/dotnet-wpf/tests/*"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      squelette-nuget-mineures:
+        update-types: ["minor", "patch"]
+  - package-ecosystem: "pip"
+    directory: "/stacks/python-fastapi"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      squelette-pip-mineures:
+        update-types: ["minor", "patch"]
+  # <!-- MODELE:fin -->
