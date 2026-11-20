@@ -116,6 +116,7 @@ try {
     Verifier ((Texte $c '.github\workflows\release.yml').Contains('Outils de la stack essai')) "les outils de la stack sont dans release.yml"
     Verifier ((Texte $c '.github\workflows\release.yml').Contains('release/Aria-Essai-$version.zip')) "release.yml nomme le zip de l'appli"
     Verifier ((Texte $c '.github\workflows\codeql.yml').Contains('language: essai')) "le langage de la stack est dans codeql.yml"
+    Verifier ((Texte $c 'LICENCES-TIERS.txt').Contains("Composant d'essai")) "les composants de la stack sont dans LICENCES-TIERS.txt"
     Verifier (Test-Path (Join-Path $c 'Aria-Essai.txt')) "un fichier nommé Aria-Modele est renommé"
     Verifier ((Texte $c 'Aria-Essai.txt').Contains('Aria-Essai : Une appli pour essayer le modèle. Port 8123.')) "son contenu est rempli"
     $version = "$(& (Join-Path $c 'tools\version.ps1') | Select-Object -Last 1)".Trim()

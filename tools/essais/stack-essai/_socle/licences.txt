@@ -1,0 +1,5 @@
+Composant d'essai
+  Version      : 1.2.3
+  Source       : https://example.invalid
+  Licence      : MIT
+  Vérification : aucune, composant d'essai

@@ -1,0 +1,44 @@
+Polices
+-------
+
+IBM Plex Mono : 400, 500 et 600, sous-ensemble latin, en WOFF2 (appli\statique\polices)
+  Version      : 2.3 (lue dans les fichiers)
+  Source       : https://github.com/IBM/plex, par le paquet npm @fontsource/ibm-plex-mono 5.3.0
+  Licence      : SIL Open Font License 1.1
+  Vérification : empreinte SHA-256 de chaque fichier identique à celle du fichier de même nom dans
+                 @fontsource/ibm-plex-mono 5.3.0 (comparée le 20 novembre 2026).
+
+Space Grotesk : 500, 600 et 700, sous-ensemble latin, en WOFF2 (appli\statique\polices)
+  Version      : 2.000 (lue dans les fichiers)
+  Source       : https://github.com/floriankarsten/space-grotesk
+  Licence      : SIL Open Font License 1.1
+  Vérification : à renseigner. Empreintes différentes de celles des paquets npm @fontsource/space-grotesk
+                 5.0.20, 5.1.1, 5.2.5, 5.2.10 et 5.3.0 : l'origine des fichiers reste à retrouver.
+
+Interpréteur et bibliothèques
+-----------------------------
+
+Python : l'interpréteur que PyInstaller embarque dans l'exe
+  Version      : à renseigner : celle de l'environnement du build
+  Source       : https://www.python.org
+  Licence      : PSF-2.0
+  Vérification : à renseigner
+
+Chargeur de PyInstaller (bootloader)
+  Version      : à renseigner : celle de requirements.txt au moment de la version
+  Source       : https://github.com/pyinstaller/pyinstaller
+  Licence      : GPL-2.0-or-later avec l'exception du chargeur, qui permet de distribuer l'exe sous une autre
+                 licence
+  Vérification : à renseigner
+
+FastAPI, Starlette, Pydantic, pydantic-core, Uvicorn
+  Version      : à renseigner : celles de l'environnement du build (pip freeze)
+  Source       : https://pypi.org/project/fastapi/, /starlette/, /pydantic/, /pydantic-core/, /uvicorn/
+  Licence      : MIT (FastAPI, Pydantic, pydantic-core) ; BSD-3-Clause (Starlette, Uvicorn)
+  Vérification : à renseigner
+
+Leurs dépendances (anyio, h11, click, idna, typing-extensions, annotated-types…)
+  Version      : à renseigner : un bloc par paquet, d'après pip freeze de l'environnement du build
+  Source       : à renseigner
+  Licence      : à renseigner
+  Vérification : à renseigner

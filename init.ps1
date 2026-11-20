@@ -193,7 +193,8 @@ foreach ($relatif in 'tools\tester-squelettes.ps1', '.github\workflows\squelette
 
 $fichiersSocle = @(
     '.gitignore', '.gitattributes', '.github\dependabot.yml',
-    '.github\workflows\tests.yml', '.github\workflows\release.yml', '.github\workflows\codeql.yml'
+    '.github\workflows\tests.yml', '.github\workflows\release.yml', '.github\workflows\codeql.yml',
+    'LICENCES-TIERS.txt'
 )
 foreach ($relatif in $fichiersSocle) {
     $chemin = Join-Path $racine $relatif
