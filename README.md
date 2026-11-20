@@ -1,8 +1,10 @@
 <!-- MODELE:debut -->
 > **Ce dépôt est le modèle des applis Aria.** Il ne se lance pas tel quel.
 > Crée ton appli avec « Use this template », clone-la, puis lance `.\init.ps1`
-> dans le dossier du clone : le script choisit la stack, remplit le nom et se
-> supprime. Ce qui suit est le squelette du README de la future appli.
+> dans le dossier du clone : le script te demande la stack, remplit le nom et se
+> supprime. Ce que chaque stack fournit déjà est dans
+> [stacks/LISEZ-MOI.md](stacks/LISEZ-MOI.md). Ce qui suit est le squelette du
+> README de la future appli.
 
 <!-- MODELE:fin -->
 <p align="center">
@@ -107,8 +109,9 @@ Ce que l'appli ne fait pas.
 
 Mises à jour : l'empreinte SHA-256 vérifie que le téléchargement est intact, pas
 d'où il vient. La provenance repose sur le compte GitHub de l'auteur, sur les
-releases immuables (une version publiée ne change plus) et sur l'attestation
-jointe à chaque zip. Si le compte de l'auteur était compromis, une version
+releases immuables (une version publiée ne change plus) et sur l'attestation de
+provenance que GitHub enregistre pour chaque zip (`gh attestation verify`, voir
+les notes de version). Si le compte de l'auteur était compromis, une version
 piégée pourrait quand même être proposée.
 
 Projet personnel, sans audit de sécurité indépendant.
