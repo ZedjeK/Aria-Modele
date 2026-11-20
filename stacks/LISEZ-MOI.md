@@ -33,6 +33,7 @@ nom dans le socle ; un fichier absent supprime simplement la ligne.
 | `dependabot.txt` | `.github\dependabot.yml` (blocs indentés de deux espaces) |
 | `outils.txt` | `tests.yml` et `release.yml` (étapes d'installation des outils, indentées de six espaces) ; chaque action y garde le SHA épinglé dans `squelettes.yml`, que Dependabot tient à jour (`tools\tester.ps1` refuse un écart) |
 | `codeql.txt` | `codeql.yml` (une entrée de matrice, indentée de dix espaces) |
+| `licences.txt` | `LICENCES-TIERS.txt` (un bloc par composant que l'exe de la stack embarque : polices, runtime, bibliothèques ; ce qui dépend du build reste « à renseigner », et `verifier-release.ps1` le fait compléter avant chaque version) |
 | `stack.json` | réglages lus par `init.ps1` : `{ "nom": "Go + Wails", "runsOn": "windows-latest" }`, et `nonFournis` si le squelette ne tient pas encore tout le contrat |
 
 `nonFournis` liste ce que le squelette ne tient pas encore : `installation`, `demarrageAuto` (démarrage automatique et
