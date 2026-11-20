@@ -5,7 +5,7 @@ Tests du dépôt modèle : rejoue init.ps1 sur une stack d'essai, dans un dossie
 .DESCRIPTION
 Ce fichier est celui du dépôt modèle. Dans une appli, init.ps1 le remplace par le tester.ps1 de la stack choisie.
 
-Neuf scénarios, les huit premiers chacun dans sa propre copie du dépôt :
+Dix scénarios, les huit premiers chacun dans sa propre copie du dépôt :
   1. init.ps1 réussit : marqueurs remplis, blocs de stack fusionnés, fichiers du modèle retirés ;
   2. un port déjà pris est refusé, sans rien modifier ;
   3. un arbre de travail modifié est refusé, sans rien modifier ;
@@ -14,7 +14,8 @@ Neuf scénarios, les huit premiers chacun dans sa propre copie du dépôt :
   6. sans installation par l'exe, le README et les notes de version gardent le bloc portable ;
   7. verifier-release.ps1 refuse une version incomplète et accepte une version complète ;
   8. une stack refuse ce qu'elle ne fournit pas encore (clé nonFournis de stack.json) ;
-  9. les actions recopiées dans les _socle\outils.txt gardent le SHA épinglé dans les workflows.
+  9. les actions recopiées dans les _socle\outils.txt gardent le SHA épinglé dans les workflows ;
+ 10. chaque script PowerShell du dépôt se lit sans erreur de syntaxe.
 
 Tous les scénarios tournent ; le code de retour est non nul si un seul contrôle est manqué.
 #>
@@ -255,6 +256,19 @@ try {
             $sha = $m.Groups[2].Value
             Verifier ($epingles.ContainsKey($action) -and $epingles[$action].Contains($sha)) "${relatif} : $action garde le SHA des workflows"
         }
+    }
+
+    Write-Host "10. Chaque script PowerShell du dépôt se lit sans erreur de syntaxe"
+    # Certains scripts ne tournent pas en CI (proteger-depot.ps1 écrit sur GitHub) : leur syntaxe, au moins, est relue.
+    $scripts = @(Get-ChildItem -LiteralPath $racine -Recurse -File -Filter '*.ps1' |
+        Where-Object { $_.FullName -notmatch '[\\/]\.(git|work)[\\/]' })
+    foreach ($s in $scripts) {
+        $jetons = $null
+        $erreurs = $null
+        [Management.Automation.Language.Parser]::ParseFile($s.FullName, [ref]$jetons, [ref]$erreurs) | Out-Null
+        $detail = ''
+        if ($erreurs.Count -gt 0) { $detail = " (ligne $($erreurs[0].Extent.StartLineNumber) : $($erreurs[0].Message))" }
+        Verifier ($erreurs.Count -eq 0) "$($s.FullName.Substring($racine.Length + 1)) se lit sans erreur de syntaxe$detail"
     }
 }
 finally {
