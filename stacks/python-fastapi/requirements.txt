@@ -1,7 +1,10 @@
+# Versions exactes : l'exe d'une release est construit avec ces versions-là, pas avec la dernière publiée la veille.
+# Dependabot les monte, sept jours au plus tôt après leur sortie (cooldown de dependabot.yml).
+# Les dépendances de ces paquets (starlette, pydantic...) ne sont pas épinglées ici.
 # Exécution
-fastapi>=0.129
-uvicorn>=0.41
+fastapi==0.162.5
+uvicorn==0.54.0
 # Tests (TestClient de FastAPI) et construction de l'exe
-httpx>=0.28.1
-pytest>=9
+httpx==0.28.1
+pytest==9.2.0
 pyinstaller==6.22.3
