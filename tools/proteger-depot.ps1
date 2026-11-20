@@ -1,7 +1,7 @@
 ﻿<#
 .SYNOPSIS
-Pose les protections GitHub d'une appli Aria : fusion en squash, rulesets, signalement privé, alertes et correctifs
-Dependabot, secret scanning, releases immuables, actions épinglées par SHA.
+Pose les protections GitHub d'une appli Aria : fusion en squash, rulesets (dont la règle de code scanning CodeQL),
+signalement privé, alertes et correctifs Dependabot, secret scanning, releases immuables, actions épinglées par SHA.
 
 .DESCRIPTION
 À lancer après le premier passage vert de la CI sur main : on n'exige jamais un check qui n'a pas encore tourné.
@@ -112,6 +112,12 @@ if ($checks -and $checks.PSObject.Properties['check_runs']) {
     $testsVerts = @($exiges | Where-Object { $verts -notcontains $_ }).Count -eq 0
 }
 
+# CodeQL a-t-il déjà analysé la branche par défaut ? Sans analyse, la règle de code scanning bloquerait toute PR.
+$analyses = Lire "repos/$Depot/code-scanning/analyses?ref=refs/heads/$([uri]::EscapeDataString($branche))&per_page=1"
+$codeqlPret = @($analyses | Where-Object { $_ -and $_ -isnot [bool] }).Count -gt 0
+$avecCodeql = ''
+if ($codeqlPret) { $avecCodeql = ', alerte CodeQL élevée bloquante' }
+
 $plan = New-Object Collections.Generic.List[object]
 function Prevoir([string]$titre, [scriptblock]$action) {
     $script:plan.Add([pscustomobject]@{ Titre = $titre; Action = $action })
@@ -155,6 +161,13 @@ $corpsBranche = @{
         }
     )
 }
+# Une alerte CodeQL de sécurité élevée ou critique, ou une erreur, bloque la fusion ; une analyse pas finie aussi.
+if ($codeqlPret) {
+    $corpsBranche.rules = @($corpsBranche.rules) + @(, @{ type = 'code_scanning'; parameters = @{
+                code_scanning_tools = @(@{ tool = 'CodeQL'; security_alerts_threshold = 'high_or_higher'; alerts_threshold = 'errors' })
+            }
+        })
+}
 
 $regles = @($reglesBranche | Where-Object { $_ -and $_.PSObject.Properties['type'] })
 $types = @($regles | ForEach-Object { $_.type })
@@ -162,13 +175,15 @@ $lies = @($regles | Where-Object { $_.type -eq 'required_status_checks' } |
     ForEach-Object { $_.parameters.required_status_checks } |
     Where-Object { $_.PSObject.Properties['integration_id'] -and $_.integration_id -eq $idActions } | ForEach-Object { $_.context })
 $checkLie = @($exiges | Where-Object { $lies -notcontains $_ }).Count -eq 0
-$complet = $types -contains 'deletion' -and $types -contains 'non_fast_forward' -and $types -contains 'pull_request' -and $checkLie
+$complet = $types -contains 'deletion' -and $types -contains 'non_fast_forward' -and $types -contains 'pull_request' -and $checkLie -and
+    (-not $codeqlPret -or $types -contains 'code_scanning')
 # Le ruleset posé par ce script se reconnaît à son nom ; les règles venues d'ailleurs ne sont jamais modifiées.
 $notre = @($rulesets | Where-Object { $_ -and $_.PSObject.Properties['name'] -and $_.name -eq $nomRuleset -and $_.target -eq 'branch' })
 $etrangeres = @($regles | Where-Object { $notre.Count -eq 0 -or $_.ruleset_id -ne $notre[0].id } | ForEach-Object { $_.type })
 
 if ($complet) {
     Write-Host "  déjà en place : $branche protégée, PR obligatoire, check(s) $listeExiges exigé(s) et lié(s) à GitHub Actions"
+    if ($codeqlPret) { Write-Host "  déjà en place : une alerte CodeQL élevée ou critique bloque la fusion" }
 }
 elseif ($etrangeres.Count -gt 0) {
     Write-Host "  À FAIRE À LA MAIN : $branche a des règles venues d'un autre ruleset ($($etrangeres -join ', ')). Complète-le plutôt que d'en créer un second." -ForegroundColor Yellow
@@ -178,14 +193,18 @@ elseif (-not $testsVerts) {
 }
 elseif ($notre.Count -gt 0) {
     $idRuleset = $notre[0].id
-    Prevoir "Ruleset « $nomRuleset » complété : PR obligatoire, check(s) $listeExiges liés à GitHub Actions" {
+    Prevoir "Ruleset « $nomRuleset » complété : PR obligatoire, check(s) $listeExiges liés à GitHub Actions$avecCodeql" {
         Ecrire 'PUT' "repos/$Depot/rulesets/$idRuleset" $corpsBranche
     }
 }
 else {
-    Prevoir "Ruleset « $nomRuleset » : suppression et réécriture interdites, PR obligatoire, check(s) $listeExiges exigé(s)" {
+    Prevoir "Ruleset « $nomRuleset » : suppression et réécriture interdites, PR obligatoire, check(s) $listeExiges exigé(s)$avecCodeql" {
         Ecrire 'POST' "repos/$Depot/rulesets" $corpsBranche
     }
+}
+
+if (-not $codeqlPret) {
+    Write-Host "  PAS ENCORE : aucune analyse CodeQL sur $branche, la règle de code scanning attend. Relance ce script après la première." -ForegroundColor Yellow
 }
 
 # 3. Ruleset des tags de version
