@@ -23,6 +23,16 @@
   <main class="zone">
     <canvas id="fond" aria-hidden="true"></canvas>
 
+    <!-- Une nouvelle version : rien ne se télécharge sans un clic sur « Installer la mise à jour » -->
+    <section class="bandeau" id="maj" hidden>
+      <p><strong id="maj-titre"></strong> <span id="maj-detail"></span></p>
+      <p>
+        <button type="button" id="maj-installer">Installer la mise à jour</button>
+        <a id="maj-page" href="#" target="_blank" rel="noopener noreferrer">Voir les nouveautés</a>
+      </p>
+      <p id="maj-message" role="status"></p>
+    </section>
+
     <section class="panneau" id="accueil">
       <h2>{{PROMESSE}}</h2>
       <p>Ce squelette fournit le dossier de données, les réglages, le journal, les sauvegardes, le coffre des secrets, le
@@ -47,9 +57,17 @@
         <label class="ligne">et au plus
           <input type="number" id="fond-maximum" min="1" max="12">
         </label>
+        <h3>Mises à jour</h3>
+        <label class="ligne"><input type="checkbox" id="chercher-maj"> Chercher une nouvelle version au lancement</label>
+        <p class="aide">Une seule requête, vers la page des versions de l'appli sur GitHub, sans rien qui t'identifie.
+          Rien ne s'installe sans ton accord.</p>
         <button type="submit">Enregistrer</button>
         <p id="message" role="status"></p>
       </form>
+      <p class="ligne">
+        <button type="button" id="maj-chercher" class="secondaire">Rechercher maintenant</button>
+        <span id="maj-etat" role="status"></span>
+      </p>
     </section>
   </main>
   <script src="/app.js"></script>

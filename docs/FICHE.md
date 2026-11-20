@@ -16,7 +16,7 @@ jour quand l'appli change.
 | Port local (interface web) | {{PORT}} |
 | Données de l'utilisateur | `%USERPROFILE%\.Aria-{{NOM}}` ; secrètes : à renseigner |
 | Écritures hors du dossier de données | à renseigner : démarrage automatique, raccourci du Bureau, et ce que l'appli modifie |
-| Connexions sortantes | à renseigner : liste complète, destination par destination |
+| Connexions sortantes | à renseigner : liste complète, destination par destination (les mises à jour intégrées en ajoutent deux : `api.github.com` pour chercher une nouvelle version, et `github.com` avec son hôte de téléchargement pour le zip) |
 | Composants tiers embarqués | à renseigner |
 | Réussite de la v0.1 | à renseigner : un critère mesurable |
 

@@ -73,6 +73,20 @@ Tout est dans `%USERPROFILE%\.Aria-{{NOM}}` :
 
 Supprimer ce dossier remet l'appli à neuf.
 
+## Mises à jour
+
+Au lancement, l'appli regarde s'il existe une nouvelle version : une seule
+requête, vers la page des versions de ce dépôt sur GitHub, sans rien qui
+t'identifie. Une case des réglages coupe cette recherche.
+
+Rien ne se télécharge ni ne s'installe sans ton clic sur « Installer la mise à
+jour ». L'appli télécharge alors le zip de la version, vérifie sa taille et son
+empreinte, garde ta version actuelle dans `sauvegardes\versions\`, met la
+nouvelle à sa place et se relance.
+
+Pour revenir à la version précédente : quitte l'appli, puis copie les fichiers
+de `sauvegardes\versions\<version>\` à la place de ceux de l'appli.
+
 ## Sécurité
 
 - **Droits** : l'appli se lance sans droits administrateur.
