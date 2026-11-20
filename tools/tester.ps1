@@ -5,7 +5,7 @@ Tests du dépôt modèle : rejoue init.ps1 sur une stack d'essai, dans un dossie
 .DESCRIPTION
 Ce fichier est celui du dépôt modèle. Dans une appli, init.ps1 le remplace par le tester.ps1 de la stack choisie.
 
-Dix scénarios, les huit premiers chacun dans sa propre copie du dépôt :
+Onze scénarios, les huit premiers et le dernier chacun dans sa propre copie du dépôt :
   1. init.ps1 réussit : marqueurs remplis, blocs de stack fusionnés, fichiers du modèle retirés ;
   2. un port déjà pris est refusé, sans rien modifier ;
   3. un arbre de travail modifié est refusé, sans rien modifier ;
@@ -15,7 +15,8 @@ Dix scénarios, les huit premiers chacun dans sa propre copie du dépôt :
   7. verifier-release.ps1 refuse une version incomplète et accepte une version complète ;
   8. une stack refuse ce qu'elle ne fournit pas encore (clé nonFournis de stack.json) ;
   9. les actions recopiées dans les _socle\outils.txt gardent le SHA épinglé dans les workflows ;
- 10. chaque script PowerShell du dépôt se lit sans erreur de syntaxe.
+ 10. chaque script PowerShell du dépôt se lit sans erreur de syntaxe ;
+ 11. le socle commun (tools\socle.txt) : une appli fraîchement créée est à jour, une appli modifiée est signalée.
 
 Tous les scénarios tournent ; le code de retour est non nul si un seul contrôle est manqué.
 #>
@@ -275,6 +276,33 @@ try {
         if ($erreurs.Count -gt 0) { $detail = " (ligne $($erreurs[0].Extent.StartLineNumber) : $($erreurs[0].Message))" }
         Verifier ($erreurs.Count -eq 0) "$($s.FullName.Substring($racine.Length + 1)) se lit sans erreur de syntaxe$detail"
     }
+
+    Write-Host "11. Le socle commun : une appli fraîchement créée est à jour, une appli modifiée ne l'est pas"
+    $socle = @([IO.File]::ReadAllLines((Join-Path $racine 'tools\socle.txt'), [Text.Encoding]::UTF8) |
+        ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith('#') })
+    Verifier ($socle.Count -gt 0) "tools\socle.txt liste des fichiers"
+    foreach ($f in $socle) {
+        $relatif = $f -replace '/', '\'
+        $existe = Test-Path -LiteralPath (Join-Path $racine $relatif) -PathType Leaf
+        Verifier $existe "$f existe dans le modèle"
+        # Tout ce que init.ps1 réécrit : marqueur, bloc de stack, bloc retiré, ou le nom du modèle lui-même. Un
+        # fichier qui en porte ne peut pas rester identique au modèle.
+        if ($existe) {
+            Verifier ((Texte $racine $relatif) -notmatch '\{\{[A-Z_]+\}\}|<<STACK:[a-z-]+>>|<!-- [A-Z]+:(debut|fin) -->|Aria-Modele') "$f ne porte rien que init.ps1 réécrit"
+        }
+    }
+    $c = Nouvelle-Copie
+    $code = Lancer-Init $c 8123
+    Verifier ($code -eq 0) "init.ps1 se termine sans erreur"
+    $verif = Join-Path $c 'tools\verifier-socle.ps1'
+    & $hote -NoProfile -ExecutionPolicy Bypass -File $verif -Modele $racine | Out-Host
+    Verifier ($LASTEXITCODE -eq 0) "une appli fraîchement créée a tout le socle du modèle"
+    [IO.File]::AppendAllText((Join-Path $c '.github\release.yml'), "`n# une ligne ajoutée dans l'appli`n")
+    & $hote -NoProfile -ExecutionPolicy Bypass -File $verif -Modele $racine | Out-Host
+    Verifier ($LASTEXITCODE -eq 1) "un fichier du socle modifié dans l'appli est signalé"
+    Remove-Item -LiteralPath (Join-Path $c '.github\release.yml') -Force
+    & $hote -NoProfile -ExecutionPolicy Bypass -File $verif -Modele $racine | Out-Host
+    Verifier ($LASTEXITCODE -eq 1) "un fichier du socle absent de l'appli est signalé"
 }
 finally {
     foreach ($copie in $copies) {
