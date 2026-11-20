@@ -269,8 +269,9 @@ $suivis | ForEach-Object { Join-Path $racine $_ } |
         $lu = Lire-Texte $_.FullName
         if ($null -eq $lu) { return }
         $texte = $lu.Texte
-        # Blocs réservés au dépôt modèle (README.md)
-        $texte = [regex]::Replace($texte, '(?s)<!-- MODELE:debut -->.*?<!-- MODELE:fin -->\r?\n?', '')
+        # Blocs réservés au dépôt modèle (README.md, dependabot.yml) : retirés avec les lignes entières de leurs balises,
+        # pour qu'une balise écrite dans un commentaire YAML (« # <!-- MODELE:debut --> ») ne laisse rien derrière elle.
+        $texte = [regex]::Replace($texte, '(?ms)^[^\r\n]*<!-- MODELE:debut -->.*?<!-- MODELE:fin -->[^\r\n]*\r?\n?', '')
         # Installation par l'exe (README.md, notes de version) : un bloc retiré en entier, l'autre perd ses balises.
         $texte = [regex]::Replace($texte, "(?s)<!-- ${blocRetire}:debut -->.*?<!-- ${blocRetire}:fin -->\r?\n?", '')
         $texte = [regex]::Replace($texte, "<!-- ${blocGarde}:(debut|fin) -->\r?\n?", '')

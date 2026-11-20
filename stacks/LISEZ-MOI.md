@@ -31,7 +31,7 @@ nom dans le socle ; un fichier absent supprime simplement la ligne.
 | `gitignore.txt` | `.gitignore` |
 | `gitattributes.txt` | `.gitattributes` |
 | `dependabot.txt` | `.github\dependabot.yml` (blocs indentés de deux espaces) |
-| `outils.txt` | `tests.yml` et `release.yml` (étapes d'installation des outils, indentées de six espaces) |
+| `outils.txt` | `tests.yml` et `release.yml` (étapes d'installation des outils, indentées de six espaces) ; chaque action y garde le SHA épinglé dans `squelettes.yml`, que Dependabot tient à jour (`tools\tester.ps1` refuse un écart) |
 | `codeql.txt` | `codeql.yml` (une entrée de matrice, indentée de dix espaces) |
 | `stack.json` | réglages lus par `init.ps1` : `{ "nom": "Go + Wails", "runsOn": "windows-latest" }`, et `nonFournis` si le squelette ne tient pas encore tout le contrat |
 

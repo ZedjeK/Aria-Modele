@@ -5,7 +5,7 @@ Tests du dépôt modèle : rejoue init.ps1 sur une stack d'essai, dans un dossie
 .DESCRIPTION
 Ce fichier est celui du dépôt modèle. Dans une appli, init.ps1 le remplace par le tester.ps1 de la stack choisie.
 
-Huit scénarios, chacun dans sa propre copie du dépôt :
+Neuf scénarios, les huit premiers chacun dans sa propre copie du dépôt :
   1. init.ps1 réussit : marqueurs remplis, blocs de stack fusionnés, fichiers du modèle retirés ;
   2. un port déjà pris est refusé, sans rien modifier ;
   3. un arbre de travail modifié est refusé, sans rien modifier ;
@@ -13,7 +13,8 @@ Huit scénarios, chacun dans sa propre copie du dépôt :
   5. un dossier qui contient une jonction est refusé ;
   6. sans installation par l'exe, le README et les notes de version gardent le bloc portable ;
   7. verifier-release.ps1 refuse une version incomplète et accepte une version complète ;
-  8. une stack refuse ce qu'elle ne fournit pas encore (clé nonFournis de stack.json).
+  8. une stack refuse ce qu'elle ne fournit pas encore (clé nonFournis de stack.json) ;
+  9. les actions recopiées dans les _socle\outils.txt gardent le SHA épinglé dans les workflows.
 
 Tous les scénarios tournent ; le code de retour est non nul si un seul contrôle est manqué.
 #>
@@ -107,6 +108,7 @@ try {
     Verifier ((Texte $c '.gitignore').Contains('essai-ignore/')) "le bloc de la stack est dans .gitignore"
     Verifier ((Texte $c '.gitattributes').Contains('*.essai text')) "le bloc de la stack est dans .gitattributes"
     Verifier ((Texte $c '.github\dependabot.yml').Contains('essai-ecosysteme')) "le bloc de la stack est dans dependabot.yml"
+    Verifier (-not (Texte $c '.github\dependabot.yml').Contains('/stacks/')) "les blocs Dependabot des squelettes ne sont pas copiés dans l'appli"
     Verifier ((Texte $c '.github\workflows\tests.yml').Contains('Outils de la stack essai')) "les outils de la stack sont dans tests.yml"
     Verifier ((Texte $c '.github\workflows\tests.yml').Contains('runs-on: ubuntu-24.04')) "tests.yml tourne sur la machine demandée par la stack"
     Verifier ((Texte $c '.github\workflows\tests.yml').Contains('  tests: #')) "le job s'appelle toujours « tests »"
@@ -230,6 +232,30 @@ try {
     Verifier (Test-Path (Join-Path $c 'stacks')) "rien n'a été modifié : stacks\ est toujours là"
     $code = Lancer-Init $c 8123 -installation non
     Verifier ($code -eq 0) "sans installation : init.ps1 se termine sans erreur"
+
+    Write-Host "9. Les actions des blocs de stack gardent le SHA des workflows"
+    # Dependabot ne lit que .github\workflows : un SHA recopié dans un _socle\outils.txt resterait en arrière.
+    $motif = 'uses:\s*([^\s@]+)@([0-9a-f]{40})'
+    $epingles = @{}
+    Get-ChildItem -LiteralPath (Join-Path $racine '.github\workflows') -Filter '*.yml' | ForEach-Object {
+        foreach ($m in [regex]::Matches([IO.File]::ReadAllText($_.FullName), $motif)) {
+            $action = $m.Groups[1].Value
+            if (-not $epingles.ContainsKey($action)) { $epingles[$action] = New-Object Collections.Generic.List[string] }
+            if (-not $epingles[$action].Contains($m.Groups[2].Value)) { $epingles[$action].Add($m.Groups[2].Value) }
+        }
+    }
+    $doubles = @($epingles.Keys | Where-Object { $epingles[$_].Count -gt 1 })
+    Verifier ($doubles.Count -eq 0) "chaque action a un seul SHA dans les workflows ($($doubles -join ', '))"
+    $fragments = @(Get-ChildItem -LiteralPath (Join-Path $racine 'stacks') -Recurse -File -Filter 'outils.txt' |
+        Where-Object { $_.Directory.Name -eq '_socle' })
+    foreach ($f in $fragments) {
+        $relatif = $f.FullName.Substring($racine.Length + 1)
+        foreach ($m in [regex]::Matches([IO.File]::ReadAllText($f.FullName), $motif)) {
+            $action = $m.Groups[1].Value
+            $sha = $m.Groups[2].Value
+            Verifier ($epingles.ContainsKey($action) -and $epingles[$action].Contains($sha)) "${relatif} : $action garde le SHA des workflows"
+        }
+    }
 }
 finally {
     foreach ($copie in $copies) {
