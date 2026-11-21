@@ -1,10 +1,19 @@
 <!-- MODELE:debut -->
 > **Ce dépôt est le modèle des applis Aria.** Il ne se lance pas tel quel.
 > Crée ton appli avec « Use this template », clone-la, puis lance `.\init.ps1`
-> dans le dossier du clone : le script te demande la stack, remplit le nom et se
-> supprime. Ce que chaque stack fournit déjà est dans
-> [stacks/LISEZ-MOI.md](stacks/LISEZ-MOI.md). Ce qui suit est le squelette du
-> README de la future appli.
+> dans le dossier du clone : le script demande le nom, la stack, la promesse,
+> l'élément orange du logo, si l'appli sert en arrière-plan, si elle s'installe et
+> son port local s'il y en a un,
+> remplit tout et se supprime.
+>
+> Une stack : `rust-tauri` (Rust, Tauri 2, Svelte 5 en TypeScript). Elle tient
+> tout le contrat des applis Aria (dossier de données, journal, secrets chiffrés,
+> icône de notification, démarrage avec Windows, installation par l'exe, mises à
+> jour vérifiées), et son interface suit celle d'Aria Studio et d'Aria Cockpit.
+> Le détail est dans [stacks/LISEZ-MOI.md](stacks/LISEZ-MOI.md). Pour construire :
+> Rust (rustup) et Node.js 24.
+>
+> Ce qui suit est le squelette du README de la future appli.
 
 <!-- MODELE:fin -->
 <p align="center">
@@ -23,7 +32,8 @@ Ce que l'appli permet, en clair, sans jargon.
 
 ## Avant de commencer
 
-Windows 10 ou 11, 64 bits. Droits, ports et matériel nécessaires.
+Windows 10 ou 11, 64 bits, avec WebView2 (déjà présent sur Windows 11 et sur un
+Windows 10 à jour). Droits, ports et matériel nécessaires.
 
 ## Installation
 
@@ -68,7 +78,7 @@ Tout est dans `%USERPROFILE%\.Aria-{{NOM}}` :
 - `journal.json` : les 500 dernières opérations ;
 - `sauvegardes\` : une copie datée avant chaque modification, et la version précédente de l'appli ;
 - `secrets\` : ce que l'appli garde de secret, chiffré pour ton compte Windows (supprime la ligne si elle n'en garde pas) ;
-- `cache\` : fichiers temporaires de l'interface.
+- `cache\` : données de l'interface et fichiers de travail, recréés au besoin.
 <!-- INSTALLATION:debut -->
 - `programme\` : l'appli installée.
 <!-- INSTALLATION:fin -->
@@ -84,12 +94,14 @@ désinstalle. Quitte-la avant ; le raccourci du Bureau, s'il existe, se supprime
 
 Au lancement, l'appli regarde s'il existe une nouvelle version : une seule
 requête, vers la page des versions de ce dépôt sur GitHub, sans rien qui
-t'identifie. Une case des réglages coupe cette recherche.
+t'identifie. Une case des paramètres coupe cette recherche.
 
-Rien ne se télécharge ni ne s'installe sans ton clic sur « Installer la mise à
-jour ». L'appli télécharge alors le zip de la version, vérifie sa taille et son
-empreinte, garde ta version actuelle dans `sauvegardes\versions\`, met la
-nouvelle à sa place et se relance.
+Quand une version plus récente existe, un bandeau « Mise à jour disponible »
+s'affiche en haut de la fenêtre ; « Voir » ouvre le détail et les notes de
+version. Rien ne se télécharge ni ne s'installe sans ton clic sur « Installer la
+mise à jour ». L'appli télécharge alors le zip de la version, vérifie sa taille
+et son empreinte, garde ta version actuelle dans `sauvegardes\versions\`, met
+la nouvelle à sa place et se relance.
 
 Pour revenir à la version précédente : quitte l'appli, puis copie les fichiers
 de `sauvegardes\versions\<version>\` à la place de ceux de l'appli.
@@ -97,9 +109,14 @@ de `sauvegardes\versions\<version>\` à la place de ceux de l'appli.
 ## Sécurité
 
 - **Droits** : l'appli se lance sans droits administrateur.
-- **Connexions sortantes** : la liste complète, destination par destination.
-- **Secrets** : ce que l'appli garde, où, comment c'est protégé, et contre quoi
-  cette protection ne joue pas.
+- **Connexions sortantes** : `api.github.com` pour chercher une mise à jour (si
+  la case est cochée), puis `github.com` et son serveur de fichiers pour la
+  télécharger, sur ton clic. Ajoute ici celles propres à l'appli, destination
+  par destination.
+- **Secrets** : chiffrés avec la protection des données de Windows (DPAPI) pour
+  ton compte, un fichier par secret dans `secrets\`. Une autre appli lancée sous
+  ton compte Windows peut les déchiffrer : cette protection vise la copie du
+  dossier sur un autre compte ou un autre PC. Dis ici ce que l'appli garde.
 
 Pour signaler une faille : voir [SECURITY.md](SECURITY.md).
 
@@ -123,17 +140,33 @@ est dans [LICENCES-TIERS.txt](LICENCES-TIERS.txt).
 
 ## Compiler soi-même
 
-Prérequis de la stack, puis :
+Il faut Rust, installé par [rustup](https://rustup.rs), et Node.js 24. Puis, dans
+le dossier du dépôt :
 
 ```powershell
+rustup toolchain install
+.\tools\tester.ps1
 .\build.ps1
 ```
 
-Comment vérifier que l'exe obtenu est le bon.
+`rustup toolchain install` prend la version de Rust écrite dans
+`rust-toolchain.toml`.
+
+`tester.ps1` lance les contrôles et les tests de l'interface et du Rust ;
+`build.ps1` construit l'exe dans `.work\sortie\`. Comment vérifier que l'exe
+obtenu est le bon.
 
 ## Structure
 
-L'arborescence commentée, en dix lignes.
+```text
+coeur/        le contrat en Rust (données, réglages, journal, secrets, mises à jour), testable partout
+appli/        l'exe Tauri : fenêtres, icône de notification, appels à Windows
+  capabilities/   ce que chaque fenêtre a le droit d'appeler
+interface/    l'interface en Svelte et TypeScript (pages, dialogues, composants)
+tools/        contrôles, version, zip de release
+docs/         logo, fiche du projet, notes de version
+build.ps1     construction de l'exe
+```
 
 ## Licence
 
