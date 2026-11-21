@@ -101,7 +101,7 @@ pub fn installer(app: AppHandle, etat: State<'_, Etat>, raccourci: bool) -> Resu
 
 /// Lance l'exe installé et arrête celui-ci. La place d'exemplaire unique est rendue d'abord : sinon le nouveau
 /// lancement la trouverait prise et s'arrêterait aussitôt.
-fn relancer(app: &AppHandle, exe: &Path) -> Result<(), String> {
+pub fn relancer(app: &AppHandle, exe: &Path) -> Result<(), String> {
     tauri_plugin_single_instance::destroy(app);
     let mut commande = Command::new(exe);
     if let Some(dossier) = exe.parent() {

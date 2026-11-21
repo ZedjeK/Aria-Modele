@@ -9,6 +9,8 @@
     "allow-mesurer-disque",
     "allow-lire-demarrage-auto",
     "allow-regler-demarrage-auto",
+    "allow-mise-a-jour-disponible",
+    "allow-ouvrir-mise-a-jour",
     "core:event:allow-listen",
     "core:event:allow-unlisten"
   ]

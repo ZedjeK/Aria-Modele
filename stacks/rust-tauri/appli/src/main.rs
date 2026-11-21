@@ -10,6 +10,7 @@ mod disque;
 mod erreur_fatale;
 mod icone;
 mod installation;
+mod mise_a_jour;
 
 use std::path::PathBuf;
 
@@ -67,6 +68,7 @@ fn lancer() -> Result<(), String> {
             cache_webview,
         })
         .manage(icone::Presence::default())
+        .manage(mise_a_jour::Disponible::default())
         .invoke_handler(tauri::generate_handler![
             commandes::identite,
             commandes::lire_reglages,
@@ -80,6 +82,10 @@ fn lancer() -> Result<(), String> {
             installation::infos_installation,
             installation::installer,
             installation::lancer_sans_installer,
+            mise_a_jour::mise_a_jour_disponible,
+            mise_a_jour::ouvrir_mise_a_jour,
+            mise_a_jour::voir_notes,
+            mise_a_jour::installer_mise_a_jour,
         ])
         .setup(move |app| {
             if proposer {
@@ -124,6 +130,9 @@ pub fn ouvrir_principale(app: &AppHandle, visible: bool) -> tauri::Result<()> {
             }
         });
     }
+    // Une requête vers GitHub, seulement si le réglage le permet ; aucune installation sans accord.
+    let dossier = app.state::<Etat>().dossier.clone();
+    mise_a_jour::chercher_au_lancement(app, &dossier);
     Ok(())
 }
 
