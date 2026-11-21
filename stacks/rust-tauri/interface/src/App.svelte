@@ -12,6 +12,8 @@
     lireReglages,
     mesurerDisque,
     messageErreur,
+    miseAJourDisponible,
+    ouvrirMiseAJour,
     reglerDemarrageAuto,
     type Identite,
     type Reglages,
@@ -45,6 +47,7 @@
   let etat = $state('');
   let erreur = $state(false);
   let demarrageAuto = $state(false);
+  let miseAJour = $state<string | null>(null);
 
   const nomCourt = $derived(identite?.nom.replace(/^Aria\s+/, '') ?? '');
 
@@ -58,6 +61,7 @@
       try {
         [identite, reglages] = await Promise.all([lireIdentite(), lireReglages()]);
         await relireDemarrageAuto();
+        miseAJour ??= (await miseAJourDisponible())?.version ?? null;
       } catch (e) {
         signaler(`Démarrage incomplet : ${messageErreur(e)}`, true);
       }
@@ -69,9 +73,12 @@
     const arret = ecouter<string>('aller-a', (page) => {
       if (page === 'reglages') onglet = 'reglages';
     });
+    // Une version plus récente trouvée au lancement (la recherche ne bloque pas l'appli).
+    const arretMiseAJour = ecouter<string>('mise-a-jour', (version) => (miseAJour = version));
     return () => {
       window.removeEventListener('focus', auRetour);
       void arret.then((f) => f());
+      void arretMiseAJour.then((f) => f());
     };
   });
 
@@ -124,6 +131,11 @@
     <ul>
       <li><a href="#accueil" class="actif" aria-current="page">Accueil</a></li>
     </ul>
+    {#if miseAJour}
+      <div class="maj">
+        <Bouton genre="secondaire" onclick={() => void ouvrirMiseAJour()}>Mise à jour {miseAJour}</Bouton>
+      </div>
+    {/if}
     <div class="pied code">
       {#if identite}<span>v{identite.version}</span>{/if}
       <span>tout en local</span>
@@ -179,6 +191,13 @@
               </label>
             </Panneau>
           {/if}
+
+          <Panneau titre="Mises à jour">
+            <label class="ligne">
+              <input type="checkbox" bind:checked={reglages.chercherMisesAJour} onchange={enregistrer} />
+              Chercher une nouvelle version au lancement (une requête vers GitHub ; rien n'est installé sans ton accord)
+            </label>
+          </Panneau>
 
           <Panneau titre="Fond animé">
             <label class="ligne">
@@ -269,6 +288,14 @@
   ul a:hover {
     color: var(--cyan);
     border-left-color: var(--cyan);
+  }
+
+  .maj {
+    margin-top: auto;
+  }
+
+  .maj + .pied {
+    margin-top: 0;
   }
 
   .pied {

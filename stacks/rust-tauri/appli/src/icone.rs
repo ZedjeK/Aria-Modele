@@ -18,6 +18,7 @@ use tauri::{
     WebviewWindowBuilder, WindowEvent,
 };
 
+use crate::mise_a_jour::{self, Disponible};
 use crate::{FENETRE, demarrage_auto, ramener};
 
 /// L'identifiant de l'icône de notification.
@@ -172,10 +173,12 @@ pub struct EtatMenu {
     nom: &'static str,
     lignes: Vec<LigneMenu>,
     demarrage_auto: bool,
+    /// La version disponible : la ligne « Voir la mise à jour » n'apparaît qu'avec elle.
+    mise_a_jour: Option<String>,
 }
 
 #[tauri::command]
-pub fn etat_menu(presence: State<'_, Presence>) -> EtatMenu {
+pub fn etat_menu(presence: State<'_, Presence>, disponible: State<'_, Disponible>) -> EtatMenu {
     let lignes = presence
         .lire()
         .lignes()
@@ -194,6 +197,7 @@ pub fn etat_menu(presence: State<'_, Presence>) -> EtatMenu {
         nom: identite::NOM,
         lignes,
         demarrage_auto: demarrage_auto::est_actif(),
+        mise_a_jour: mise_a_jour::mise_a_jour_disponible(disponible).map(|m| m.version),
     }
 }
 
@@ -203,6 +207,7 @@ pub fn etat_menu(presence: State<'_, Presence>) -> EtatMenu {
 pub enum ActionMenu {
     Ouvrir,
     Reglages,
+    MiseAJour,
     Quitter,
 }
 
@@ -216,6 +221,9 @@ pub fn action_menu(app: AppHandle, action: ActionMenu) {
         ActionMenu::Reglages => {
             ramener(&app);
             let _ = app.emit_to(FENETRE, "aller-a", "reglages");
+        }
+        ActionMenu::MiseAJour => {
+            let _ = mise_a_jour::ouvrir_fenetre(&app);
         }
         ActionMenu::Quitter => app.exit(0),
     }

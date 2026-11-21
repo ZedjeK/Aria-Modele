@@ -14,6 +14,10 @@ fn main() {
         "infos_installation",
         "installer",
         "lancer_sans_installer",
+        "mise_a_jour_disponible",
+        "ouvrir_mise_a_jour",
+        "voir_notes",
+        "installer_mise_a_jour",
     ]);
     let attributs = tauri_build::Attributes::new().app_manifest(commandes);
     if let Err(erreur) = tauri_build::try_build(attributs) {

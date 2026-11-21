@@ -16,7 +16,7 @@
     try {
       etat = await etatMenu();
     } catch (e) {
-      etat = { nom: etat?.nom ?? 'Aria', lignes: [ligneErreur(messageErreur(e))], demarrageAuto: false };
+      etat = { nom: etat?.nom ?? 'Aria', lignes: [ligneErreur(messageErreur(e))], demarrageAuto: false, miseAJour: null };
     }
   }
 
@@ -61,6 +61,9 @@
         <span class="point" style:background={couleurTon(ligne.ton)}></span>{ligne.texte}
       </p>
     {/each}
+    {#if etat.miseAJour}
+      <button class="ligne" role="menuitem" onclick={() => agir('miseAJour')}>Voir la mise à jour</button>
+    {/if}
     <div class="separation"></div>
 
     <p class="titre">Aller à</p>
