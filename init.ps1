@@ -307,7 +307,7 @@ Write-Host ""
 Write-Host "Aria $Nom est prête." -ForegroundColor Cyan
 Write-Host "La suite :"
 Write-Host "  1. Relis ce qui a changé : git status"
-Write-Host "  2. Remplace docs\logo.png, docs\logo.svg et l'icône de la stack."
+Write-Host "  2. Dessine l'élément orange dans docs\logo.svg, puis lance .\tools\icone.ps1 (icône Windows, docs\logo.png, logo du menu)."
 Write-Host "  3. Complète les lignes « à renseigner » de la fiche projet, dans docs\FICHE.md."
 Write-Host "  4. Fais le premier commit sur une branche init/$($Nom.ToLowerInvariant()) et amène-le par une PR."
 Write-Host "  5. Après le premier passage vert de la CI sur main : .\tools\proteger-depot.ps1"

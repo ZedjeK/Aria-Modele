@@ -8,7 +8,7 @@ qu'au dépôt modèle : `init.ps1` les supprime dans l'appli créée.
 
 | Dossier | Stack | État |
 | --- | --- | --- |
-| `rust-tauri/` | Rust, Tauri 2, Svelte 5 en TypeScript | socle posé : dossier de données, réglages, journal, sauvegardes, fond animé, instance unique, icône de notification et son menu, démarrage automatique, secrets (DPAPI), installation par l'exe, mises à jour intégrées (release GitHub, taille et SHA-256 vérifiées), interface sur le modèle d'Aria Studio et d'Aria Cockpit (fenêtre sans cadre, menu latéral par familles, état en direct, bandeau de mise à jour, dialogues posés sur la page), exe en un seul fichier (WebView2 de Windows, données de WebView2 dans le dossier de l'appli) ; contrat complet |
+| `rust-tauri/` | Rust, Tauri 2, Svelte 5 en TypeScript | socle posé : dossier de données, réglages, journal, sauvegardes, fond animé, instance unique, icône de notification et son menu, démarrage automatique, secrets (DPAPI), installation par l'exe, mises à jour intégrées (release GitHub, taille et SHA-256 vérifiées), interface sur le modèle d'Aria Studio et d'Aria Cockpit (logo et icône Windows de la famille tirés de `docs/logo.svg` par `tools/icone.ps1`, fenêtre sans cadre, menu latéral par familles, état en direct, bandeau de mise à jour, dialogues posés sur la page), exe en un seul fichier (WebView2 de Windows, données de WebView2 dans le dossier de l'appli) ; contrat complet |
 
 ## Ce qu'un squelette doit fournir
 
@@ -19,6 +19,7 @@ Trois scripts, toujours au même endroit, pour que la CI soit la même quelle qu
 | `build.ps1` | compile l'exe portable et pose tout ce qui doit être livré dans `.work\sortie\` |
 | `tools\tester.ps1` | lance les tests de la stack ; code de retour non nul en cas d'échec |
 | `tools\version.ps1` | affiche la version sur sa dernière ligne, sans le « v » (`1.2.3`) |
+| `tools\icone.ps1` | facultatif : tire l'icône Windows et `docs\logo.png` de `docs\logo.svg` ; `tester-squelettes.ps1` le lance avant `build.ps1` |
 
 Et un dossier `_socle\`, que `init.ps1` lit puis supprime. Chaque fichier remplace la ligne `<<STACK:nom>>` du même
 nom dans le socle ; un fichier absent supprime simplement la ligne.
