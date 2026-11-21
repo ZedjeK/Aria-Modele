@@ -73,15 +73,13 @@ function Get-Rendu([int]$taille) {
         "--window-size=$taille,$taille", "--screenshot=$image", $adresse
     )
     $journal = Join-Path $travail "navigateur-$taille.txt"
-    # Le navigateur écrit ses messages sur la sortie d'erreur : sous Windows PowerShell 5.1, avec « Stop », la
-    # moindre ligne arrêterait le script. Le code de sortie et l'image produite font foi.
-    $avant = $ErrorActionPreference
-    $ErrorActionPreference = 'Continue'
-    & $Navigateur @arguments *> $journal
-    $code = $LASTEXITCODE
-    $ErrorActionPreference = $avant
-    if ($code -ne 0 -or -not (Test-Path -LiteralPath $image)) {
-        throw "Le rendu en $taille px a échoué (code $code) ; voir $journal."
+    # Edge est une appli fenêtrée : l'opérateur & ne l'attendrait pas. Start-Process -Wait l'attend ; ses messages
+    # vont dans le journal. Un argument qui contient une espace est mis entre guillemets.
+    $ligne = ($arguments | ForEach-Object { if ($_ -match '\s') { '"' + $_ + '"' } else { $_ } }) -join ' '
+    $processus = Start-Process -FilePath $Navigateur -ArgumentList $ligne -Wait -PassThru -NoNewWindow `
+        -RedirectStandardError $journal -RedirectStandardOutput "$journal.sortie"
+    if (-not (Test-Path -LiteralPath $image)) {
+        throw "Le rendu en $taille px a échoué (code $($processus.ExitCode)) ; voir $journal."
     }
     $octets = [IO.File]::ReadAllBytes($image)
     $lu = Get-TaillePng $octets
