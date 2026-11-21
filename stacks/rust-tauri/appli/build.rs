@@ -11,6 +11,9 @@ fn main() {
         "etat_menu",
         "action_menu",
         "taille_menu",
+        "infos_installation",
+        "installer",
+        "lancer_sans_installer",
     ]);
     let attributs = tauri_build::Attributes::new().app_manifest(commandes);
     if let Err(erreur) = tauri_build::try_build(attributs) {

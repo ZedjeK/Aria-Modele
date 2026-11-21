@@ -162,6 +162,15 @@
         </div>
       {:else if reglages}
         <div class="pile">
+          {#if identite?.installable}
+            <Panneau titre="Installation">
+              <label class="ligne">
+                <input type="checkbox" bind:checked={reglages.proposerInstallation} onchange={enregistrer} />
+                Proposer l'installation quand l'exe est lancé hors de son dossier
+              </label>
+            </Panneau>
+          {/if}
+
           {#if identite?.enFond}
             <Panneau titre="Démarrage">
               <label class="ligne">

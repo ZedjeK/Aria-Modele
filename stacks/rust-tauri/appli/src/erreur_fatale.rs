@@ -1,4 +1,5 @@
-//! Quand l'appli ne peut pas démarrer, il n'y a pas encore de fenêtre : une boîte de dialogue de Windows le dit.
+//! Les boîtes de dialogue de Windows, pour ce qui doit être dit hors de toute fenêtre de l'appli : l'appli ne peut
+//! pas démarrer, ou un avertissement au moment de se relancer.
 
 use aria_coeur::identite;
 
@@ -21,4 +22,25 @@ pub fn afficher(message: &str) {
 #[cfg(not(windows))]
 pub fn afficher(message: &str) {
     eprintln!("{} n'a pas pu démarrer : {message}", identite::NOM);
+}
+
+/// Prévient d'un problème qui n'empêche pas de continuer (un raccourci non créé, par exemple).
+#[cfg(windows)]
+pub fn avertir(message: &str) {
+    use windows::Win32::UI::WindowsAndMessaging::{MB_ICONWARNING, MB_OK, MessageBoxW};
+    use windows::core::HSTRING;
+
+    let titre = HSTRING::from(identite::NOM);
+    let texte = HSTRING::from(message);
+    // SAFETY : comme pour `afficher`.
+    #[allow(unsafe_code)]
+    unsafe {
+        MessageBoxW(None, &texte, &titre, MB_OK | MB_ICONWARNING);
+    }
+}
+
+/// Hors de Windows : sur la sortie d'erreur.
+#[cfg(not(windows))]
+pub fn avertir(message: &str) {
+    eprintln!("{} : {message}", identite::NOM);
 }
