@@ -1,6 +1,8 @@
-// Les commandes Rust que l'interface peut appeler (appli\src\commandes.rs), avec leurs types.
-// Une commande ajoutée ici doit aussi l'être dans appli\build.rs et appli\capabilities\principale.json.
+// Les commandes Rust que l'interface peut appeler (appli\src\commandes.rs, demarrage_auto.rs, icone.rs), avec
+// leurs types. Une commande ajoutée ici doit aussi l'être dans appli\build.rs et dans la capacité de la fenêtre
+// qui l'appelle (appli\capabilities\principale.json ou menu.json).
 import { invoke } from '@tauri-apps/api/core';
+import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 
 export type Vitesse = 'lente' | 'normale' | 'rapide';
 
@@ -41,6 +43,41 @@ export const enregistrerReglages = (reglages: Reglages): Promise<Reglages> =>
   invoke<Reglages>('enregistrer_reglages', { reglages });
 
 export const mesurerDisque = (): Promise<Espace> => invoke<Espace>('mesurer_disque');
+
+/** « Démarrer avec Windows », relu dans le registre à chaque appel. */
+export const lireDemarrageAuto = (): Promise<boolean> => invoke<boolean>('lire_demarrage_auto');
+
+/** Coche ou décoche « Démarrer avec Windows » ; renvoie l'état relu ensuite. */
+export const reglerDemarrageAuto = (actif: boolean): Promise<boolean> =>
+  invoke<boolean>('regler_demarrage_auto', { actif });
+
+/** Couleur du point d'une ligne « État » du menu de l'icône. */
+export type Ton = 'repos' | 'actif' | 'attention' | 'information';
+
+export interface LigneMenu {
+  ton: Ton;
+  texte: string;
+}
+
+export interface EtatMenu {
+  nom: string;
+  lignes: LigneMenu[];
+  demarrageAuto: boolean;
+}
+
+export type ActionMenu = 'ouvrir' | 'reglages' | 'quitter';
+
+export const etatMenu = (): Promise<EtatMenu> => invoke<EtatMenu>('etat_menu');
+
+/** Le menu se range, puis l'action se fait. */
+export const actionMenu = (action: ActionMenu): Promise<void> => invoke<void>('action_menu', { action });
+
+/** La fenêtre du menu prend la hauteur de son contenu. */
+export const tailleMenu = (hauteur: number): Promise<void> => invoke<void>('taille_menu', { hauteur });
+
+/** Événements envoyés par l'appli : « etat-icone » (le menu relit son état), « aller-a » (page à montrer). */
+export const ecouter = <T>(evenement: 'etat-icone' | 'aller-a', rappel: (charge: T) => void): Promise<UnlistenFn> =>
+  listen<T>(evenement, (e) => rappel(e.payload));
 
 /** Le message d'une erreur renvoyée par une commande Rust (du texte) ou par le navigateur. */
 export function messageErreur(erreur: unknown): string {

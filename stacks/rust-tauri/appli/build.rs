@@ -6,6 +6,11 @@ fn main() {
         "lire_reglages",
         "enregistrer_reglages",
         "mesurer_disque",
+        "lire_demarrage_auto",
+        "regler_demarrage_auto",
+        "etat_menu",
+        "action_menu",
+        "taille_menu",
     ]);
     let attributs = tauri_build::Attributes::new().app_manifest(commandes);
     if let Err(erreur) = tauri_build::try_build(attributs) {

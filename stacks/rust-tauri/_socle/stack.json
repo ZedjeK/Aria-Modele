@@ -1,1 +1,1 @@
-{ "nom": "Rust, Tauri 2, Svelte 5 (TypeScript)", "runsOn": "windows-latest", "nonFournis": ["installation", "demarrageAuto", "misesAJour"] }
+{ "nom": "Rust, Tauri 2, Svelte 5 (TypeScript)", "runsOn": "windows-latest", "nonFournis": ["installation", "misesAJour"] }

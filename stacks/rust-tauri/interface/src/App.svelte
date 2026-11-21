@@ -5,11 +5,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import {
+    ecouter,
     enregistrerReglages,
     identite as lireIdentite,
+    lireDemarrageAuto,
     lireReglages,
     mesurerDisque,
     messageErreur,
+    reglerDemarrageAuto,
     type Identite,
     type Reglages,
   } from './lib/api';
@@ -26,12 +29,14 @@
     { id: 'apercu', titre: 'Aperçu' },
     { id: 'reglages', titre: 'Réglages' },
   ];
-  const commentaires: Record<string, string> = {
-    apercu: "Exemple à remplacer : une action de l'appli et ce qu'elle produit. Rien n'est modifié sans ton accord.",
-    reglages: 'Chaque changement est enregistré tout de suite dans reglages.json, dans le dossier de données.',
-  };
 
   let identite = $state<Identite | null>(null);
+  const commentaires: Record<string, string> = $derived({
+    apercu: "Exemple à remplacer : une action de l'appli et ce qu'elle produit. Rien n'est modifié sans ton accord.",
+    reglages: identite?.enFond
+      ? 'Chaque changement est enregistré tout de suite : dans reglages.json, et dans Windows pour le démarrage.'
+      : 'Chaque changement est enregistré tout de suite dans reglages.json, dans le dossier de données.',
+  });
   let reglages = $state<Reglages | null>(null);
   let onglet = $state('apercu');
   let fraction = $state<number | null>(null);
@@ -39,6 +44,7 @@
   let mesureEnCours = $state(false);
   let etat = $state('');
   let erreur = $state(false);
+  let demarrageAuto = $state(false);
 
   const nomCourt = $derived(identite?.nom.replace(/^Aria\s+/, '') ?? '');
 
@@ -47,13 +53,41 @@
     erreur = estErreur;
   }
 
-  onMount(async () => {
-    try {
-      [identite, reglages] = await Promise.all([lireIdentite(), lireReglages()]);
-    } catch (e) {
-      signaler(`Démarrage incomplet : ${messageErreur(e)}`, true);
-    }
+  onMount(() => {
+    void (async () => {
+      try {
+        [identite, reglages] = await Promise.all([lireIdentite(), lireReglages()]);
+        await relireDemarrageAuto();
+      } catch (e) {
+        signaler(`Démarrage incomplet : ${messageErreur(e)}`, true);
+      }
+    })();
+    // « Démarrer avec Windows » se change aussi dans Windows et dans le menu de l'icône : relu au retour.
+    const auRetour = () => void relireDemarrageAuto();
+    window.addEventListener('focus', auRetour);
+    // « Réglages » dans le menu de l'icône.
+    const arret = ecouter<string>('aller-a', (page) => {
+      if (page === 'reglages') onglet = 'reglages';
+    });
+    return () => {
+      window.removeEventListener('focus', auRetour);
+      void arret.then((f) => f());
+    };
   });
+
+  async function relireDemarrageAuto() {
+    if (identite?.enFond) demarrageAuto = await lireDemarrageAuto();
+  }
+
+  async function changerDemarrageAuto() {
+    try {
+      demarrageAuto = await reglerDemarrageAuto(demarrageAuto);
+      signaler(demarrageAuto ? 'Démarrage avec Windows activé.' : 'Démarrage avec Windows désactivé.');
+    } catch (e) {
+      signaler(messageErreur(e), true);
+      await relireDemarrageAuto();
+    }
+  }
 
   async function mesurer() {
     mesureEnCours = true;
@@ -128,6 +162,15 @@
         </div>
       {:else if reglages}
         <div class="pile">
+          {#if identite?.enFond}
+            <Panneau titre="Démarrage">
+              <label class="ligne">
+                <input type="checkbox" bind:checked={demarrageAuto} onchange={changerDemarrageAuto} />
+                Démarrer avec Windows (dans l'icône de notification, sans ouvrir la fenêtre)
+              </label>
+            </Panneau>
+          {/if}
+
           <Panneau titre="Fond animé">
             <label class="ligne">
               <input type="checkbox" bind:checked={reglages.fond.actif} onchange={enregistrer} />

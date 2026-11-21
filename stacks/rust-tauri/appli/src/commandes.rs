@@ -5,10 +5,10 @@
 
 use aria_coeur::{Reglages, identite, journal};
 use serde::Serialize;
-use tauri::State;
+use tauri::{AppHandle, State};
 
-use crate::Etat;
 use crate::disque::{self, Espace};
+use crate::{Etat, icone};
 
 /// Ce que l'interface affiche de l'appli.
 #[derive(Debug, Serialize)]
@@ -50,10 +50,14 @@ pub fn enregistrer_reglages(etat: State<'_, Etat>, reglages: Reglages) -> Result
     Ok(reglages)
 }
 
-/// Exemple d'action à remplacer : la place sur le disque du dossier de données. Lecture seule.
+/// Exemple d'action à remplacer : la place sur le disque du dossier de données. Lecture seule. Pendant l'action,
+/// l'icône de notification porte la pastille cyan (l'appli agit).
 #[tauri::command]
-pub fn mesurer_disque(etat: State<'_, Etat>) -> Result<Espace, String> {
-    let espace = disque::espace(etat.dossier.racine()).map_err(|e| format!("mesure impossible : {e}"))?;
+pub fn mesurer_disque(app: AppHandle, etat: State<'_, Etat>) -> Result<Espace, String> {
+    icone::changer(&app, |icone| icone.en_cours = Some("mesure du disque".to_owned()));
+    let mesure = disque::espace(etat.dossier.racine());
+    icone::changer(&app, |icone| icone.en_cours = None);
+    let espace = mesure.map_err(|e| format!("mesure impossible : {e}"))?;
     journal::consigner(
         &etat.dossier,
         "mesure",
