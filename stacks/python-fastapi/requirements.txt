@@ -2,7 +2,7 @@
 # Dependabot les monte, sept jours au plus tôt après leur sortie (cooldown de dependabot.yml).
 # Les dépendances de ces paquets (starlette, pydantic...) ne sont pas épinglées ici.
 # Exécution
-fastapi==0.162.5
+fastapi==0.163.0
 uvicorn==0.54.0
 # Tests (TestClient de FastAPI) et construction de l'exe
 httpx==0.28.1
