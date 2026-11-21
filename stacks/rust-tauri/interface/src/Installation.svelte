@@ -72,7 +72,7 @@
       Ne plus me proposer l'installation
     </label>
     <p class="aide">
-      Pris en compte avec « Lancer sans installer ». La proposition se réactive dans les réglages de l'appli.
+      Pris en compte avec « Lancer sans installer ». La proposition se réactive dans les paramètres de l'appli.
     </p>
   </div>
 

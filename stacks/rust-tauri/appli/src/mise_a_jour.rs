@@ -1,6 +1,6 @@
 //! Mise à jour intégrée, côté appli : une requête vers GitHub au lancement (si le réglage le permet), la pastille
-//! bleue et « Voir la mise à jour » quand une version plus récente existe, puis la fenêtre « mise-a-jour » (vue
-//! `MiseAJour.svelte`), qui télécharge, vérifie et installe seulement sur demande.
+//! bleue, le bandeau et « Voir la mise à jour » quand une version plus récente existe, puis le dialogue de la
+//! fenêtre de l'appli (`dialogues/MiseAJour.svelte`), qui télécharge, vérifie et installe seulement sur demande.
 
 use std::path::PathBuf;
 use std::process::Command;
@@ -10,15 +10,11 @@ use std::time::Duration;
 use aria_coeur::mises_a_jour::{self, MiseAJour};
 use aria_coeur::{Dossier, Reglages, identite, journal};
 use serde::Serialize;
-use tauri::window::Color;
-use tauri::{AppHandle, Emitter, Manager, State, Theme, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Emitter, Manager, State};
 use ureq::Agent;
 use ureq::tls::{RootCerts, TlsConfig, TlsProvider};
 
 use crate::{Etat, FENETRE, icone, installation};
-
-/// L'étiquette de la fenêtre, citée par capabilities\mise-a-jour.json.
-pub const FENETRE_MISE_A_JOUR: &str = "mise-a-jour";
 
 /// La mise à jour trouvée au lancement, s'il y en a une.
 #[derive(Default)]
@@ -98,31 +94,10 @@ pub fn mise_a_jour_disponible(disponible: State<'_, Disponible>) -> Option<Infos
     })
 }
 
-/// Ouvre la fenêtre de mise à jour, ou la ramène si elle est déjà ouverte.
-pub fn ouvrir_fenetre(app: &AppHandle) -> tauri::Result<()> {
-    if let Some(fenetre) = app.get_webview_window(FENETRE_MISE_A_JOUR) {
-        let _ = fenetre.unminimize();
-        let _ = fenetre.show();
-        return fenetre.set_focus();
-    }
-    let cache_webview = app.state::<Etat>().cache_webview.clone();
-    WebviewWindowBuilder::new(app, FENETRE_MISE_A_JOUR, WebviewUrl::default())
-        .title(format!("Mettre à jour {}", identite::NOM))
-        .inner_size(600.0, 460.0)
-        .resizable(false)
-        .maximizable(false)
-        .minimizable(false)
-        .center()
-        .theme(Some(Theme::Dark))
-        .background_color(Color(3, 8, 18, 255))
-        .data_directory(cache_webview)
-        .build()?;
-    Ok(())
-}
-
-#[tauri::command]
-pub fn ouvrir_mise_a_jour(app: AppHandle) -> Result<(), String> {
-    ouvrir_fenetre(&app).map_err(|e| e.to_string())
+/// Montre la mise à jour : la fenêtre de l'appli revient au premier plan et ouvre son dialogue.
+pub fn montrer(app: &AppHandle) {
+    crate::ramener(app);
+    let _ = app.emit_to(FENETRE, "aller-a", "mise-a-jour");
 }
 
 /// Ouvre la page de la release dans le navigateur : seulement une page du dépôt de l'appli.

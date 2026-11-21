@@ -3,6 +3,7 @@
 //!
 //! Les erreurs remontent en texte français : l'interface les montre telles quelles. Jamais de secret dedans.
 
+use aria_coeur::journal::Operation;
 use aria_coeur::{Reglages, identite, journal};
 use serde::Serialize;
 use tauri::{AppHandle, State};
@@ -64,4 +65,18 @@ pub fn mesurer_disque(app: AppHandle, etat: State<'_, Etat>) -> Result<Espace, S
         &format!("disque : {} octets libres sur {}", espace.libre, espace.total),
     );
     Ok(espace)
+}
+
+/// Les dernières opérations du journal, la plus récente d'abord.
+#[tauri::command]
+pub fn lire_journal(etat: State<'_, Etat>) -> Vec<Operation> {
+    let mut operations = journal::lire(&etat.dossier);
+    operations.reverse();
+    operations
+}
+
+/// Quitte l'appli, icône de notification comprise.
+#[tauri::command]
+pub fn quitter(app: AppHandle) {
+    app.exit(0);
 }

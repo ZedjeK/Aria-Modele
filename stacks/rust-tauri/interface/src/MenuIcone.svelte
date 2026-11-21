@@ -67,7 +67,7 @@
     <div class="separation"></div>
 
     <p class="titre">Aller à</p>
-    <button class="ligne" role="menuitem" onclick={() => agir('reglages')}>Réglages</button>
+    <button class="ligne" role="menuitem" onclick={() => agir('parametres')}>Paramètres</button>
     <div class="separation"></div>
 
     <button class="ligne case" role="menuitemcheckbox" aria-checked={etat.demarrageAuto} onclick={basculerDemarrage}>

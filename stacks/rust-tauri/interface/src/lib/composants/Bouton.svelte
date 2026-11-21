@@ -12,14 +12,16 @@
     genre?: 'principal' | 'secondaire' | 'discret';
     type?: 'button' | 'submit';
     desactive?: boolean;
+    /** Plus bas et plus étroit : dans un bandeau ou une rangée serrée. */
+    petit?: boolean;
     onclick?: (() => void) | undefined;
     children: Snippet;
   }
 
-  let { genre = 'secondaire', type = 'button', desactive = false, onclick, children }: Props = $props();
+  let { genre = 'secondaire', type = 'button', desactive = false, petit = false, onclick, children }: Props = $props();
 </script>
 
-<button class="bouton {genre}" {type} disabled={desactive} {onclick}><span>{@render children()}</span></button>
+<button class="bouton {genre}" class:petit {type} disabled={desactive} {onclick}><span>{@render children()}</span></button>
 
 <style>
   .bouton {
@@ -49,6 +51,14 @@
 
   .bouton span {
     position: relative;
+  }
+
+  .bouton.petit {
+    min-width: 0;
+    height: 30px;
+    padding: 0 20px;
+    font-size: 11.5px;
+    letter-spacing: 0.1em;
   }
 
   .principal {

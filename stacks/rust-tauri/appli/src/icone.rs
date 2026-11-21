@@ -206,7 +206,7 @@ pub fn etat_menu(presence: State<'_, Presence>, disponible: State<'_, Disponible
 #[serde(rename_all = "camelCase")]
 pub enum ActionMenu {
     Ouvrir,
-    Reglages,
+    Parametres,
     MiseAJour,
     Quitter,
 }
@@ -218,12 +218,12 @@ pub fn action_menu(app: AppHandle, action: ActionMenu) {
     }
     match action {
         ActionMenu::Ouvrir => ramener(&app),
-        ActionMenu::Reglages => {
+        ActionMenu::Parametres => {
             ramener(&app);
-            let _ = app.emit_to(FENETRE, "aller-a", "reglages");
+            let _ = app.emit_to(FENETRE, "aller-a", "parametres");
         }
         ActionMenu::MiseAJour => {
-            let _ = mise_a_jour::ouvrir_fenetre(&app);
+            mise_a_jour::montrer(&app);
         }
         ActionMenu::Quitter => app.exit(0),
     }

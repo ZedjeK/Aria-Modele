@@ -8,7 +8,7 @@ qu'au dépôt modèle : `init.ps1` les supprime dans l'appli créée.
 
 | Dossier | Stack | État |
 | --- | --- | --- |
-| `rust-tauri/` | Rust, Tauri 2, Svelte 5 en TypeScript | socle posé : dossier de données, réglages, journal, sauvegardes, fond animé, instance unique, icône de notification et son menu, démarrage automatique, secrets (DPAPI), installation par l'exe, mises à jour intégrées (release GitHub, taille et SHA-256 vérifiées), exe en un seul fichier (WebView2 de Windows, données de WebView2 dans le dossier de l'appli) ; contrat complet |
+| `rust-tauri/` | Rust, Tauri 2, Svelte 5 en TypeScript | socle posé : dossier de données, réglages, journal, sauvegardes, fond animé, instance unique, icône de notification et son menu, démarrage automatique, secrets (DPAPI), installation par l'exe, mises à jour intégrées (release GitHub, taille et SHA-256 vérifiées), interface sur le modèle d'Aria Studio et d'Aria Cockpit (fenêtre sans cadre, menu latéral par familles, état en direct, bandeau de mise à jour, dialogues posés sur la page), exe en un seul fichier (WebView2 de Windows, données de WebView2 dans le dossier de l'appli) ; contrat complet |
 
 ## Ce qu'un squelette doit fournir
 
