@@ -1,6 +1,6 @@
 // Les commandes Rust que l'interface peut appeler (appli\src\commandes.rs, demarrage_auto.rs, icone.rs), avec
 // leurs types. Une commande ajoutée ici doit aussi l'être dans appli\build.rs et dans la capacité de la fenêtre
-// qui l'appelle (appli\capabilities\principale.json ou menu.json).
+// qui l'appelle (appli\capabilities\principale.json, menu.json ou installation.json).
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 
@@ -74,6 +74,24 @@ export const actionMenu = (action: ActionMenu): Promise<void> => invoke<void>('a
 
 /** La fenêtre du menu prend la hauteur de son contenu. */
 export const tailleMenu = (hauteur: number): Promise<void> => invoke<void>('taille_menu', { hauteur });
+
+export interface InfosInstallation {
+  nom: string;
+  version: string;
+  /** Le dossier programme\ du dossier de données. */
+  dossier: string;
+  versionInstallee: string | null;
+  /** Le raccourci du Bureau qui serait créé ; null si le Bureau est introuvable. */
+  raccourci: string | null;
+}
+
+export const infosInstallation = (): Promise<InfosInstallation> => invoke<InfosInstallation>('infos_installation');
+
+/** Installe, puis l'appli se relance depuis son dossier et ce lancement se ferme : seul un échec revient ici. */
+export const installer = (raccourci: boolean): Promise<void> => invoke<void>('installer', { raccourci });
+
+export const lancerSansInstaller = (nePlusProposer: boolean): Promise<void> =>
+  invoke<void>('lancer_sans_installer', { nePlusProposer });
 
 /** Événements envoyés par l'appli : « etat-icone » (le menu relit son état), « aller-a » (page à montrer). */
 export const ecouter = <T>(evenement: 'etat-icone' | 'aller-a', rappel: (charge: T) => void): Promise<UnlistenFn> =>

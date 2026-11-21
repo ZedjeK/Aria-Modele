@@ -9,8 +9,11 @@ mod demarrage_auto;
 mod disque;
 mod erreur_fatale;
 mod icone;
+mod installation;
 
-use aria_coeur::{Dossier, demarrage, identite, journal};
+use std::path::PathBuf;
+
+use aria_coeur::{Dossier, Reglages, demarrage, identite, journal};
 use tauri::window::Color;
 use tauri::{AppHandle, Manager, RunEvent, Theme, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
@@ -20,6 +23,8 @@ pub const FENETRE: &str = "principale";
 /// Ce que les commandes partagent.
 pub struct Etat {
     pub dossier: Dossier,
+    /// Contrat : WebView2 range ses données dans le dossier de l'appli, jamais dans %LOCALAPPDATA%.
+    pub cache_webview: PathBuf,
 }
 
 fn main() {
@@ -37,10 +42,17 @@ fn lancer() -> Result<(), String> {
         "lancement",
         &format!("{} {}", identite::NOM, identite::VERSION),
     );
-    // Contrat : WebView2 range ses données dans le dossier de l'appli, jamais dans %LOCALAPPDATA%.
-    let cache_webview = dossier.cache_webview();
+    // Restes d'un remplacement précédent, maintenant que l'ancienne version est arrêtée.
+    aria_coeur::installation::nettoyer(&dossier.programme());
+    let arguments: Vec<String> = std::env::args().skip(1).collect();
     // Lancé à l'ouverture de session : l'icône seule, la fenêtre reste rangée jusqu'à ce qu'on l'ouvre.
-    let silencieux = identite::EN_FOND && demarrage::est_silencieux(std::env::args().skip(1));
+    let silencieux = identite::EN_FOND && demarrage::est_silencieux(&arguments);
+    // Exe lancé hors de programme\ (zip décompressé) : proposition de s'installer, avant la fenêtre de l'appli.
+    let proposer = !silencieux
+        && std::env::current_exe().is_ok_and(|exe| {
+            aria_coeur::installation::doit_proposer(&exe, &dossier, &Reglages::charger(&dossier), &arguments)
+        });
+    let cache_webview = dossier.cache_webview();
 
     tauri::Builder::default()
         // Toujours le premier greffon : relancer l'exe ramène la fenêtre existante au lieu d'en ouvrir une autre.
@@ -50,7 +62,10 @@ fn lancer() -> Result<(), String> {
                 ramener(app);
             }
         }))
-        .manage(Etat { dossier })
+        .manage(Etat {
+            dossier,
+            cache_webview,
+        })
         .manage(icone::Presence::default())
         .invoke_handler(tauri::generate_handler![
             commandes::identite,
@@ -62,29 +77,15 @@ fn lancer() -> Result<(), String> {
             icone::etat_menu,
             icone::action_menu,
             icone::taille_menu,
+            installation::infos_installation,
+            installation::installer,
+            installation::lancer_sans_installer,
         ])
         .setup(move |app| {
-            let fenetre = WebviewWindowBuilder::new(app, FENETRE, WebviewUrl::default())
-                .title(identite::NOM)
-                .inner_size(1100.0, 740.0)
-                .min_inner_size(900.0, 600.0)
-                .center()
-                .visible(!silencieux)
-                .theme(Some(Theme::Dark))
-                // La couleur du fond de l'appli : pas d'éclair blanc avant le premier affichage.
-                .background_color(Color(3, 8, 18, 255))
-                .data_directory(cache_webview.clone())
-                .build()?;
-            if identite::EN_FOND {
-                icone::creer(app.handle(), cache_webview)?;
-                // Fermer la fenêtre ne suffit pas à arrêter l'appli : elle reste dans son icône.
-                let rangee = fenetre.clone();
-                fenetre.on_window_event(move |evenement| {
-                    if let WindowEvent::CloseRequested { api, .. } = evenement {
-                        api.prevent_close();
-                        let _ = rangee.hide();
-                    }
-                });
+            if proposer {
+                installation::ouvrir_fenetre(app.handle())?;
+            } else {
+                ouvrir_principale(app.handle(), !silencieux)?;
             }
             Ok(())
         })
@@ -98,9 +99,41 @@ fn lancer() -> Result<(), String> {
     Ok(())
 }
 
-/// Ramène la fenêtre au premier plan, même réduite ou cachée.
+/// Ouvre la fenêtre de l'appli et, pour une appli qui sert en arrière-plan, son icône de notification.
+pub fn ouvrir_principale(app: &AppHandle, visible: bool) -> tauri::Result<()> {
+    let cache_webview = app.state::<Etat>().cache_webview.clone();
+    let fenetre = WebviewWindowBuilder::new(app, FENETRE, WebviewUrl::default())
+        .title(identite::NOM)
+        .inner_size(1100.0, 740.0)
+        .min_inner_size(900.0, 600.0)
+        .center()
+        .visible(visible)
+        .theme(Some(Theme::Dark))
+        // La couleur du fond de l'appli : pas d'éclair blanc avant le premier affichage.
+        .background_color(Color(3, 8, 18, 255))
+        .data_directory(cache_webview.clone())
+        .build()?;
+    if identite::EN_FOND {
+        icone::creer(app, cache_webview)?;
+        // Fermer la fenêtre ne suffit pas à arrêter l'appli : elle reste dans son icône.
+        let rangee = fenetre.clone();
+        fenetre.on_window_event(move |evenement| {
+            if let WindowEvent::CloseRequested { api, .. } = evenement {
+                api.prevent_close();
+                let _ = rangee.hide();
+            }
+        });
+    }
+    Ok(())
+}
+
+/// Ramène au premier plan la fenêtre ouverte (celle de l'appli, ou la proposition d'installation), même réduite
+/// ou cachée.
 fn ramener(app: &AppHandle) {
-    if let Some(fenetre) = app.get_webview_window(FENETRE) {
+    let fenetre = app
+        .get_webview_window(FENETRE)
+        .or_else(|| app.get_webview_window(installation::FENETRE_INSTALLATION));
+    if let Some(fenetre) = fenetre {
         // Chaque étape est indépendante : si l'une échoue, les autres ramènent quand même la fenêtre.
         let _ = fenetre.unminimize();
         let _ = fenetre.show();
