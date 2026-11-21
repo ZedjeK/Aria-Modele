@@ -6,7 +6,7 @@ Transforme ce dépôt modèle en appli Aria, puis se supprime.
 À lancer une seule fois, dans le dossier du clone :
 
     .\init.ps1
-    .\init.ps1 -Nom Atlas -Stack go-wails -Promesse "..." -ElementOrange "une boussole" -DemarrageAuto non -Installation oui -Port 8123
+    .\init.ps1 -Nom Atlas -Stack rust-tauri -Promesse "..." -ElementOrange "une boussole" -DemarrageAuto non -Installation oui -Port 8123
 
 Le script choisit la stack, remplit le nom et la promesse, fusionne les blocs propres à la stack, lance les tests,
 puis se supprime. Il ne fait aucun git add, aucun commit, aucun push et aucun appel à GitHub.

@@ -10,12 +10,12 @@ Pour chaque dossier de stacks\ qui a un _socle\stack.json (ou seulement celui do
   2. build.ps1 compile l'exe ; tools\empaqueter.ps1 en fait le zip et son empreinte ;
   3. le zip contient l'exe, BUILDINFO.txt et LICENCES-TIERS.txt ; tools\version.ps1 répond X.Y.Z.
 
-Il faut les outils de chaque stack (le SDK .NET 10 pour dotnet-wpf). Tous les squelettes tournent ; le code de
+Il faut les outils de chaque stack (Rust et Node.js pour rust-tauri). Tous les squelettes tournent ; le code de
 retour est non nul si un seul contrôle est manqué.
 
     .\tools\tester-squelettes.ps1
-    .\tools\tester-squelettes.ps1 -Stack dotnet-wpf
-    .\tools\tester-squelettes.ps1 -Stack dotnet-wpf -Garder    garde l'appli jetable pour la lancer à la main
+    .\tools\tester-squelettes.ps1 -Stack rust-tauri
+    .\tools\tester-squelettes.ps1 -Stack rust-tauri -Garder    garde l'appli jetable pour la lancer à la main
 #>
 [CmdletBinding()]
 param(

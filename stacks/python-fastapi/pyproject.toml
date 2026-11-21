@@ -1,9 +1,0 @@
-[project]
-name = "aria-{{NOM_MIN}}"
-version = "0.1.0"
-description = "{{PROMESSE}}"
-requires-python = ">=3.11"
-
-[tool.pytest.ini_options]
-pythonpath = ["."]
-testpaths = ["tests"]

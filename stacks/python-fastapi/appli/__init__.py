@@ -1,1 +1,0 @@
-"""Aria {{NOM}} : {{PROMESSE}}"""

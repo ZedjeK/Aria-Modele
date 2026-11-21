@@ -8,10 +8,6 @@ qu'au dépôt modèle : `init.ps1` les supprime dans l'appli créée.
 
 | Dossier | Stack | État |
 | --- | --- | --- |
-| `go-wails/` | Go, Wails v3, Svelte 5 | à écrire |
-| `dotnet-wpf/` | C# .NET 10, WPF, WPF-UI | socle et contrat posés : dossier de données, réglages, journal, secrets DPAPI, démarrage automatique, icône de notification, installation par l'exe, mises à jour intégrées, habillage |
-| `python-fastapi/` | Python 3.11, FastAPI, exe PyInstaller | socle posé : serveur local gardé par un jeton, dossier de données, réglages, journal, sauvegardes, coffre DPAPI, fond animé, instance unique, exe autonome, mises à jour intégrées (l'exe portable se remplace là où il tourne) ; le contrat vient ensuite (installation, démarrage automatique, icône de notification) |
-| `extension-mv3/` | exe Electron et son extension Manifest V3 | à écrire |
 | `rust-tauri/` | Rust, Tauri 2, Svelte 5 en TypeScript | socle posé : dossier de données, réglages, journal, sauvegardes, fond animé, instance unique, icône de notification et son menu, démarrage automatique, secrets (DPAPI), installation par l'exe, mises à jour intégrées (release GitHub, taille et SHA-256 vérifiées), exe en un seul fichier (WebView2 de Windows, données de WebView2 dans le dossier de l'appli) ; contrat complet |
 
 ## Ce qu'un squelette doit fournir
@@ -35,7 +31,7 @@ nom dans le socle ; un fichier absent supprime simplement la ligne.
 | `outils.txt` | `tests.yml` et `release.yml` (étapes d'installation des outils, indentées de six espaces) ; chaque action y garde le SHA épinglé dans `squelettes.yml`, que Dependabot tient à jour (`tools\tester.ps1` refuse un écart) |
 | `codeql.txt` | `codeql.yml` (une entrée de matrice, indentée de dix espaces) |
 | `licences.txt` | `LICENCES-TIERS.txt` (un bloc par composant que l'exe de la stack embarque : polices, runtime, bibliothèques ; ce qui dépend du build reste « à renseigner », et `verifier-release.ps1` le fait compléter avant chaque version) |
-| `stack.json` | réglages lus par `init.ps1` : `{ "nom": "Go + Wails", "runsOn": "windows-latest" }`, et `nonFournis` si le squelette ne tient pas encore tout le contrat |
+| `stack.json` | réglages lus par `init.ps1` : `{ "nom": "Rust, Tauri 2, Svelte 5 (TypeScript)", "runsOn": "windows-latest" }`, et `nonFournis` si le squelette ne tient pas encore tout le contrat |
 
 `nonFournis` liste ce que le squelette ne tient pas encore : `installation`, `demarrageAuto` (démarrage automatique et
 icône de notification), `misesAJour`. `init.ps1` refuse de créer une appli qui demande les deux premiers, et prévient pour
