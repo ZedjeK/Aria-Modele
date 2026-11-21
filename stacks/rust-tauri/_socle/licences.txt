@@ -1,0 +1,45 @@
+Polices
+-------
+
+Space Grotesk : Medium, SemiBold et Bold (latin), embarquées dans l'exe
+  Version      : paquet npm @fontsource/space-grotesk 5.3.0 (interface\package.json)
+  Source       : https://github.com/floriankarsten/space-grotesk, via https://fontsource.org
+  Licence      : SIL Open Font License 1.1
+  Vérification : à renseigner
+
+IBM Plex Mono : Regular et Bold (latin), embarquées dans l'exe
+  Version      : paquet npm @fontsource/ibm-plex-mono 5.3.0 (interface\package.json)
+  Source       : https://github.com/IBM/plex, via https://fontsource.org
+  Licence      : SIL Open Font License 1.1
+  Vérification : à renseigner
+
+Runtime et bibliothèques
+------------------------
+
+WebView2 : non embarqué. L'exe utilise le moteur WebView2 installé dans Windows.
+  Source       : https://developer.microsoft.com/microsoft-edge/webview2
+  Licence      : celle de Microsoft Edge WebView2, installé avec Windows
+
+Bibliothèque standard de Rust, compilée dans l'exe
+  Version      : à renseigner : celle de rust-toolchain.toml au moment de la version
+  Source       : https://github.com/rust-lang/rust
+  Licence      : MIT ou Apache-2.0
+  Vérification : à renseigner
+
+Tauri (crates tauri, tauri-runtime, tauri-utils, wry, tao…), compilé dans l'exe
+  Version      : à renseigner : celle de Cargo.lock au moment de la version
+  Source       : https://github.com/tauri-apps/tauri
+  Licence      : MIT ou Apache-2.0
+  Vérification : à renseigner
+
+Autres crates compilées dans l'exe (Cargo.lock)
+  Version      : à renseigner : un bloc par crate, d'après Cargo.lock du build (cargo about peut les lister)
+  Source       : à renseigner
+  Licence      : à renseigner
+  Vérification : à renseigner
+
+Paquets npm embarqués dans l'interface (@tauri-apps/api, Svelte)
+  Version      : à renseigner : celles de interface\package-lock.json au moment de la version
+  Source       : https://github.com/tauri-apps/tauri et https://github.com/sveltejs/svelte
+  Licence      : MIT ou Apache-2.0 (@tauri-apps/api), MIT (Svelte)
+  Vérification : à renseigner

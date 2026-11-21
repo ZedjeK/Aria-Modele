@@ -12,6 +12,7 @@ qu'au dépôt modèle : `init.ps1` les supprime dans l'appli créée.
 | `dotnet-wpf/` | C# .NET 10, WPF, WPF-UI | socle et contrat posés : dossier de données, réglages, journal, secrets DPAPI, démarrage automatique, icône de notification, installation par l'exe, mises à jour intégrées, habillage |
 | `python-fastapi/` | Python 3.11, FastAPI, exe PyInstaller | socle posé : serveur local gardé par un jeton, dossier de données, réglages, journal, sauvegardes, coffre DPAPI, fond animé, instance unique, exe autonome, mises à jour intégrées (l'exe portable se remplace là où il tourne) ; le contrat vient ensuite (installation, démarrage automatique, icône de notification) |
 | `extension-mv3/` | exe Electron et son extension Manifest V3 | à écrire |
+| `rust-tauri/` | Rust, Tauri 2, Svelte 5 en TypeScript | socle posé : dossier de données, réglages, journal, sauvegardes, fond animé, instance unique, exe en un seul fichier (WebView2 de Windows, données de WebView2 dans le dossier de l'appli) ; le contrat vient ensuite (démarrage automatique, icône de notification, secrets, installation, mises à jour) |
 
 ## Ce qu'un squelette doit fournir
 

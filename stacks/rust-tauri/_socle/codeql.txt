@@ -1,0 +1,5 @@
+          # Rust et TypeScript relus sans compiler.
+          - language: rust
+            build-mode: none
+          - language: javascript-typescript
+            build-mode: none
