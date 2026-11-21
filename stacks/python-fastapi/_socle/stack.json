@@ -1,1 +1,0 @@
-{ "nom": "Python + FastAPI", "runsOn": "windows-latest", "nonFournis": ["installation", "demarrageAuto"] }

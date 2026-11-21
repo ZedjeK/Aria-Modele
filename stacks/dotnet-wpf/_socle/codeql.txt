@@ -1,3 +1,0 @@
-          # C# relu sans compiler : CodeQL tourne sous Linux, où WPF ne se compile pas.
-          - language: csharp
-            build-mode: none

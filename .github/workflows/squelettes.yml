@@ -23,7 +23,7 @@ defaults:
 jobs:
   squelettes:
     runs-on: windows-latest
-    # La stack Rust compile Tauri deux fois (tests, puis exe optimisé) : bien plus long que les autres.
+    # La stack Rust compile Tauri deux fois (tests, puis exe optimisé).
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -31,17 +31,6 @@ jobs:
           persist-credentials: false
 
       # Outils de toutes les stacks déjà écrites
-      - uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
-        with:
-          dotnet-version: 10.0.x
-
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
-        with:
-          python-version: "3.11"
-
-      - name: Dépendances de la stack Python
-        run: python -m pip install -r stacks/python-fastapi/requirements.txt
-
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "24"
@@ -57,7 +46,4 @@ jobs:
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Squelettes
-        env:
-          DOTNET_CLI_TELEMETRY_OPTOUT: "1"
-          DOTNET_NOLOGO: "1"
         run: ./tools/tester-squelettes.ps1
