@@ -1,11 +1,15 @@
 {
   "identifier": "principale",
-  "description": "La fenêtre principale : les commandes de l'appli, une par une, et rien d'autre.",
+  "description": "La fenêtre principale : les commandes de l'appli, une par une, et l'écoute des événements de l'appli.",
   "windows": ["principale"],
   "permissions": [
     "allow-identite",
     "allow-lire-reglages",
     "allow-enregistrer-reglages",
-    "allow-mesurer-disque"
+    "allow-mesurer-disque",
+    "allow-lire-demarrage-auto",
+    "allow-regler-demarrage-auto",
+    "core:event:allow-listen",
+    "core:event:allow-unlisten"
   ]
 }

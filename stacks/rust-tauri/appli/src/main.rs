@@ -5,12 +5,14 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod commandes;
+mod demarrage_auto;
 mod disque;
 mod erreur_fatale;
+mod icone;
 
-use aria_coeur::{Dossier, identite, journal};
+use aria_coeur::{Dossier, demarrage, identite, journal};
 use tauri::window::Color;
-use tauri::{AppHandle, Manager, RunEvent, Theme, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Manager, RunEvent, Theme, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 
 /// L'étiquette de la fenêtre principale, citée par capabilities\principale.json.
 pub const FENETRE: &str = "principale";
@@ -37,30 +39,53 @@ fn lancer() -> Result<(), String> {
     );
     // Contrat : WebView2 range ses données dans le dossier de l'appli, jamais dans %LOCALAPPDATA%.
     let cache_webview = dossier.cache_webview();
+    // Lancé à l'ouverture de session : l'icône seule, la fenêtre reste rangée jusqu'à ce qu'on l'ouvre.
+    let silencieux = identite::EN_FOND && demarrage::est_silencieux(std::env::args().skip(1));
 
     tauri::Builder::default()
         // Toujours le premier greffon : relancer l'exe ramène la fenêtre existante au lieu d'en ouvrir une autre.
-        .plugin(tauri_plugin_single_instance::init(|app, _arguments, _dossier| {
-            ramener(app);
+        // Un second lancement silencieux (ouverture de session) ne fait pas surgir la fenêtre.
+        .plugin(tauri_plugin_single_instance::init(|app, arguments, _dossier| {
+            if !demarrage::est_silencieux(arguments.iter().skip(1)) {
+                ramener(app);
+            }
         }))
         .manage(Etat { dossier })
+        .manage(icone::Presence::default())
         .invoke_handler(tauri::generate_handler![
             commandes::identite,
             commandes::lire_reglages,
             commandes::enregistrer_reglages,
             commandes::mesurer_disque,
+            demarrage_auto::lire_demarrage_auto,
+            demarrage_auto::regler_demarrage_auto,
+            icone::etat_menu,
+            icone::action_menu,
+            icone::taille_menu,
         ])
         .setup(move |app| {
-            WebviewWindowBuilder::new(app, FENETRE, WebviewUrl::default())
+            let fenetre = WebviewWindowBuilder::new(app, FENETRE, WebviewUrl::default())
                 .title(identite::NOM)
                 .inner_size(1100.0, 740.0)
                 .min_inner_size(900.0, 600.0)
                 .center()
+                .visible(!silencieux)
                 .theme(Some(Theme::Dark))
                 // La couleur du fond de l'appli : pas d'éclair blanc avant le premier affichage.
                 .background_color(Color(3, 8, 18, 255))
-                .data_directory(cache_webview)
+                .data_directory(cache_webview.clone())
                 .build()?;
+            if identite::EN_FOND {
+                icone::creer(app.handle(), cache_webview)?;
+                // Fermer la fenêtre ne suffit pas à arrêter l'appli : elle reste dans son icône.
+                let rangee = fenetre.clone();
+                fenetre.on_window_event(move |evenement| {
+                    if let WindowEvent::CloseRequested { api, .. } = evenement {
+                        api.prevent_close();
+                        let _ = rangee.hide();
+                    }
+                });
+            }
             Ok(())
         })
         .build(tauri::generate_context!())
