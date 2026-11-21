@@ -6,5 +6,10 @@
 *.syso
 node_modules/
 dist/
+# <!-- MODELE:debut -->
+# Dépôt modèle seulement : ce que compilent les squelettes quand on les essaie sur place.
+stacks/*/target/
+stacks/*/appli/gen/
+# <!-- MODELE:fin -->
 
 # <<STACK:gitignore>>

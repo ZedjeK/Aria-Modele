@@ -1,0 +1,11 @@
+{
+  "identifier": "principale",
+  "description": "La fenêtre principale : les commandes de l'appli, une par une, et rien d'autre.",
+  "windows": ["principale"],
+  "permissions": [
+    "allow-identite",
+    "allow-lire-reglages",
+    "allow-enregistrer-reglages",
+    "allow-mesurer-disque"
+  ]
+}

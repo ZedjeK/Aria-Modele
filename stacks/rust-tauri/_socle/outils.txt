@@ -1,0 +1,11 @@
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+
+      - name: Rust (la version de rust-toolchain.toml)
+        run: rustup toolchain install
+
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          # Seule main enregistre le cache ; les PR et les tags le lisent sans pouvoir le remplacer.
+          save-if: ${{ github.ref == 'refs/heads/main' }}

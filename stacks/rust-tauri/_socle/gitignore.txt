@@ -1,0 +1,3 @@
+# Rust et Tauri
+target/
+appli/gen/
