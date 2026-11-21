@@ -1,6 +1,7 @@
 <!--
-  La fenêtre d'Aria {{NOM}} : menu latéral à gauche, zone principale à droite avec ses sous-onglets.
-  Page d'exemple à remplacer par celle de l'appli, en gardant les règles de l'identité Aria (aria-template-app).
+  La fenêtre d'Aria {{NOM}}, sur le modèle d'Aria Studio et d'Aria Cockpit : menu latéral à gauche (marque, familles
+  de pages, Quitter, version), et à droite la zone des pages sur son décor (nuit profonde, grille fine, halos, fond
+  animé) : barre de titre avec le chemin et l'état en direct, bandeau de mise à jour, la page, puis la ligne d'état.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
@@ -8,48 +9,70 @@
     ecouter,
     enregistrerReglages,
     identite as lireIdentite,
-    lireDemarrageAuto,
     lireReglages,
-    mesurerDisque,
     messageErreur,
     miseAJourDisponible,
-    ouvrirMiseAJour,
-    reglerDemarrageAuto,
+    quitter,
     type Identite,
+    type InfosMiseAJour,
     type Reglages,
   } from './lib/api';
-  import { octetsLisibles } from './lib/jauge';
-  import ASavoir from './lib/composants/ASavoir.svelte';
+  import type { Pastille } from './lib/menu';
+  import Bandeau from './lib/composants/Bandeau.svelte';
+  import BarreTitre from './lib/composants/BarreTitre.svelte';
   import Bouton from './lib/composants/Bouton.svelte';
-  import CarteChoix from './lib/composants/CarteChoix.svelte';
+  import EtatDirect from './lib/composants/EtatDirect.svelte';
   import FondAnime from './lib/composants/FondAnime.svelte';
-  import Jauge from './lib/composants/Jauge.svelte';
-  import Panneau from './lib/composants/Panneau.svelte';
-  import SousOnglets from './lib/composants/SousOnglets.svelte';
+  import MenuLateral from './lib/composants/MenuLateral.svelte';
+  import DialogueMiseAJour from './dialogues/MiseAJour.svelte';
+  import Accueil from './pages/Accueil.svelte';
+  import Journal from './pages/Journal.svelte';
+  import Parametres from './pages/Parametres.svelte';
 
-  const onglets = [
-    { id: 'apercu', titre: 'Aperçu' },
-    { id: 'reglages', titre: 'Réglages' },
+  type Page = 'accueil' | 'journal' | 'parametres';
+
+  // Les familles de pages : le travail de l'appli d'abord, puis l'appli elle-même. À adapter.
+  const familles: { titre: string; pages: { id: Page; titre: string }[] }[] = [
+    { titre: 'Travail', pages: [{ id: 'accueil', titre: 'Accueil' }] },
+    {
+      titre: 'Appli',
+      pages: [
+        { id: 'journal', titre: 'Journal' },
+        { id: 'parametres', titre: 'Paramètres' },
+      ],
+    },
   ];
 
   let identite = $state<Identite | null>(null);
-  const commentaires: Record<string, string> = $derived({
-    apercu: "Exemple à remplacer : une action de l'appli et ce qu'elle produit. Rien n'est modifié sans ton accord.",
-    reglages: identite?.enFond
-      ? 'Chaque changement est enregistré tout de suite : dans reglages.json, et dans Windows pour le démarrage.'
-      : 'Chaque changement est enregistré tout de suite dans reglages.json, dans le dossier de données.',
-  });
   let reglages = $state<Reglages | null>(null);
-  let onglet = $state('apercu');
+  let page = $state<Page>('accueil');
   let fraction = $state<number | null>(null);
   let mesure = $state('');
-  let mesureEnCours = $state(false);
+  let miseAJour = $state<InfosMiseAJour | null>(null);
+  let bandeauRange = $state(false);
+  let dialogueMiseAJour = $state(false);
   let etat = $state('');
   let erreur = $state(false);
-  let demarrageAuto = $state(false);
-  let miseAJour = $state<string | null>(null);
 
   const nomCourt = $derived(identite?.nom.replace(/^Aria\s+/, '') ?? '');
+  const famille = $derived(familles.find((f) => f.pages.some((p) => p.id === page)));
+  const titrePage = $derived(famille?.pages.find((p) => p.id === page)?.titre ?? '');
+  const pastilles: Pastille[] = $derived([
+    {
+      nom: 'Disque',
+      detail: fraction === null ? 'à tester' : `${Math.round(fraction * 100)} % libre`,
+      ton: fraction === null ? 'repos' : fraction < 0.1 ? 'attention' : 'actif',
+    },
+    {
+      nom: 'Mises à jour',
+      detail: miseAJour
+        ? `${miseAJour.version} disponible`
+        : reglages?.chercherMisesAJour === false
+          ? 'désactivées'
+          : 'aucune connue',
+      ton: miseAJour ? 'information' : 'repos',
+    },
+  ]);
 
   function signaler(texte: string, estErreur = false) {
     etat = texte;
@@ -60,55 +83,25 @@
     void (async () => {
       try {
         [identite, reglages] = await Promise.all([lireIdentite(), lireReglages()]);
-        await relireDemarrageAuto();
-        miseAJour ??= (await miseAJourDisponible())?.version ?? null;
+        miseAJour ??= await miseAJourDisponible();
       } catch (e) {
         signaler(`Démarrage incomplet : ${messageErreur(e)}`, true);
       }
     })();
-    // « Démarrer avec Windows » se change aussi dans Windows et dans le menu de l'icône : relu au retour.
-    const auRetour = () => void relireDemarrageAuto();
-    window.addEventListener('focus', auRetour);
-    // « Réglages » dans le menu de l'icône.
-    const arret = ecouter<string>('aller-a', (page) => {
-      if (page === 'reglages') onglet = 'reglages';
+    // « Paramètres » et « Voir la mise à jour » dans le menu de l'icône.
+    const arretAllerA = ecouter<string>('aller-a', (cible) => {
+      if (cible === 'parametres') page = 'parametres';
+      if (cible === 'mise-a-jour' && miseAJour) dialogueMiseAJour = true;
     });
     // Une version plus récente trouvée au lancement (la recherche ne bloque pas l'appli).
-    const arretMiseAJour = ecouter<string>('mise-a-jour', (version) => (miseAJour = version));
+    const arretMiseAJour = ecouter<string>('mise-a-jour', () => {
+      void miseAJourDisponible().then((infos) => (miseAJour = infos));
+    });
     return () => {
-      window.removeEventListener('focus', auRetour);
-      void arret.then((f) => f());
+      void arretAllerA.then((f) => f());
       void arretMiseAJour.then((f) => f());
     };
   });
-
-  async function relireDemarrageAuto() {
-    if (identite?.enFond) demarrageAuto = await lireDemarrageAuto();
-  }
-
-  async function changerDemarrageAuto() {
-    try {
-      demarrageAuto = await reglerDemarrageAuto(demarrageAuto);
-      signaler(demarrageAuto ? 'Démarrage avec Windows activé.' : 'Démarrage avec Windows désactivé.');
-    } catch (e) {
-      signaler(messageErreur(e), true);
-      await relireDemarrageAuto();
-    }
-  }
-
-  async function mesurer() {
-    mesureEnCours = true;
-    try {
-      const espace = await mesurerDisque();
-      fraction = espace.total > 0 ? espace.libre / espace.total : 0;
-      mesure = `${octetsLisibles(espace.libre)} libres sur ${octetsLisibles(espace.total)}`;
-      signaler('Mesure faite, rien n’a été écrit.');
-    } catch (e) {
-      signaler(messageErreur(e), true);
-    } finally {
-      mesureEnCours = false;
-    }
-  }
 
   async function enregistrer() {
     if (!reglages) return;
@@ -122,109 +115,43 @@
 </script>
 
 <div class="fenetre">
-  <!-- Menu latéral : opaque, le fond animé ne passe jamais dessous. -->
-  <nav class="menu" aria-label="Pages">
-    <div class="marque">
-      <strong>Aria</strong>
-      <span class="code">{nomCourt}</span>
-    </div>
-    <ul>
-      <li><a href="#accueil" class="actif" aria-current="page">Accueil</a></li>
-    </ul>
-    {#if miseAJour}
-      <div class="maj">
-        <Bouton genre="secondaire" onclick={() => void ouvrirMiseAJour()}>Mise à jour {miseAJour}</Bouton>
-      </div>
-    {/if}
-    <div class="pied code">
-      {#if identite}<span>v{identite.version}</span>{/if}
-      <span>tout en local</span>
-    </div>
-  </nav>
+  <MenuLateral
+    nom={nomCourt}
+    version={identite?.version ?? ''}
+    {familles}
+    bind:page
+    quitter={identite?.enFond ? () => void quitter() : undefined}
+  />
 
   <main class="zone">
+    <!-- Décor : nuit profonde, grille fine, halo bleu au centre, halo orange en bas à droite. -->
+    <div class="decor" aria-hidden="true"></div>
     {#if reglages}
       <FondAnime reglages={reglages.fond} />
     {/if}
 
-    <div class="contenu" id="accueil">
-      <h1>Accueil</h1>
-      {#if identite}<p class="sous-titre">{identite.nom} : {identite.promesse}</p>{/if}
+    <BarreTitre>
+      <span class="chemin" data-tauri-drag-region>{famille?.titre ?? ''} <b>/ {titrePage}</b></span>
+      <EtatDirect {pastilles} />
+    </BarreTitre>
 
-      <SousOnglets {onglets} bind:actif={onglet} />
-      <ASavoir>{commentaires[onglet]}</ASavoir>
+    {#if miseAJour && !bandeauRange}
+      <Bandeau
+        etiquette="Mise à jour disponible"
+        texte={`La version ${miseAJour.version} est publiée (en cours : ${miseAJour.actuelle}).`}
+      >
+        <Bouton genre="discret" petit onclick={() => (bandeauRange = true)}>Plus tard</Bouton>
+        <Bouton petit onclick={() => (dialogueMiseAJour = true)}>Voir</Bouton>
+      </Bandeau>
+    {/if}
 
-      {#if onglet === 'apercu'}
-        <div class="pile">
-          <Panneau titre="Exemple d'action" accentue>
-            <p class="discret">
-              Exemple à remplacer : le bouton orange mesure la place libre sur le disque de ton dossier de données.
-              Lecture seule, rien n'est écrit.
-            </p>
-            <Jauge etiquette="Disque" {fraction} mesure={mesure || undefined} />
-            <div class="actions">
-              <Bouton genre="principal" desactive={mesureEnCours} onclick={mesurer}>Mesurer le disque</Bouton>
-            </div>
-          </Panneau>
-
-          <Panneau titre="Dossier de données">
-            <p>Tout ce que l'appli garde est ici : réglages, journal, sauvegardes, cache.</p>
-            {#if identite}<p class="code discret">{identite.dossier}</p>{/if}
-          </Panneau>
-        </div>
-      {:else if reglages}
-        <div class="pile">
-          {#if identite?.installable}
-            <Panneau titre="Installation">
-              <label class="ligne">
-                <input type="checkbox" bind:checked={reglages.proposerInstallation} onchange={enregistrer} />
-                Proposer l'installation quand l'exe est lancé hors de son dossier
-              </label>
-            </Panneau>
-          {/if}
-
-          {#if identite?.enFond}
-            <Panneau titre="Démarrage">
-              <label class="ligne">
-                <input type="checkbox" bind:checked={demarrageAuto} onchange={changerDemarrageAuto} />
-                Démarrer avec Windows (dans l'icône de notification, sans ouvrir la fenêtre)
-              </label>
-            </Panneau>
-          {/if}
-
-          <Panneau titre="Mises à jour">
-            <label class="ligne">
-              <input type="checkbox" bind:checked={reglages.chercherMisesAJour} onchange={enregistrer} />
-              Chercher une nouvelle version au lancement (une requête vers GitHub ; rien n'est installé sans ton accord)
-            </label>
-          </Panneau>
-
-          <Panneau titre="Fond animé">
-            <label class="ligne">
-              <input type="checkbox" bind:checked={reglages.fond.actif} onchange={enregistrer} />
-              Afficher le fond animé (jamais si Windows demande moins d'animations)
-            </label>
-
-            <p class="etiquette">Vitesse</p>
-            <div class="cartes">
-              <CarteChoix groupe="vitesse" valeur="lente" titre="Lente" bind:choisie={reglages.fond.vitesse} onchange={enregistrer}>
-                Un passage toutes les 14 s
-              </CarteChoix>
-              <CarteChoix groupe="vitesse" valeur="normale" titre="Normale" bind:choisie={reglages.fond.vitesse} onchange={enregistrer}>
-                Un passage toutes les 7 s
-              </CarteChoix>
-              <CarteChoix groupe="vitesse" valeur="rapide" titre="Rapide" bind:choisie={reglages.fond.vitesse} onchange={enregistrer}>
-                Un passage toutes les 3,5 s
-              </CarteChoix>
-            </div>
-
-            <p class="etiquette">Éléments par passage</p>
-            <div class="ligne">
-              <label>Au moins <input type="number" min="1" max="12" bind:value={reglages.fond.minimum} onchange={enregistrer} /></label>
-              <label>au plus <input type="number" min="1" max="12" bind:value={reglages.fond.maximum} onchange={enregistrer} /></label>
-            </div>
-          </Panneau>
-        </div>
+    <div class="page">
+      {#if page === 'accueil'}
+        <Accueil {identite} bind:fraction bind:mesure {signaler} />
+      {:else if page === 'journal'}
+        <Journal {signaler} />
+      {:else if identite && reglages}
+        <Parametres {identite} bind:reglages {enregistrer} {signaler} />
       {/if}
 
       <p class="etat" class:erreur role="status">{etat}</p>
@@ -232,148 +159,84 @@
   </main>
 </div>
 
+{#if dialogueMiseAJour && miseAJour}
+  <DialogueMiseAJour infos={miseAJour} fermer={() => (dialogueMiseAJour = false)} />
+{/if}
+
 <style>
   .fenetre {
     display: grid;
-    grid-template-columns: 220px 1fr;
+    grid-template-columns: 220px minmax(0, 1fr);
     height: 100%;
-  }
-
-  .menu {
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    padding: 22px 12px 18px 20px;
-    background: var(--panneau);
-    border-right: 1px solid var(--ligne);
-  }
-
-  .marque {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .marque strong {
-    font-size: 15px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-
-  .marque span {
-    font-size: 11px;
-    color: var(--cyan);
-    text-transform: uppercase;
-  }
-
-  ul {
-    flex: 1;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  ul a {
-    display: block;
-    padding: 8px 10px;
-    border-left: 3px solid transparent;
-    color: var(--texte-2);
-    font-size: 13px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-decoration: none;
-    text-transform: uppercase;
-  }
-
-  ul a.actif,
-  ul a:hover {
-    color: var(--cyan);
-    border-left-color: var(--cyan);
-  }
-
-  .maj {
-    margin-top: auto;
-  }
-
-  .maj + .pied {
-    margin-top: 0;
-  }
-
-  .pied {
-    display: flex;
-    flex-direction: column;
-    font-size: 11px;
-    color: var(--texte-2);
   }
 
   .zone {
     position: relative;
-    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+    background: linear-gradient(180deg, var(--fond) 0%, #061026 55%, var(--fond) 100%);
   }
 
-  .contenu {
+  .decor {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse 550px 450px at 50% 50%, rgb(92 139 255 / 18%), transparent 70%),
+      radial-gradient(ellipse 450px 350px at 100% 100%, rgb(255 138 31 / 9%), transparent 70%),
+      linear-gradient(rgb(125 249 255 / 6%) 1px, transparent 1px) 0 0 / 40px 40px,
+      linear-gradient(90deg, rgb(125 249 255 / 6%) 1px, transparent 1px) 0 0 / 40px 40px;
+  }
+
+  .chemin {
+    flex: 1;
+    color: var(--texte-2);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .chemin b {
+    color: var(--cyan);
+    font-weight: 500;
+  }
+
+  .page {
     position: relative;
     z-index: 1;
     display: flex;
+    flex: 1;
     flex-direction: column;
-    gap: 14px;
-    max-width: 860px;
-    padding: 26px 32px 32px;
+    gap: 16px;
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    overflow-y: auto;
+    padding: 18px 28px 28px;
   }
 
-  h1 {
+  .page :global(h1) {
     margin: 0;
     font-size: 26px;
-    font-weight: 700;
+    font-weight: 600;
+    letter-spacing: 0.02em;
   }
 
-  .sous-titre {
-    margin: 0 0 6px;
+  .page :global(.sous-titre) {
+    margin: -10px 0 0;
     color: var(--texte-2);
   }
 
-  .pile {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .discret {
+  .page :global(.discret) {
     color: var(--texte-2);
-  }
-
-  .code {
-    font-family: var(--police-code);
-    font-size: 12px;
-  }
-
-  .actions {
-    margin-top: 18px;
-  }
-
-  .etiquette {
-    margin: 18px 0 8px;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--texte-2);
-  }
-
-  .cartes {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-  }
-
-  .ligne {
-    display: flex;
-    gap: 16px;
-    align-items: center;
   }
 
   .etat {
     min-height: 1.5em;
-    margin: 0;
+    margin: auto 0 0;
     color: var(--texte-2);
   }
 

@@ -6,6 +6,8 @@ fn main() {
         "lire_reglages",
         "enregistrer_reglages",
         "mesurer_disque",
+        "lire_journal",
+        "quitter",
         "lire_demarrage_auto",
         "regler_demarrage_auto",
         "etat_menu",
@@ -15,7 +17,6 @@ fn main() {
         "installer",
         "lancer_sans_installer",
         "mise_a_jour_disponible",
-        "ouvrir_mise_a_jour",
         "voir_notes",
         "installer_mise_a_jour",
     ]);

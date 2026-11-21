@@ -74,6 +74,8 @@ fn lancer() -> Result<(), String> {
             commandes::lire_reglages,
             commandes::enregistrer_reglages,
             commandes::mesurer_disque,
+            commandes::lire_journal,
+            commandes::quitter,
             demarrage_auto::lire_demarrage_auto,
             demarrage_auto::regler_demarrage_auto,
             icone::etat_menu,
@@ -83,7 +85,6 @@ fn lancer() -> Result<(), String> {
             installation::installer,
             installation::lancer_sans_installer,
             mise_a_jour::mise_a_jour_disponible,
-            mise_a_jour::ouvrir_mise_a_jour,
             mise_a_jour::voir_notes,
             mise_a_jour::installer_mise_a_jour,
         ])
@@ -113,6 +114,8 @@ pub fn ouvrir_principale(app: &AppHandle, visible: bool) -> tauri::Result<()> {
         .inner_size(1100.0, 740.0)
         .min_inner_size(900.0, 600.0)
         .center()
+        // Sans cadre de Windows : la barre de titre est celle de l'interface (BarreTitre.svelte).
+        .decorations(false)
         .visible(visible)
         .theme(Some(Theme::Dark))
         // La couleur du fond de l'appli : pas d'éclair blanc avant le premier affichage.

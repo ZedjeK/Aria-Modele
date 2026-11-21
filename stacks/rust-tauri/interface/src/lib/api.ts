@@ -1,6 +1,6 @@
 // Les commandes Rust que l'interface peut appeler (appli\src\commandes.rs, demarrage_auto.rs, icone.rs), avec
 // leurs types. Une commande ajoutée ici doit aussi l'être dans appli\build.rs et dans la capacité de la fenêtre
-// qui l'appelle (appli\capabilities\principale.json, menu.json, installation.json ou mise-a-jour.json).
+// qui l'appelle (appli\capabilities\principale.json, menu.json ou installation.json).
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 
@@ -44,6 +44,20 @@ export const enregistrerReglages = (reglages: Reglages): Promise<Reglages> =>
 
 export const mesurerDisque = (): Promise<Espace> => invoke<Espace>('mesurer_disque');
 
+/** Une opération du journal (journal.json). */
+export interface Operation {
+  /** RFC 3339, heure locale. */
+  date: string;
+  type: string;
+  bilan: string;
+}
+
+/** Les dernières opérations, la plus récente d'abord. */
+export const lireJournal = (): Promise<Operation[]> => invoke<Operation[]>('lire_journal');
+
+/** Quitte l'appli, icône de notification comprise. */
+export const quitter = (): Promise<void> => invoke<void>('quitter');
+
 /** « Démarrer avec Windows », relu dans le registre à chaque appel. */
 export const lireDemarrageAuto = (): Promise<boolean> => invoke<boolean>('lire_demarrage_auto');
 
@@ -67,7 +81,7 @@ export interface EtatMenu {
   miseAJour: string | null;
 }
 
-export type ActionMenu = 'ouvrir' | 'reglages' | 'miseAJour' | 'quitter';
+export type ActionMenu = 'ouvrir' | 'parametres' | 'miseAJour' | 'quitter';
 
 export const etatMenu = (): Promise<EtatMenu> => invoke<EtatMenu>('etat_menu');
 
@@ -107,8 +121,6 @@ export interface InfosMiseAJour {
 export const miseAJourDisponible = (): Promise<InfosMiseAJour | null> =>
   invoke<InfosMiseAJour | null>('mise_a_jour_disponible');
 
-export const ouvrirMiseAJour = (): Promise<void> => invoke<void>('ouvrir_mise_a_jour');
-
 /** Ouvre la page de la release dans le navigateur. */
 export const voirNotes = (): Promise<void> => invoke<void>('voir_notes');
 
@@ -116,8 +128,8 @@ export const voirNotes = (): Promise<void> => invoke<void>('voir_notes');
 export const installerMiseAJour = (): Promise<void> => invoke<void>('installer_mise_a_jour');
 
 /**
- * Événements envoyés par l'appli : « etat-icone » (le menu relit son état), « aller-a » (page à montrer),
- * « mise-a-jour » (version disponible).
+ * Événements envoyés par l'appli : « etat-icone » (le menu relit son état), « aller-a » (page ou dialogue à
+ * montrer : « parametres », « mise-a-jour »), « mise-a-jour » (version disponible).
  */
 export const ecouter = <T>(
   evenement: 'etat-icone' | 'aller-a' | 'mise-a-jour',
