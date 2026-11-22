@@ -7,7 +7,8 @@ Fichier du dépôt modèle seulement : init.ps1 le supprime dans l'appli créée
 
 Pour chaque dossier de stacks\ qui a un _socle\stack.json (ou seulement celui donné par -Stack) :
   1. init.ps1 crée une appli « Essai » dans une copie jetable du dépôt, et lance les tests de la stack ;
-  2. build.ps1 compile l'exe ; tools\empaqueter.ps1 en fait le zip et son empreinte ;
+  2. tools\icone.ps1, si la stack le fournit, tire l'icône Windows de docs\logo.svg ; build.ps1 compile l'exe ;
+     tools\empaqueter.ps1 en fait le zip et son empreinte ;
   3. le zip contient l'exe, BUILDINFO.txt et LICENCES-TIERS.txt ; tools\version.ps1 répond X.Y.Z.
 
 Il faut les outils de chaque stack (Rust et Node.js pour rust-tauri). Tous les squelettes tournent ; le code de
@@ -103,6 +104,13 @@ try {
 
         $version = "$(& (Join-Path $c 'tools\version.ps1') | Select-Object -Last 1)".Trim()
         Verifier ($version -match '^\d+\.\d+\.\d+$') "$($s.Name) : tools\version.ps1 répond X.Y.Z ($version)"
+
+        # L'icône Windows tirée de docs\logo.svg (rendu par Edge), avant la compilation qui l'embarque dans l'exe.
+        $outilIcone = Join-Path $c 'tools\icone.ps1'
+        if (Test-Path $outilIcone) {
+            & $hote -NoProfile -ExecutionPolicy Bypass -File $outilIcone | Out-Host
+            Verifier ($LASTEXITCODE -eq 0) "$($s.Name) : tools\icone.ps1 tire l'icône de docs\logo.svg"
+        }
 
         & $hote -NoProfile -ExecutionPolicy Bypass -File (Join-Path $c 'build.ps1') | Out-Host
         Verifier ($LASTEXITCODE -eq 0) "$($s.Name) : build.ps1 compile l'exe"
