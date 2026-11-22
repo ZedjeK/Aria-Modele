@@ -54,14 +54,28 @@ function Get-TaillePng([byte[]]$octets) {
     if ($octets.Length -lt 24 -or $octets[1] -ne 0x50 -or $octets[2] -ne 0x4E -or $octets[3] -ne 0x47) {
         throw 'le rendu n''est pas une image PNG'
     }
+    $fin = [Text.Encoding]::ASCII.GetString($octets, $octets.Length - 8, 4)
+    if ($fin -ne 'IEND') { throw 'le rendu est une image PNG incomplète' }
     $lire = { param($i) ([int]$octets[$i] -shl 24) -bor ([int]$octets[$i + 1] -shl 16) -bor ([int]$octets[$i + 2] -shl 8) -bor [int]$octets[$i + 3] }
     return @((& $lire 16), (& $lire 20))
+}
+
+# Arrête le processus lancé et, sous Windows, les processus d'Edge restés sur ce profil.
+function Stop-Edge($processus, [string]$profil) {
+    if (-not $processus.HasExited) { Stop-Process -Id $processus.Id -Force -ErrorAction SilentlyContinue }
+    if ($env:OS -eq 'Windows_NT') {
+        $motif = '*' + $profil + '*'
+        Get-CimInstance Win32_Process -Filter "Name = 'msedge.exe'" -ErrorAction SilentlyContinue |
+            Where-Object { $_.CommandLine -like $motif } |
+            ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+    }
 }
 
 # Rend le logo en carré de $taille pixels, fond transparent, et renvoie les octets du PNG.
 function Get-Rendu([int]$taille) {
     $page = Join-Path $travail "logo-$taille.html"
     $image = Join-Path $travail "logo-$taille.png"
+    $profil = Join-Path $travail "profil-$taille"
     $html = "<!DOCTYPE html><html><head><meta charset=`"utf-8`"><style>html,body{margin:0;background:transparent;overflow:hidden}" +
         "img{display:block;width:${taille}px;height:${taille}px}</style></head><body><img src=`"logo.svg`" alt=`"`"></body></html>"
     [IO.File]::WriteAllText($page, $html, (New-Object Text.UTF8Encoding $false))
@@ -69,23 +83,32 @@ function Get-Rendu([int]$taille) {
     $arguments = @(
         '--headless=new', '--disable-gpu', '--hide-scrollbars', '--no-first-run', '--no-default-browser-check',
         '--force-device-scale-factor=1', '--default-background-color=00000000',
-        "--user-data-dir=$(Join-Path $travail "profil-$taille")", '--disable-crash-reporter',
+        "--user-data-dir=$profil", '--disable-crash-reporter',
         "--window-size=$taille,$taille", "--screenshot=$image", $adresse
     )
     $journal = Join-Path $travail "navigateur-$taille.txt"
-    # Edge est une appli fenêtrée : l'opérateur & ne l'attendrait pas. On attend le seul processus lancé, 60 s au
-    # plus (Start-Process -Wait attendrait aussi ses processus annexes, qui peuvent rester). Un profil par rendu :
-    # un Edge resté ouvert sur le même profil recevrait la commande à la place du nouveau. Un argument qui contient
-    # une espace est mis entre guillemets ; les messages du navigateur vont dans le journal.
+    # On attend l'image, pas la fin d'Edge : sous Windows, le processus lancé ne rend pas toujours la main une fois
+    # la capture écrite. Dès que le PNG est complet (taille stable), Edge et ses processus annexes sont arrêtés ;
+    # 60 s au plus. Un profil par rendu : un Edge resté ouvert sur le même profil recevrait la commande à la place du
+    # nouveau. Un argument qui contient une espace est mis entre guillemets ; les messages vont dans le journal.
     $ligne = ($arguments | ForEach-Object { if ($_ -match '\s') { '"' + $_ + '"' } else { $_ } }) -join ' '
     $processus = Start-Process -FilePath $Navigateur -ArgumentList $ligne -PassThru -NoNewWindow `
         -RedirectStandardError $journal -RedirectStandardOutput "$journal.sortie"
-    if (-not $processus.WaitForExit(60000)) {
-        Stop-Process -Id $processus.Id -Force -ErrorAction SilentlyContinue
-        throw "Le rendu en $taille px n'a pas fini en 60 s ; voir $journal."
+    $limite = (Get-Date).AddSeconds(60)
+    $taillePrecedente = -1
+    $prete = $false
+    while ((Get-Date) -lt $limite) {
+        Start-Sleep -Milliseconds 250
+        if (Test-Path -LiteralPath $image) {
+            $actuelle = (Get-Item -LiteralPath $image).Length
+            if ($actuelle -gt 0 -and $actuelle -eq $taillePrecedente) { $prete = $true; break }
+            $taillePrecedente = $actuelle
+        }
+        elseif ($processus.HasExited) { break }
     }
-    if (-not (Test-Path -LiteralPath $image)) {
-        throw "Le rendu en $taille px a échoué (code $($processus.ExitCode)) ; voir $journal."
+    Stop-Edge $processus $profil
+    if (-not $prete) {
+        throw "Le rendu en $taille px n'a rien donné en 60 s ; voir $journal."
     }
     $octets = [IO.File]::ReadAllBytes($image)
     $lu = Get-TaillePng $octets
@@ -129,14 +152,7 @@ New-Item -ItemType Directory -Path (Split-Path -Parent $icone) -Force | Out-Null
 [IO.File]::WriteAllBytes($png, $grand)
 Copy-Item -LiteralPath $source -Destination $copieMenu -Force
 
-# Les processus annexes d'Edge restés ouverts sur nos profils, puis le dossier de travail (gardé si l'un d'eux le
-# tient encore : .work\ n'est pas suivi par git).
-if ($env:OS -eq 'Windows_NT') {
-    $motif = '*' + $travail + '*'
-    Get-CimInstance Win32_Process -Filter "Name = 'msedge.exe'" -ErrorAction SilentlyContinue |
-        Where-Object { $_.CommandLine -like $motif } |
-        ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
-}
+# Le dossier de travail (gardé si un processus le tient encore : .work\ n'est pas suivi par git).
 Remove-Item -LiteralPath $travail -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Host "Écrits : appli\icons\icon.ico ($($tailles -join ', ') px), docs\logo.png (512 px), interface\src\lib\logo.svg."
