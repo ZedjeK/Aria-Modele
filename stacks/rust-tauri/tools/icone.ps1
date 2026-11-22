@@ -69,15 +69,21 @@ function Get-Rendu([int]$taille) {
     $arguments = @(
         '--headless=new', '--disable-gpu', '--hide-scrollbars', '--no-first-run', '--no-default-browser-check',
         '--force-device-scale-factor=1', '--default-background-color=00000000',
-        "--user-data-dir=$(Join-Path $travail 'profil')",
+        "--user-data-dir=$(Join-Path $travail "profil-$taille")", '--disable-crash-reporter',
         "--window-size=$taille,$taille", "--screenshot=$image", $adresse
     )
     $journal = Join-Path $travail "navigateur-$taille.txt"
-    # Edge est une appli fenêtrée : l'opérateur & ne l'attendrait pas. Start-Process -Wait l'attend ; ses messages
-    # vont dans le journal. Un argument qui contient une espace est mis entre guillemets.
+    # Edge est une appli fenêtrée : l'opérateur & ne l'attendrait pas. On attend le seul processus lancé, 60 s au
+    # plus (Start-Process -Wait attendrait aussi ses processus annexes, qui peuvent rester). Un profil par rendu :
+    # un Edge resté ouvert sur le même profil recevrait la commande à la place du nouveau. Un argument qui contient
+    # une espace est mis entre guillemets ; les messages du navigateur vont dans le journal.
     $ligne = ($arguments | ForEach-Object { if ($_ -match '\s') { '"' + $_ + '"' } else { $_ } }) -join ' '
-    $processus = Start-Process -FilePath $Navigateur -ArgumentList $ligne -Wait -PassThru -NoNewWindow `
+    $processus = Start-Process -FilePath $Navigateur -ArgumentList $ligne -PassThru -NoNewWindow `
         -RedirectStandardError $journal -RedirectStandardOutput "$journal.sortie"
+    if (-not $processus.WaitForExit(60000)) {
+        Stop-Process -Id $processus.Id -Force -ErrorAction SilentlyContinue
+        throw "Le rendu en $taille px n'a pas fini en 60 s ; voir $journal."
+    }
     if (-not (Test-Path -LiteralPath $image)) {
         throw "Le rendu en $taille px a échoué (code $($processus.ExitCode)) ; voir $journal."
     }
@@ -122,6 +128,15 @@ New-Item -ItemType Directory -Path (Split-Path -Parent $icone) -Force | Out-Null
 [IO.File]::WriteAllBytes($icone, $flux.ToArray())
 [IO.File]::WriteAllBytes($png, $grand)
 Copy-Item -LiteralPath $source -Destination $copieMenu -Force
-Remove-Item -LiteralPath $travail -Recurse -Force
+
+# Les processus annexes d'Edge restés ouverts sur nos profils, puis le dossier de travail (gardé si l'un d'eux le
+# tient encore : .work\ n'est pas suivi par git).
+if ($env:OS -eq 'Windows_NT') {
+    $motif = '*' + $travail + '*'
+    Get-CimInstance Win32_Process -Filter "Name = 'msedge.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.CommandLine -like $motif } |
+        ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+}
+Remove-Item -LiteralPath $travail -Recurse -Force -ErrorAction SilentlyContinue
 
 Write-Host "Écrits : appli\icons\icon.ico ($($tailles -join ', ') px), docs\logo.png (512 px), interface\src\lib\logo.svg."
