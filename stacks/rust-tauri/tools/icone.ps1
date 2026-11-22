@@ -75,40 +75,54 @@ function Stop-Edge($processus, [string]$profil) {
 function Get-Rendu([int]$taille) {
     $page = Join-Path $travail "logo-$taille.html"
     $image = Join-Path $travail "logo-$taille.png"
-    $profil = Join-Path $travail "profil-$taille"
     $html = "<!DOCTYPE html><html><head><meta charset=`"utf-8`"><style>html,body{margin:0;background:transparent;overflow:hidden}" +
         "img{display:block;width:${taille}px;height:${taille}px}</style></head><body><img src=`"logo.svg`" alt=`"`"></body></html>"
     [IO.File]::WriteAllText($page, $html, (New-Object Text.UTF8Encoding $false))
     $adresse = [Uri]::new($page, [UriKind]::Absolute).AbsoluteUri
-    $arguments = @(
-        '--headless=new', '--disable-gpu', '--hide-scrollbars', '--no-first-run', '--no-default-browser-check',
-        '--force-device-scale-factor=1', '--default-background-color=00000000',
-        "--user-data-dir=$profil", '--disable-crash-reporter',
-        "--window-size=$taille,$taille", "--screenshot=$image", $adresse
-    )
-    $journal = Join-Path $travail "navigateur-$taille.txt"
     # On attend l'image, pas la fin d'Edge : sous Windows, le processus lancé ne rend pas toujours la main une fois
-    # la capture écrite. Dès que le PNG est complet (taille stable), Edge et ses processus annexes sont arrêtés ;
-    # 60 s au plus. Un profil par rendu : un Edge resté ouvert sur le même profil recevrait la commande à la place du
-    # nouveau. Un argument qui contient une espace est mis entre guillemets ; les messages vont dans le journal.
-    $ligne = ($arguments | ForEach-Object { if ($_ -match '\s') { '"' + $_ + '"' } else { $_ } }) -join ' '
-    $processus = Start-Process -FilePath $Navigateur -ArgumentList $ligne -PassThru -NoNewWindow `
-        -RedirectStandardError $journal -RedirectStandardOutput "$journal.sortie"
-    $limite = (Get-Date).AddSeconds(60)
-    $taillePrecedente = -1
+    # la capture écrite, et il lui arrive de caler sans rien écrire. Dès que le PNG est complet (taille stable), Edge
+    # et ses processus annexes sont arrêtés ; sinon, après 20 s, il est arrêté et relancé, 3 essais au plus. Un
+    # profil par essai : un Edge resté ouvert sur le même profil recevrait la commande à la place du nouveau. Un
+    # argument qui contient une espace est mis entre guillemets ; les messages d'Edge vont dans un journal par essai.
+    $essais = 3
+    $journaux = @()
     $prete = $false
-    while ((Get-Date) -lt $limite) {
-        Start-Sleep -Milliseconds 250
-        if (Test-Path -LiteralPath $image) {
-            $actuelle = (Get-Item -LiteralPath $image).Length
-            if ($actuelle -gt 0 -and $actuelle -eq $taillePrecedente) { $prete = $true; break }
-            $taillePrecedente = $actuelle
+    for ($essai = 1; $essai -le $essais -and -not $prete; $essai++) {
+        $profil = Join-Path $travail "profil-$taille-$essai"
+        $journal = Join-Path $travail "navigateur-$taille-$essai.txt"
+        $journaux += $journal
+        if (Test-Path -LiteralPath $image) { Remove-Item -LiteralPath $image -Force }
+        $arguments = @(
+            '--headless=new', '--disable-gpu', '--hide-scrollbars', '--no-first-run', '--no-default-browser-check',
+            '--force-device-scale-factor=1', '--default-background-color=00000000',
+            "--user-data-dir=$profil", '--disable-crash-reporter',
+            "--window-size=$taille,$taille", "--screenshot=$image", $adresse
+        )
+        $ligne = ($arguments | ForEach-Object { if ($_ -match '\s') { '"' + $_ + '"' } else { $_ } }) -join ' '
+        $processus = Start-Process -FilePath $Navigateur -ArgumentList $ligne -PassThru -NoNewWindow `
+            -RedirectStandardError $journal -RedirectStandardOutput "$journal.sortie"
+        $limite = (Get-Date).AddSeconds(20)
+        $taillePrecedente = -1
+        while ((Get-Date) -lt $limite) {
+            Start-Sleep -Milliseconds 250
+            if (Test-Path -LiteralPath $image) {
+                $actuelle = (Get-Item -LiteralPath $image).Length
+                if ($actuelle -gt 0 -and $actuelle -eq $taillePrecedente) { $prete = $true; break }
+                $taillePrecedente = $actuelle
+            }
+            elseif ($processus.HasExited) { break }
         }
-        elseif ($processus.HasExited) { break }
+        Stop-Edge $processus $profil
+        if (-not $prete -and $essai -lt $essais) {
+            Write-Host "  Edge n'a rien rendu en $taille px (essai $essai sur $essais) : nouvel essai."
+        }
     }
-    Stop-Edge $processus $profil
     if (-not $prete) {
-        throw "Le rendu en $taille px n'a rien donné en 60 s ; voir $journal."
+        foreach ($j in $journaux) {
+            Write-Host "--- $j"
+            if (Test-Path -LiteralPath $j) { Get-Content -LiteralPath $j -Tail 30 | ForEach-Object { Write-Host "    $_" } }
+        }
+        throw "Le rendu en $taille px n'a rien donné après $essais essais de 20 s ; les journaux d'Edge sont ci-dessus."
     }
     $octets = [IO.File]::ReadAllBytes($image)
     $lu = Get-TaillePng $octets
