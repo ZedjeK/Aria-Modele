@@ -27,6 +27,7 @@ mais pas les fichiers à marqueurs (workflows, README, fiche, squelette) ni les 
 | #71 | Décisions d'architecture : `docs/decisions/` |
 | #72 | `CONTRIBUTING.md` |
 | #73 | Ce journal |
+| #74 | État de la flotte : `tools/etat-flotte.ps1` et `docs/APPLIS.md`, réservés au modèle |
 
 Pas encore faits, faute des clés minisign : signature des mises à jour, canal d'essai, recette et chaîne de release
 complète.
