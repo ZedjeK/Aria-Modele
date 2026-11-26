@@ -4,7 +4,7 @@ Les règles que toute appli de la famille respecte. Ce fichier fait foi : en cas
 préférence de style, et le code, le README et la fiche projet s'y conforment.
 
 Il est le même dans toutes les applis : il fait partie du socle commun (`tools/socle.txt`). Pour le changer, passe
-par le dépôt modèle.
+par le dépôt modèle. Les décisions d'où viennent ses règles sont dans `docs/decisions/`.
 
 ## Principes
 
