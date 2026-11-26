@@ -33,6 +33,19 @@ jobs:
 
       # <<STACK:outils>>
 
+      # Règles et exceptions dans PSScriptAnalyzerSettings.psd1. Le module est installé à une version exacte :
+      # à monter à la main, par une PR, comme les autres outils (Dependabot ne le suit pas).
+      - name: Analyse des scripts PowerShell
+        run: |
+          Install-PSResource -Name PSScriptAnalyzer -Version '[1.25.0]' -Repository PSGallery -TrustRepository -Quiet
+          Import-Module PSScriptAnalyzer -RequiredVersion 1.25.0
+          $remarques = @(Invoke-ScriptAnalyzer -Path . -Recurse -Settings ./PSScriptAnalyzerSettings.psd1)
+          if ($remarques.Count -gt 0) {
+            $remarques | Format-Table Severity, RuleName, ScriptName, Line, Message -AutoSize -Wrap | Out-String -Width 220 | Write-Host
+            throw "PSScriptAnalyzer : $($remarques.Count) remarque(s) à corriger."
+          }
+          Write-Host 'PSScriptAnalyzer : aucune remarque.'
+
       - name: Tests
         run: ./tools/tester.ps1
 

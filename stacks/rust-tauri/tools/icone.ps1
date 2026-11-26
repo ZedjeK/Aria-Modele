@@ -61,7 +61,10 @@ function Get-TaillePng([byte[]]$octets) {
 }
 
 # Arrête le processus lancé et, sous Windows, les processus d'Edge restés sur ce profil.
-function Stop-Edge($processus, [string]$profil) {
+function Stop-Edge {
+    [CmdletBinding(SupportsShouldProcess)]
+    param($processus, [string]$profil)
+    if (-not $PSCmdlet.ShouldProcess("Edge lancé sur le profil $profil", 'Arrêter')) { return }
     if (-not $processus.HasExited) { Stop-Process -Id $processus.Id -Force -ErrorAction SilentlyContinue }
     if ($env:OS -eq 'Windows_NT') {
         $motif = '*' + $profil + '*'
