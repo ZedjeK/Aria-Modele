@@ -93,6 +93,8 @@ try {
     Verifier (-not (Test-Path (Join-Path $c 'tools\tester-squelettes.ps1'))) "les tests des squelettes ne sont pas copiés dans l'appli"
     Verifier (-not (Test-Path (Join-Path $c '.github\workflows\squelettes.yml'))) "le workflow des squelettes n'est pas copié dans l'appli"
     Verifier (-not (Test-Path (Join-Path $c 'docs\MODELE-JOURNAL.md'))) "le journal du modèle n'est pas copié dans l'appli"
+    Verifier (-not (Test-Path (Join-Path $c 'tools\etat-flotte.ps1'))) "l'état de la flotte n'est pas copié dans l'appli"
+    Verifier (-not (Test-Path (Join-Path $c 'docs\APPLIS.md'))) "la liste des applis n'est pas copiée dans l'appli"
     Verifier (-not (Test-Path (Join-Path $c 'CLAUDE.md'))) "aucun CLAUDE.md dans l'appli"
 
     $restes = @(Get-ChildItem -LiteralPath $c -Recurse -File -Force |
