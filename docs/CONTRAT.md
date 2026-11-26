@@ -39,6 +39,9 @@ tiens à jour quand l'appli change.
   du Bureau).
 - **Ouverture** : connexions sortantes (liste complète, destination par destination), composants tiers embarqués.
 - **Réussite** : critère mesurable de réussite de la v0.1.
+- **Cap** : objectif de la prochaine version, non-objectifs, plateformes, budget (taille de l'exe, mémoire au repos,
+  délai d'ouverture). La taille de l'exe est relevée dans `BUILDINFO.txt` à chaque zip ; un budget dépassé se dit
+  dans les notes de la version.
 
 Les lignes « à renseigner » se complètent **avant la première ligne de code**.
 

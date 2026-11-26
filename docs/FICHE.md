@@ -19,5 +19,9 @@ jour quand l'appli change.
 | Connexions sortantes | à renseigner : liste complète, destination par destination (les mises à jour intégrées en ajoutent deux : `api.github.com` pour chercher une nouvelle version, et `github.com` avec son hôte de téléchargement pour le zip) |
 | Composants tiers embarqués | à renseigner |
 | Réussite de la v0.1 | à renseigner : un critère mesurable |
+| Prochaine version : objectif | à renseigner : ce que la prochaine version doit apporter, en une phrase |
+| Non-objectifs | à renseigner : ce que l'appli ne fera pas, pour couper court aux demandes hors sujet |
+| Plateformes | à renseigner : Windows 11 et Windows 10 22H2 (contrat), ou moins |
+| Budget | à renseigner : taille de l'exe (Mo, relevée dans BUILDINFO.txt), mémoire au repos et délai d'ouverture (relevés dans la recette) |
 
 Les lignes « à renseigner » se complètent avant la première ligne de code.

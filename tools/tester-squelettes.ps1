@@ -143,6 +143,8 @@ try {
             $manquants = @($sortie | Where-Object { $contenu -notcontains $_ })
             Verifier ($manquants.Count -eq 0) "$($s.Name) : le zip contient tout ce que build.ps1 a produit ($($manquants -join ', '))"
             Verifier (@($contenu | Where-Object { $_ -like '*.pdb' }).Count -eq 0) "$($s.Name) : aucun fichier de débogage dans le zip"
+            $infos = [IO.File]::ReadAllText((Join-Path $extrait "Aria-Essai-$version\BUILDINFO.txt"), [Text.Encoding]::UTF8)
+            Verifier ($infos -match "Taille de l'exe : \d+(\.\d)? Mo \(\d+ octets\)") "$($s.Name) : BUILDINFO.txt relève la taille de l'exe"
             $exe = Get-Item -LiteralPath (Join-Path $extrait "Aria-Essai-$version\Aria-Essai.exe") -ErrorAction SilentlyContinue
             if ($exe) { Write-Host "        taille de l'exe : $([math]::Round($exe.Length / 1MB, 1)) Mo, zip : $([math]::Round((Get-Item $zip).Length / 1MB, 1)) Mo" }
         }
