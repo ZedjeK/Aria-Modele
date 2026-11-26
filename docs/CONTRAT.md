@@ -68,6 +68,11 @@ Les lignes « à renseigner » se complètent **avant la première ligne de code
   sous le même compte. DPAPI est en place dans le squelette (`coeur/src/secrets.rs`, entropie liée au nom de
   l'appli).
 
+- **Diagnostic** : la page « Journal » a un bouton « Exporter le diagnostic » qui copie dans le presse-papiers la
+  version, le build, les versions de Windows et de WebView2, les réglages et les 50 dernières lignes du journal. Aucun
+  secret, aucun envoi réseau ; le chemin du profil y devient `%USERPROFILE%`. Le formulaire de bug du dépôt demande ce
+  texte.
+
 ### Lancement et présence
 
 - **Démarrage automatique** : désactivé par défaut, case dans les réglages et dans le menu de l'icône, lancement avec

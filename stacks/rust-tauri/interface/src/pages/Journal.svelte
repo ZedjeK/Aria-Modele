@@ -1,12 +1,15 @@
 <!--
-  Le journal de l'appli : ses dernières opérations, la plus récente en haut. Lecture seule.
+  Le journal de l'appli : ses dernières opérations, la plus récente en haut. Lecture seule. « Exporter le diagnostic »
+  copie dans le presse-papiers le texte à coller dans un signalement de bug ; si le presse-papiers refuse, le texte
+  s'affiche dans un dialogue, à copier à la main.
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { lireJournal, messageErreur, type Operation } from '../lib/api';
+  import { diagnostic, lireJournal, messageErreur, type Operation } from '../lib/api';
   import { dateLisible } from '../lib/journal';
   import ASavoir from '../lib/composants/ASavoir.svelte';
   import Bouton from '../lib/composants/Bouton.svelte';
+  import Dialogue from '../lib/composants/Dialogue.svelte';
   import Panneau from '../lib/composants/Panneau.svelte';
 
   interface Props {
@@ -15,12 +18,30 @@
 
   let { signaler }: Props = $props();
   let operations = $state<Operation[] | null>(null);
+  let texteDiagnostic = $state<string | null>(null);
 
   async function relire() {
     try {
       operations = await lireJournal();
     } catch (e) {
       signaler(messageErreur(e), true);
+    }
+  }
+
+  async function exporterDiagnostic() {
+    let texte: string;
+    try {
+      texte = await diagnostic();
+    } catch (e) {
+      signaler(messageErreur(e), true);
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(texte);
+      signaler('Diagnostic copié : relis-le, puis colle-le dans ton signalement. Rien n\'a été envoyé.');
+    } catch {
+      // Presse-papiers refusé : le texte s'affiche, à copier à la main.
+      texteDiagnostic = texte;
     }
   }
 
@@ -50,8 +71,24 @@
       </tbody>
     </table>
   {/if}
-  <div class="actions"><Bouton onclick={() => void relire()}>Relire</Bouton></div>
+  <div class="actions">
+    <Bouton onclick={() => void relire()}>Relire</Bouton>
+    <Bouton onclick={() => void exporterDiagnostic()}>Exporter le diagnostic</Bouton>
+  </div>
 </Panneau>
+
+{#if texteDiagnostic !== null}
+  <Dialogue titre="Diagnostic" fermer={() => (texteDiagnostic = null)}>
+    <ASavoir>
+      Le presse-papiers n'a pas pu être utilisé : clique dans le texte, sélectionne tout (Ctrl+A), copie-le (Ctrl+C) et
+      colle-le dans ton signalement. Rien n'a été envoyé ; aucun secret n'y figure.
+    </ASavoir>
+    <textarea class="diagnostic" readonly rows="16" aria-label="Texte du diagnostic" value={texteDiagnostic}></textarea>
+    {#snippet pied()}
+      <Bouton genre="discret" onclick={() => (texteDiagnostic = null)}>Fermer</Bouton>
+    {/snippet}
+  </Dialogue>
+{/if}
 
 <style>
   table {
@@ -85,6 +122,19 @@
   .actions {
     display: flex;
     justify-content: flex-end;
+    gap: 12px;
     margin-top: 16px;
+  }
+
+  .diagnostic {
+    box-sizing: border-box;
+    width: 100%;
+    margin-top: 12px;
+    padding: 10px;
+    border: 1px solid var(--ligne);
+    background: var(--fond);
+    color: var(--texte);
+    font: 12px var(--police-code);
+    resize: vertical;
   }
 </style>

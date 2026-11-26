@@ -59,6 +59,12 @@ export const lireJournal = (): Promise<Operation[]> => invoke<Operation[]>('lire
 /** Quitte l'appli, icône de notification comprise. */
 export const quitter = (): Promise<void> => invoke<void>('quitter');
 
+/**
+ * Le diagnostic à coller dans un signalement de bug (version, build, Windows, WebView2, réglages, 50 dernières lignes
+ * du journal) : aucun secret, chemin du profil remplacé par %USERPROFILE%, rien n'est envoyé.
+ */
+export const diagnostic = (): Promise<string> => invoke<string>('diagnostic');
+
 /** « Démarrer avec Windows », relu dans le registre à chaque appel. */
 export const lireDemarrageAuto = (): Promise<boolean> => invoke<boolean>('lire_demarrage_auto');
 

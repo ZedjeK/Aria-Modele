@@ -49,8 +49,8 @@ body:
     validations:
       required: true
   - type: textarea
-    id: journal
+    id: diagnostic
     attributes:
-      label: "Extrait du journal (facultatif)"
-      description: "Les dernières lignes de %USERPROFILE%\\.Aria-{{NOM}}\\journal.json, relues avant d'être collées."
-      render: json
+      label: "Diagnostic"
+      description: "Dans l'appli : page Journal, bouton « Exporter le diagnostic », puis colle ici le texte copié. Il donne la version, le build, Windows, WebView2, les réglages et les 50 dernières lignes du journal, sans aucun secret ; relis-le avant d'envoyer."
+      render: text
