@@ -17,8 +17,15 @@
 # Les notes, la fiche projet et les licences doivent être complètes (tools/verifier-release.ps1) : sans notes de
 # version, aucune release, plus de notes générées à leur place.
 #
-# Deux jobs : « build » ne fait que lire (tests, exe, zip, empreinte) ; « publication » est le seul dont le jeton peut
-# écrire, et il n'exécute aucun code du dépôt.
+# Deux jobs : « build » ne fait que lire (tests, exe, signature Authenticode si elle est activée, zip, empreinte) ;
+# « publication » est le seul dont le jeton peut écrire, et il n'exécute aucun code du dépôt.
+#
+# Signature Authenticode (SignPath Foundation) : coupée tant que la variable de dépôt SIGNPATH_ACTIF ne vaut pas
+# « true », et jamais sur un essai à blanc. Pour l'activer, une fois l'appli acceptée par la fondation : les variables
+# SIGNPATH_ORGANISATION, SIGNPATH_PROJET, SIGNPATH_POLITIQUE, le secret SIGNPATH_JETON_API (rôle d'envoi seulement),
+# une configuration d'artefact par défaut dans SignPath qui signe l'exe à la racine du zip envoyé
+# (<zip-file><pe-file path="Aria-{{NOM}}.exe" /></zip-file>), puis SIGNPATH_ACTIF à « true » ; et dans le README, le
+# paragraphe sur l'avertissement de Windows (l'exe n'est plus « non signé »). Voir docs/POLITIQUE-SIGNATURE.md.
 #
 # Essai à blanc, sans tag : « build » tourne sur main, liste ce qui manque encore pour sortir la version de
 # tools/version.ps1 et garde le zip 7 jours en artefact ; « publication » ne tourne pas.
@@ -51,6 +58,11 @@ jobs:
     runs-on: windows-latest
     # 30 minutes de build, plus au plus 30 minutes d'attente de la signature (approbation dans SignPath).
     timeout-minutes: 60
+    permissions:
+      contents: read
+      # Lecture seule : l'action SignPath lit, avec le jeton du workflow, l'artefact de l'exe à signer et les détails
+      # du job (documentation de SignPath, « github-token »).
+      actions: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -98,7 +110,7 @@ jobs:
       # SignPath. Voir docs/POLITIQUE-SIGNATURE.md.
       - name: Exe à signer
         id: exe-a-signer
-        if: vars.SIGNPATH_ACTIF == 'true'
+        if: github.event_name == 'push' && vars.SIGNPATH_ACTIF == 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: exe-a-signer
@@ -108,7 +120,7 @@ jobs:
           retention-days: 1
 
       - name: Signature Authenticode (SignPath)
-        if: vars.SIGNPATH_ACTIF == 'true'
+        if: github.event_name == 'push' && vars.SIGNPATH_ACTIF == 'true'
         uses: signpath/github-action-submit-signing-request@f6d04783b4569d051e0c80105fe66e82819d0092 # v3.0
         with:
           api-token: ${{ secrets.SIGNPATH_JETON_API }}
@@ -122,7 +134,7 @@ jobs:
           output-artifact-directory: .work/signe
 
       - name: L'exe signé remplace l'exe construit
-        if: vars.SIGNPATH_ACTIF == 'true'
+        if: github.event_name == 'push' && vars.SIGNPATH_ACTIF == 'true'
         run: |
           $signe = '.work/signe/Aria-{{NOM}}.exe'
           if (-not (Test-Path -LiteralPath $signe)) { throw "SignPath n'a pas rendu Aria-{{NOM}}.exe : aucune release." }

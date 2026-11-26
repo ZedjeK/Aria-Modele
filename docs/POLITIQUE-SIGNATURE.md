@@ -11,7 +11,7 @@ active pour cette appli, l'exe n'est pas signé et Windows peut afficher un aver
 ## Ce qui est signé
 
 - Seulement `Aria-{{NOM}}.exe`, construit par le workflow `Release` de ce dépôt sur les machines de GitHub, depuis le
-  code source du tag de la version. Aucun exe construit sur un poste n'est signé.
+  code source du tag de la version (jamais sur un essai à blanc). Aucun exe construit sur un poste n'est signé.
 - La signature est faite avant le zip, son empreinte SHA-256 et l'attestation de provenance : les trois portent sur
   l'exe signé.
 - Chaque demande de signature est approuvée à la main dans SignPath par un approbateur avant d'aboutir.
@@ -31,13 +31,13 @@ Chaque membre de l'équipe utilise l'authentification à plusieurs facteurs sur 
 Aria {{NOM}} n'envoie aucune donnée à son auteur ni à un tiers : aucune télémétrie. Ses connexions sortantes sont
 listées une à une dans [docs/FICHE.md](FICHE.md) et dans le README ; pour toute appli de la famille :
 
-- au lancement, une requête à `api.github.com` pour chercher une nouvelle version, sans rien qui identifie
-  l'utilisateur ; une case des paramètres la coupe ;
+- au lancement, une requête à `api.github.com` pour chercher une nouvelle version : elle ne transmet que le nom et la
+  version de l'appli (GitHub voit aussi, comme pour toute requête, l'adresse IP) ; une case des paramètres la coupe ;
 - le téléchargement d'une mise à jour depuis `github.com`, seulement sur un clic de l'utilisateur.
 
-Privacy: this program sends no telemetry and no user data. Its only outgoing connections, listed in docs/FICHE.md,
-are an update check on GitHub (which can be turned off in the settings) and, on the user's click, the download of an
-update.
+Privacy: this program sends no telemetry and no user data. Its outgoing connections are listed one by one in
+docs/FICHE.md; every app of the family checks GitHub for updates at startup (sending only the app name and version;
+this can be turned off in the settings) and downloads an update only on the user's click.
 
 ## Comportement de l'appli
 
