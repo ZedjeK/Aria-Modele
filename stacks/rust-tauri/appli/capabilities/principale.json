@@ -9,6 +9,7 @@
     "allow-mesurer-disque",
     "allow-lire-journal",
     "allow-quitter",
+    "allow-diagnostic",
     "allow-lire-demarrage-auto",
     "allow-regler-demarrage-auto",
     "allow-mise-a-jour-disponible",

@@ -8,6 +8,7 @@ fn main() {
         "mesurer_disque",
         "lire_journal",
         "quitter",
+        "diagnostic",
         "lire_demarrage_auto",
         "regler_demarrage_auto",
         "etat_menu",

@@ -94,6 +94,7 @@ fn lancer() -> Result<(), String> {
             commandes::mesurer_disque,
             commandes::lire_journal,
             commandes::quitter,
+            commandes::diagnostic,
             demarrage_auto::lire_demarrage_auto,
             demarrage_auto::regler_demarrage_auto,
             desinstallation::desinstaller,

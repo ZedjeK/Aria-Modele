@@ -4,7 +4,7 @@
 //! Les erreurs remontent en texte français : l'interface les montre telles quelles. Jamais de secret dedans.
 
 use aria_coeur::journal::Operation;
-use aria_coeur::{Reglages, identite, journal};
+use aria_coeur::{Reglages, diagnostic, identite, installation, journal};
 use serde::Serialize;
 use tauri::{AppHandle, State};
 
@@ -79,4 +79,21 @@ pub fn lire_journal(etat: State<'_, Etat>) -> Vec<Operation> {
 #[tauri::command]
 pub fn quitter(app: AppHandle) {
     app.exit(0);
+}
+
+/// Le diagnostic à coller dans un signalement de bug : rien n'est envoyé, l'interface le copie dans le
+/// presse-papiers. Aucun secret, et le chemin du profil devient `%USERPROFILE%` (voir `aria_coeur::diagnostic`).
+#[tauri::command]
+pub fn diagnostic(etat: State<'_, Etat>) -> String {
+    let build = std::env::current_exe()
+        .ok()
+        .and_then(|exe| exe.parent().map(|d| d.join(installation::INFOS_BUILD)))
+        .and_then(|chemin| std::fs::read_to_string(chemin).ok());
+    let contexte = diagnostic::Contexte {
+        build,
+        windows: diagnostic::version_windows(),
+        webview2: tauri::webview_version().ok(),
+        profil: std::env::var("USERPROFILE").ok(),
+    };
+    diagnostic::texte(&etat.dossier, &contexte)
 }

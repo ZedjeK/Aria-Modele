@@ -5,6 +5,7 @@
 
 pub mod demarrage;
 pub mod desinstallation;
+pub mod diagnostic;
 pub mod donnees;
 pub mod identite;
 pub mod installation;
