@@ -1,0 +1,14 @@
+{{#each crates}}
+{{{package.name}}} {{{package.version}}}
+  Source  : {{#if package.repository}}{{{package.repository}}}{{else}}https://crates.io/crates/{{{package.name}}}{{/if}}
+  Licence : {{{license}}}
+{{/each}}
+
+Textes des licences
+-------------------
+{{#each licenses}}
+
+{{{name}}}, pour : {{#each used_by}}{{{crate.name}}} {{{crate.version}}}{{#unless @last}}, {{/unless}}{{/each}}
+
+{{{text}}}
+{{/each}}

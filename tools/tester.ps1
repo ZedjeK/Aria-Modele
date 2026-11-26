@@ -13,7 +13,8 @@ Onze scénarios, les huit premiers et le dernier chacun dans sa propre copie du 
      squelettes la garde sur une ligne, à l'abri de rustfmt ;
   5. un dossier qui contient une jonction est refusé ;
   6. sans installation par l'exe, le README et les notes de version gardent le bloc portable ;
-  7. verifier-release.ps1 refuse une version incomplète et accepte une version complète ;
+  7. verifier-release.ps1 refuse une version incomplète et accepte une version complète, dont la liste des crates
+     Rust à jour de Cargo.lock ;
   8. une stack refuse ce qu'elle ne fournit pas encore (clé nonFournis de stack.json) ;
   9. les actions recopiées dans les _socle\outils.txt gardent le SHA épinglé dans les workflows ;
  10. chaque script PowerShell du dépôt se lit sans erreur de syntaxe ;
@@ -235,6 +236,27 @@ try {
     [IO.File]::WriteAllText((Join-Path $c 'docs\releases\v1.2.3.md'), $notes.Replace("Décompresse d'abord", 'Décompresse'))
     & $hote -NoProfile -ExecutionPolicy Bypass -File $verif -Tag v1.2.3 | Out-Host
     Verifier ($LASTEXITCODE -ne 0) "des notes sans « décompresse d'abord » : refusé"
+
+    # Avec un Cargo.lock, la liste des crates Rust de LICENCES-TIERS.txt doit porter son empreinte (fins de ligne LF).
+    [IO.File]::WriteAllText((Join-Path $c 'docs\releases\v1.2.3.md'), $notes)
+    $verrou = Join-Path $c 'Cargo.lock'
+    [IO.File]::WriteAllText($verrou, "# essai`r`nversion = 4`r`n")
+    & $hote -NoProfile -ExecutionPolicy Bypass -File $verif -Tag v1.2.3 | Out-Host
+    Verifier ($LASTEXITCODE -ne 0) "un Cargo.lock sans liste des crates Rust : refusé"
+    $sha = [Security.Cryptography.SHA256]::Create()
+    $empreinte = -join ($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes("# essai`nversion = 4`n")) | ForEach-Object { $_.ToString('x2') })
+    $sha.Dispose()
+    $licencesRust = Join-Path $c 'LICENCES-TIERS.txt'
+    $avantRust = Texte $c 'LICENCES-TIERS.txt'
+    [IO.File]::WriteAllText($licencesRust, $avantRust + "`r`nCargo.lock (SHA-256, fins de ligne LF) : $empreinte`r`n")
+    & $hote -NoProfile -ExecutionPolicy Bypass -File $verif -Tag v1.2.3 | Out-Host
+    Verifier ($LASTEXITCODE -eq 0) "une liste qui porte l'empreinte de Cargo.lock : accepté"
+    [IO.File]::WriteAllText($verrou, "# essai`nversion = 4`n")
+    & $hote -NoProfile -ExecutionPolicy Bypass -File $verif -Tag v1.2.3 | Out-Host
+    Verifier ($LASTEXITCODE -eq 0) "la même empreinte avec des fins de ligne LF : accepté"
+    [IO.File]::WriteAllText($verrou, "# essai`nversion = 4`n[[package]]`n")
+    & $hote -NoProfile -ExecutionPolicy Bypass -File $verif -Tag v1.2.3 | Out-Host
+    Verifier ($LASTEXITCODE -ne 0) "un Cargo.lock modifié après la liste : refusé"
 
     Write-Host "8. Une stack refuse ce qu'elle ne fournit pas encore"
     $c = Nouvelle-Copie

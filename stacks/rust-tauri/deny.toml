@@ -1,0 +1,65 @@
+# Contrôle des dépendances Rust par cargo-deny 0.20.2 (version installée par la CI) : licences, failles connues,
+# crates interdites, origine et doublons. Lancé par tools\tester.ps1, donc par chaque passage des tests.
+#
+# Une règle de plus ou une exception se décide dans une PR, avec la raison écrite ici.
+
+[graph]
+# L'exe ne tourne que sous Windows : seules les crates compilées pour lui comptent (les crates propres à Linux ou à
+# macOS de Tauri, comme gtk ou glib, ne sont pas dans l'exe).
+targets = ["x86_64-pc-windows-msvc"]
+all-features = true
+
+[advisories]
+# Une faille connue (base RustSec) dans une crate du graphe fait échouer les tests.
+# Une crate abandonnée ou une crate « unsound » ne sont signalées que si l'appli en dépend directement : les
+# dépendances de Tauri suivent Tauri, et se règlent en montant Tauri.
+unmaintained = "workspace"
+unsound = "workspace"
+# Une version retirée de crates.io est signalée sans bloquer : la mise à jour passe par une PR de dépendances.
+yanked = "warn"
+ignore = []
+
+[licenses]
+# Liste explicite : une crate sous une autre licence fait échouer les tests. Relevé de Cargo.lock le 2026-11-26 ;
+# une crate sous plusieurs licences au choix (« MIT OR Apache-2.0 ») passe dès que l'une est ici.
+allow = [
+    "MIT",
+    "Apache-2.0",
+    # target-lexicon.
+    "Apache-2.0 WITH LLVM-exception",
+    # brotli et ses allocateurs (décompression des ressources de l'interface).
+    "BSD-3-Clause",
+    # libloading.
+    "ISC",
+    # cssparser, selectors, dtoa-short (analyse du HTML par Tauri), option-ext : licence au fichier, sources
+    # publiées sur crates.io.
+    "MPL-2.0",
+    # Les crates icu_* (Unicode) et unicode-ident.
+    "Unicode-3.0",
+    # foldhash.
+    "Zlib",
+    # webpki-root-certs : la liste des certificats racines.
+    "CDLA-Permissive-2.0",
+]
+confidence-threshold = 0.9
+exceptions = []
+
+[bans]
+# Plusieurs versions d'une même crate viennent des dépendances de Tauri (windows-sys, par exemple) : signalé sans
+# bloquer.
+multiple-versions = "warn"
+# Une dépendance sans version (« * ») est refusée ; les crates du dépôt (coeur, appli) se lient par leur chemin.
+wildcards = "deny"
+allow-wildcard-paths = true
+deny = [
+    # Les mises à jour passent par SChannel, le TLS de Windows (ureq avec native-tls) : jamais OpenSSL dans l'exe.
+    { crate = "openssl", reason = "le TLS de l'appli est celui de Windows (SChannel)" },
+    { crate = "openssl-sys", reason = "le TLS de l'appli est celui de Windows (SChannel)" },
+]
+
+[sources]
+# Seulement crates.io : ni autre registre, ni dépôt git.
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

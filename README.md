@@ -198,6 +198,10 @@ rustup toolchain install
 `rustup toolchain install` prend la version de Rust écrite dans
 `rust-toolchain.toml`.
 
+Pour le contrôle des dépendances Rust que fait aussi la CI (licences, failles
+connues), installe cargo-deny : `cargo install cargo-deny --version 0.20.2 --locked`.
+Sans lui, `tester.ps1` saute ce contrôle et le dit.
+
 `tester.ps1` lance les contrôles et les tests de l'interface et du Rust ;
 `build.ps1` construit l'exe dans `.work\sortie\`. Comment vérifier que l'exe
 obtenu est le bon.

@@ -105,6 +105,16 @@ try {
         Verifier (-not (Test-Path (Join-Path $c 'tools\tester-squelettes.ps1'))) "$($s.Name) : tester-squelettes.ps1 n'est pas copié dans l'appli"
         Verifier (-not (Test-Path (Join-Path $c '.github\workflows\squelettes.yml'))) "$($s.Name) : squelettes.yml n'est pas copié dans l'appli"
 
+        # La liste des crates Rust de LICENCES-TIERS.txt, générée par cargo-about, si la stack fournit le script.
+        $outilLicences = Join-Path $c 'tools\licences-rust.ps1'
+        if (Test-Path $outilLicences) {
+            & $hote -NoProfile -ExecutionPolicy Bypass -File $outilLicences | Out-Host
+            Verifier ($LASTEXITCODE -eq 0) "$($s.Name) : tools\licences-rust.ps1 génère la liste des crates Rust"
+            $licencesApp = [IO.File]::ReadAllText((Join-Path $c 'LICENCES-TIERS.txt'), [Text.Encoding]::UTF8)
+            Verifier ($licencesApp -match 'Cargo\.lock \(SHA-256, fins de ligne LF\) : [0-9a-f]{64}') "$($s.Name) : LICENCES-TIERS.txt porte l'empreinte de Cargo.lock"
+            Verifier ($licencesApp -match '(?m)^tauri \d+\.\d+\.\d+') "$($s.Name) : la liste des crates Rust nomme tauri"
+        }
+
         $version = "$(& (Join-Path $c 'tools\version.ps1') | Select-Object -Last 1)".Trim()
         Verifier ($version -match '^\d+\.\d+\.\d+$') "$($s.Name) : tools\version.ps1 répond X.Y.Z ($version)"
 
