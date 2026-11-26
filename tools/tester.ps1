@@ -119,6 +119,14 @@ try {
     Verifier ((Texte $c '.github\workflows\tests.yml').Contains('  tests: #')) "le job s'appelle toujours « tests »"
     Verifier ((Texte $c '.github\workflows\release.yml').Contains('Outils de la stack essai')) "les outils de la stack sont dans release.yml"
     Verifier ((Texte $c '.github\workflows\release.yml').Contains('release/Aria-Essai-$version.zip')) "release.yml nomme le zip de l'appli"
+    # Signature Authenticode (SignPath) : avant le zip, l'empreinte et l'attestation, et coupée sans SIGNPATH_ACTIF.
+    $release = Texte $c '.github\workflows\release.yml'
+    $iSignature = $release.IndexOf('signpath/github-action-submit-signing-request@')
+    $iZip = $release.IndexOf('./tools/empaqueter.ps1')
+    Verifier ($iSignature -gt 0 -and $iSignature -lt $iZip) "release.yml signe l'exe avant le zip, l'empreinte et l'attestation"
+    Verifier ([regex]::Matches($release, "if: github\.event_name == 'push' && vars\.SIGNPATH_ACTIF == 'true'").Count -eq 3) "les trois étapes de signature : seulement sur un tag, et coupées sans SIGNPATH_ACTIF"
+    Verifier ($release.Contains('.work/sortie/Aria-Essai.exe')) "release.yml signe l'exe de l'appli"
+    Verifier ((Texte $c 'docs\POLITIQUE-SIGNATURE.md').Contains("L'exe d'Aria Essai est signé")) "la politique de signature porte le nom de l'appli"
     Verifier ((Texte $c '.github\workflows\codeql.yml').Contains('language: essai')) "le langage de la stack est dans codeql.yml"
     Verifier ((Texte $c 'LICENCES-TIERS.txt').Contains("Composant d'essai")) "les composants de la stack sont dans LICENCES-TIERS.txt"
     Verifier (Test-Path (Join-Path $c '.github\pull_request_template.md')) "le modèle de PR est copié dans l'appli"
