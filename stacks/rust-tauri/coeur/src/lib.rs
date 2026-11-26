@@ -20,6 +20,13 @@ pub use reglages::{Reglages, ReglagesFond, Vitesse};
 
 use std::path::PathBuf;
 
+use time::OffsetDateTime;
+
+/// Maintenant, à l'heure locale ; à l'heure UTC si Windows ne donne pas le décalage.
+pub(crate) fn maintenant() -> OffsetDateTime {
+    OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc())
+}
+
 /// Les erreurs du cœur, en français : elles peuvent être montrées telles quelles à l'utilisateur.
 #[derive(Debug, thiserror::Error)]
 pub enum Erreur {
