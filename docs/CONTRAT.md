@@ -289,12 +289,13 @@ Les lignes « à renseigner » se complètent **avant la première ligne de code
   faille connue, crates.io pour seule origine. La liste des crates de `LICENCES-TIERS.txt` est générée par
   `.\tools\licences-rust.ps1` (cargo-about) ; `verifier-release.ps1` refuse une liste qui ne correspond plus à
   `Cargo.lock`.
-- **Branches, commits, PR, tags, releases** : voir `CONTRIBUTING.md`, sans exception pour les applis.
+- **Branches, commits, PR, tags, releases** : voir [CONTRIBUTING.md](../CONTRIBUTING.md), sans exception pour les
+  applis.
 
 ### Release d'une appli
 
-La chaîne générique (tag, workflow, brouillon, publication) est décrite dans `CONTRIBUTING.md` ; voici ce que toute
-appli y ajoute.
+La chaîne générique (tag, workflow, brouillon, publication) est décrite dans [CONTRIBUTING.md](../CONTRIBUTING.md) ;
+voici ce que toute appli y ajoute.
 
 | Point | Règle |
 | --- | --- |
@@ -303,7 +304,7 @@ appli y ajoute.
 | `release.yml` | refait le contrôle des notes, refuse un tag dont le commit n'est pas dans la branche par défaut, construit, joint l'empreinte et l'attestation de provenance, s'arrête au brouillon |
 | Essai à blanc | `gh workflow run Release --ref main` : build, zip et contrôle des notes, sans publication |
 | Zip | contient `fichiers.txt`, la liste exacte que copient l'installation et les mises à jour |
-| Tags `v*` | verrouillés par un ruleset ; un tag poussé par erreur suit le retour arrière décrit dans `CONTRIBUTING.md` |
+| Tags `v*` | verrouillés par un ruleset ; un tag poussé par erreur suit le retour arrière décrit dans [CONTRIBUTING.md](../CONTRIBUTING.md) |
 | Publication | annonce la version à tous les utilisateurs (l'appli lit `releases/latest`) : une prerelease d'abord pour tester sans prévenir |
 | Protections du dépôt | posées et relues par `.\tools\proteger-depot.ps1`, qui garde un état d'avant daté |
 
