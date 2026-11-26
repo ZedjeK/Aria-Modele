@@ -11,6 +11,13 @@
 .github/release.yml
 PSScriptAnalyzerSettings.psd1
 docs/CONTRAT.md
+docs/decisions/0001-stack-unique-rust-tauri.md
+docs/decisions/0002-exe-portable.md
+docs/decisions/0003-secrets-dpapi.md
+docs/decisions/0004-mises-a-jour.md
+docs/decisions/0005-aucune-telemetrie.md
+docs/decisions/0006-signature-signpath.md
+docs/decisions/LISEZ-MOI.md
 docs/releases/LISEZ-MOI.md
 tools/proteger-depot.ps1
 tools/socle.txt
