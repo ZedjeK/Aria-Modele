@@ -35,8 +35,9 @@ Ce que l'appli permet, en clair, sans jargon.
 
 ## Avant de commencer
 
-Windows 10 ou 11, 64 bits, avec WebView2 (déjà présent sur Windows 11 et sur un
-Windows 10 à jour). Droits, ports et matériel nécessaires.
+Windows 11, ou Windows 10 22H2, en 64 bits. L'appli ne demande rien d'autre à
+installer : WebView2, le moteur d'affichage de Windows, y est déjà présent (s'il
+manque, voir « Si ça ne marche pas »). Droits, ports et matériel nécessaires.
 
 ## Installation
 
@@ -61,9 +62,31 @@ Windows 10 à jour). Droits, ports et matériel nécessaires.
    proposer.
 <!-- INSTALLATION:fin -->
 
-L'exe n'est pas signé : Windows peut afficher « Windows a protégé votre
-ordinateur ». Clique sur « Informations complémentaires », puis sur « Exécuter
-quand même ».
+Si Windows ou ton antivirus bloque l'exe, voir « Si ça ne marche pas ».
+
+## Si ça ne marche pas
+
+- **« WebView2 n'est pas installé »** : WebView2 est le moteur d'affichage de
+  Windows qui dessine la fenêtre de l'appli. Il ne manque que rarement, sur
+  certains Windows 10. L'appli propose d'ouvrir la page de Microsoft : installe
+  « Microsoft Edge WebView2 Runtime », puis relance l'appli. La page :
+  https://developer.microsoft.com/microsoft-edge/webview2/consumer/
+- **« Windows a protégé votre ordinateur »** (SmartScreen) : l'exe n'est pas
+  signé, et Windows se méfie d'un exe qu'il voit peu. Clique sur « Informations
+  complémentaires », puis sur « Exécuter quand même ».
+- **L'antivirus met l'exe en quarantaine** : un exe récent et non signé est
+  parfois pris pour suspect. Vérifie d'abord qu'il vient de la page des versions
+  de ce dépôt : l'empreinte du zip (`Get-FileHash`) doit être celle du fichier
+  `.sha256` publié avec la version, et `gh attestation verify` confirme sa
+  provenance (voir les notes de version). Restaure-le ensuite depuis la
+  quarantaine, et signale le faux positif à l'éditeur de ton antivirus.
+- **Lancé depuis l'aperçu du zip** : l'Explorateur n'extrait que l'exe, dans un
+  dossier temporaire, sans les fichiers livrés à côté de lui.
+<!-- INSTALLATION:debut -->
+  L'appli ne propose alors pas de s'installer.
+<!-- INSTALLATION:fin -->
+  Ferme-la, décompresse le zip en entier (clic droit, « Extraire tout »), puis
+  lance l'exe du dossier obtenu.
 
 ## Premiers pas
 
