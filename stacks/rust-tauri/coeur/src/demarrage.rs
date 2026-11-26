@@ -130,9 +130,11 @@ pub mod windows {
         }
     }
 
+    /// Les deux retraits sont tentés, même si le premier échoue ; la première erreur remonte.
     pub(crate) fn oublier_sous(run: &str, approuves: &str) -> io::Result<()> {
-        desinscrire_sous(run)?;
-        desinscrire_sous(approuves)
+        let retrait_run = desinscrire_sous(run);
+        let retrait_approuves = desinscrire_sous(approuves);
+        retrait_run.and(retrait_approuves)
     }
 
     /// Supprime la valeur ; sans effet si elle n'existe pas.

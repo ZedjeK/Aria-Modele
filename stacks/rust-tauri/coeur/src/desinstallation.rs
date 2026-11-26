@@ -5,7 +5,8 @@
 //! Un exe qui tourne ne peut pas supprimer son propre fichier. Quand l'appli tourne depuis `programme\`, elle se
 //! copie dans `cache\desinstallation\` et lance cette copie avec [`ARGUMENT_FINIR`] : la copie attend la fin de
 //! l'appli, vide `programme\`, puis s'arrête. Elle ne peut pas se supprimer non plus : le lancement suivant retire
-//! son dossier ([`nettoyer_aide`]) ; sinon elle reste dans le dossier de données, avec le reste.
+//! son dossier ([`nettoyer_aide`]) ; sinon elle reste dans le dossier de données, avec le reste. La copie est l'exe
+//! seul : une appli qui livrerait des bibliothèques à côté de son exe devrait les copier aussi.
 //!
 //! Ici, les règles qui se testent partout ; le registre est dans [`crate::demarrage`], la lecture du raccourci et
 //! l'attente de la fin de l'appli dans l'exe.
@@ -74,6 +75,8 @@ pub struct Bilan {
     pub gardes: Vec<String>,
     /// `programme\` a été retiré.
     pub dossier_retire: bool,
+    /// `programme\` est un lien ou une jonction : rien n'a été suivi ni supprimé.
+    pub lien: bool,
 }
 
 impl Bilan {
@@ -86,6 +89,18 @@ impl Bilan {
             return Err(format!(
                 "pas entièrement supprimé, encore là : {} (dans {})",
                 self.restants.join(", "),
+                programme.display()
+            ));
+        }
+        if self.lien {
+            return Err(format!(
+                "{} est un lien ou une jonction : rien n'a été supprimé",
+                programme.display()
+            ));
+        }
+        if self.gardes.is_empty() && !self.dossier_retire && programme.exists() {
+            return Err(format!(
+                "fichiers de l'appli supprimés, mais le dossier {} reste",
                 programme.display()
             ));
         }
@@ -129,6 +144,14 @@ fn est_a_nous(nom: &str, noms: &[String]) -> bool {
 /// restent, et le bilan les nomme. `fichiers.txt` part en dernier, quand tout le reste est parti : tant qu'un
 /// fichier est verrouillé, la liste dit encore ce qui est à l'appli. Le dossier n'est retiré que s'il est vide.
 pub fn vider_programme(programme: &Path) -> Bilan {
+    // `programme\` lui-même en lien ou en jonction (que Rust classe comme lien) : jamais suivi.
+    let lien = fs::symlink_metadata(programme).is_ok_and(|m| m.file_type().is_symlink());
+    if lien {
+        return Bilan {
+            lien,
+            ..Bilan::default()
+        };
+    }
     let mut bilan = Bilan::default();
     let Ok(entrees) = fs::read_dir(programme) else {
         return bilan;
@@ -164,15 +187,17 @@ pub fn vider_programme(programme: &Path) -> Bilan {
     bilan
 }
 
-/// [`vider_programme`], repris tant qu'un fichier de l'appli reste verrouillé (l'exe qui vient de se fermer), au plus
-/// pendant `delai`.
+/// [`vider_programme`], repris tant qu'un fichier de l'appli reste verrouillé (l'exe qui vient de se fermer) ou que
+/// le dossier, vide, ne se retire pas encore, au plus pendant `delai`.
 pub fn vider_programme_en_attendant(programme: &Path, delai: Duration) -> Bilan {
     let fin = Instant::now() + delai;
     let mut supprimes = Vec::new();
     loop {
         let mut bilan = vider_programme(programme);
         supprimes.append(&mut bilan.supprimes);
-        if bilan.restants.is_empty() || Instant::now() >= fin {
+        // Rien de plus à faire : il ne reste que ce que l'appli n'a pas installé.
+        let seuls_gardes = bilan.restants.is_empty() && !bilan.gardes.is_empty();
+        if !programme.exists() || bilan.lien || seuls_gardes || Instant::now() >= fin {
             supprimes.sort();
             bilan.supprimes = supprimes;
             return bilan;
@@ -314,6 +339,17 @@ mod tests {
         };
         let erreur = bilan.resume(Path::new("programme")).unwrap_err();
         assert!(erreur.contains(&nom_exe()), "{erreur}");
+    }
+
+    #[test]
+    fn un_dossier_qui_reste_est_une_erreur() {
+        let temp = tempfile::tempdir().unwrap();
+        let bilan = Bilan {
+            supprimes: vec![nom_exe()],
+            ..Bilan::default()
+        };
+        let erreur = bilan.resume(temp.path()).unwrap_err();
+        assert!(erreur.contains("reste"), "{erreur}");
     }
 
     #[test]

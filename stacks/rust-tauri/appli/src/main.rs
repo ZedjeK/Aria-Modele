@@ -14,6 +14,7 @@ mod installation;
 mod mise_a_jour;
 
 use std::path::PathBuf;
+use std::sync::atomic::AtomicBool;
 
 use aria_coeur::{Dossier, Reglages, demarrage, identite, journal};
 use tauri::window::Color;
@@ -27,6 +28,8 @@ pub struct Etat {
     pub dossier: Dossier,
     /// Contrat : WebView2 range ses données dans le dossier de l'appli, jamais dans %LOCALAPPDATA%.
     pub cache_webview: PathBuf,
+    /// Désinstallée, `programme\` reste à supprimer à la fermeture (voir `desinstallation::a_la_sortie`).
+    pub desinstallee: AtomicBool,
 }
 
 fn main() {
@@ -74,6 +77,7 @@ fn lancer() -> Result<(), String> {
         .manage(Etat {
             dossier,
             cache_webview,
+            desinstallee: AtomicBool::new(false),
         })
         .manage(icone::Presence::default())
         .manage(mise_a_jour::Disponible::default())
@@ -110,7 +114,9 @@ fn lancer() -> Result<(), String> {
         .map_err(|e| format!("l'interface n'a pas pu démarrer : {e}"))?
         .run(|app, evenement| {
             if let RunEvent::Exit = evenement {
-                journal::consigner(&app.state::<Etat>().dossier, "arrêt", "appli fermée");
+                let etat = app.state::<Etat>();
+                journal::consigner(&etat.dossier, "arrêt", "appli fermée");
+                desinstallation::a_la_sortie(&etat);
             }
         });
     Ok(())

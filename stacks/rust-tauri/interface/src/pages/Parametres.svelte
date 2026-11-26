@@ -121,7 +121,11 @@
     nom={identite.nom}
     donnees={identite.dossier}
     installable={identite.installable}
-    fermer={() => (dialogueDesinstallation = false)}
+    fermer={() => {
+      dialogueDesinstallation = false;
+      // La désinstallation a pu retirer le démarrage avec Windows : la case suit.
+      void relireDemarrageAuto();
+    }}
   />
 {/if}
 

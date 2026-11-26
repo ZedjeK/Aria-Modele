@@ -1,10 +1,12 @@
 //! « Désinstaller », dans les Paramètres (vue `Parametres.svelte`) : retire le démarrage automatique, le raccourci
 //! du Bureau s'il pointe vers l'appli, puis `programme\` : tout de suite si l'exe en cours n'en vient pas, sinon par
-//! une copie de l'exe, une fois l'appli fermée. Les données restent ; l'interface dit où elles sont.
+//! une copie de l'exe, une fois l'appli fermée (par « Fermer l'appli », ou de toute autre façon : voir
+//! [`a_la_sortie`]). Les données restent ; l'interface dit où elles sont.
 
 use std::fs;
 use std::path::Path;
 use std::process::Command;
+use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 use aria_coeur::desinstallation::{self, Programme};
@@ -102,6 +104,10 @@ pub fn desinstaller(app: AppHandle, etat: State<'_, Etat>) -> Result<BilanDesins
         Programme::ALaFermeture => Ok(A_LA_FERMETURE.to_owned()),
     };
     suivi.noter("Programme", issue);
+    // Quelle que soit la façon dont l'appli se fermera, programme\ sera confié à la copie de fin.
+    if sort == Programme::ALaFermeture {
+        etat.desinstallee.store(true, Ordering::SeqCst);
+    }
 
     Ok(BilanDesinstallation {
         etapes: suivi.etapes,
@@ -119,6 +125,9 @@ fn retirer_raccourci(app: &AppHandle, exes: &[&Path]) -> Result<String, String> 
         return Ok("aucun raccourci".to_owned());
     }
     let cible = systeme::cible_raccourci(&lien).map_err(|e| format!("cible illisible, gardé : {e}"))?;
+    if cible.as_os_str().is_empty() {
+        return Ok("cible illisible, gardé".to_owned());
+    }
     if !desinstallation::raccourci_a_nous(&cible, exes) {
         return Ok("il pointe vers un autre programme : gardé".to_owned());
     }
@@ -131,8 +140,21 @@ fn retirer_raccourci(app: &AppHandle, exes: &[&Path]) -> Result<String, String> 
 #[tauri::command]
 pub fn fermer_apres_desinstallation(app: AppHandle, etat: State<'_, Etat>) -> Result<(), String> {
     confier_programme(&etat.dossier)?;
+    // Confié : la fermeture n'a plus à le faire.
+    etat.desinstallee.store(false, Ordering::SeqCst);
     app.exit(0);
     Ok(())
+}
+
+/// À la fermeture de l'appli : désinstallée sans passer par « Fermer l'appli » (Quitter, croix), `programme\` est
+/// confié maintenant à la copie de fin. Un échec est noté au journal : il n'y a plus de fenêtre pour le dire.
+pub fn a_la_sortie(etat: &Etat) {
+    if !etat.desinstallee.swap(false, Ordering::SeqCst) {
+        return;
+    }
+    if let Err(e) = confier_programme(&etat.dossier) {
+        journal::consigner(&etat.dossier, GENRE, &format!("Programme : {e}"));
+    }
 }
 
 /// Si l'appli tourne depuis `programme\`, lance la copie de l'exe qui le videra une fois l'appli fermée.
@@ -187,7 +209,7 @@ mod systeme {
     use std::path::{Path, PathBuf};
     use std::time::Duration;
 
-    use windows::Win32::Foundation::{CloseHandle, WAIT_OBJECT_0};
+    use windows::Win32::Foundation::{CloseHandle, ERROR_INVALID_PARAMETER, WAIT_OBJECT_0};
     use windows::Win32::System::Com::{
         CLSCTX_INPROC_SERVER, COINIT_APARTMENTTHREADED, CoCreateInstance, CoInitializeEx, CoUninitialize,
         IPersistFile, STGM_READ,
@@ -230,15 +252,16 @@ mod systeme {
         }
     }
 
-    /// Attend la fin du processus, au plus `delai`. Vrai s'il s'est terminé, ou s'il ne s'ouvre pas (déjà terminé) ;
-    /// un fichier encore verrouillé se verra à la suppression.
+    /// Attend la fin du processus, au plus `delai`. Vrai s'il s'est terminé, ou si son numéro n'existe plus (déjà
+    /// terminé) ; faux s'il tourne encore ou ne s'ouvre pas pour une autre raison (accès refusé).
     #[allow(unsafe_code)]
     pub fn attendre_fin(processus: u32, delai: Duration) -> bool {
         let millisecondes = u32::try_from(delai.as_millis()).unwrap_or(u32::MAX);
         // SAFETY : le handle ouvert ici ne sert que dans ce bloc, puis il est fermé ; aucun tampon n'est passé.
         unsafe {
-            let Ok(handle) = OpenProcess(PROCESS_SYNCHRONIZE, false, processus) else {
-                return true;
+            let handle = match OpenProcess(PROCESS_SYNCHRONIZE, false, processus) {
+                Ok(handle) => handle,
+                Err(e) => return e.code() == ERROR_INVALID_PARAMETER.to_hresult(),
             };
             let attente = WaitForSingleObject(handle, millisecondes);
             // Un handle qui ne se ferme pas sera rendu à la fin du processus, juste après.

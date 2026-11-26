@@ -38,7 +38,7 @@
       bilan = fait;
       const ratees = fait.etapes.filter((e) => !e.reussie).length;
       if (ratees > 0) signaler('Une partie reste à faire à la main : le détail est ci-dessus.', true);
-      else if (fait.aLaFermeture) signaler('Ferme l\'appli pour finir : programme\\ sera supprimé ensuite.');
+      else if (fait.aLaFermeture) signaler('programme\\ sera supprimé quand l\'appli se fermera.');
       else signaler('Désinstallation faite.');
     } catch (e) {
       signaler(messageErreur(e), true);
