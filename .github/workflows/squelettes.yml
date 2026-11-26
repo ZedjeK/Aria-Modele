@@ -45,5 +45,10 @@ jobs:
           # Seule main enregistre le cache ; les PR le lisent sans pouvoir le remplacer.
           save-if: ${{ github.ref == 'refs/heads/main' }}
 
+      # cargo-deny et cargo-about de la stack Rust, aux versions de stacks/rust-tauri/_socle/outils.txt.
+      - uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
+        with:
+          tool: cargo-deny@0.20.2,cargo-about@0.9.3
+
       - name: Squelettes
         run: ./tools/tester-squelettes.ps1

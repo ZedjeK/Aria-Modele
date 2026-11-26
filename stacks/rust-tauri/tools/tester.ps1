@@ -1,7 +1,7 @@
 ﻿<#
 .SYNOPSIS
 Lance les tests d'Aria {{NOM}} : runtime Visual C++ lié dans l'exe, interface (svelte-check, vitest), puis Rust
-(rustfmt, clippy, cargo test).
+(cargo deny, rustfmt, clippy, cargo test).
 
 .DESCRIPTION
 L'interface est compilée avant le Rust : l'exe l'embarque, et clippy compile l'appli telle qu'elle sera livrée.
@@ -91,6 +91,18 @@ finally { Pop-Location }
 
 Push-Location -LiteralPath $racine
 try {
+    # Licences, failles connues (RustSec), crates interdites, origine et doublons : règles dans deny.toml. La CI
+    # installe cargo-deny à la version de ses workflows ; en local, sans lui, le contrôle est sauté et le dit.
+    if (Get-Command cargo-deny -ErrorAction SilentlyContinue) {
+        Controler 'Dépendances Rust (cargo deny)' { cargo deny --locked check }
+    }
+    elseif ($env:GITHUB_ACTIONS -eq 'true') {
+        Write-Host 'Échec : cargo-deny est introuvable dans la CI (taiki-e/install-action, dans les workflows).' -ForegroundColor Red
+        exit 1
+    }
+    else {
+        Write-Warning 'cargo-deny est introuvable : contrôle des dépendances sauté. Installe-le : cargo install cargo-deny --version 0.20.2 --locked'
+    }
     Controler 'Mise en forme du Rust (rustfmt)' { cargo fmt --all --check }
     Controler 'Contrôles du Rust (clippy)' { cargo clippy --workspace --all-targets --all-features --locked -- -D warnings }
     Controler 'Tests du Rust' { cargo test --workspace --all-features --locked }

@@ -13,6 +13,7 @@ Contrôles :
   - il ne garde ni {VERSION}, ni {REPO_URL}, ni marqueur du modèle, ni commentaire HTML du modèle ;
   - il dit de décompresser le zip avant de lancer l'exe ;
   - LICENCES-TIERS.txt ne garde ni « à renseigner » ni « à compléter » ;
+  - avec un Cargo.lock, LICENCES-TIERS.txt porte son empreinte (liste des crates Rust à jour) ;
   - aucune ligne du tableau de docs\FICHE.md ne garde « à renseigner ».
 #>
 [CmdletBinding()]
@@ -61,6 +62,24 @@ $licences = Lire 'LICENCES-TIERS.txt'
 if ($null -eq $licences) { $problemes.Add("LICENCES-TIERS.txt n'existe pas.") }
 elseif ($licences -match '(?i)à renseigner|à compléter') {
     $problemes.Add("LICENCES-TIERS.txt garde « à renseigner » ou « à compléter ».")
+}
+
+# Avec un Cargo.lock, la liste des crates Rust (générée par tools\licences-rust.ps1) doit porter son empreinte : une
+# liste générée avant la dernière mise à jour des dépendances ne correspond plus à ce que l'exe embarque.
+$verrou = Join-Path $racine 'Cargo.lock'
+if ($null -ne $licences -and (Test-Path -LiteralPath $verrou -PathType Leaf)) {
+    # Fins de ligne ramenées à LF : la même empreinte sous Windows et sous Linux.
+    $texteVerrou = [IO.File]::ReadAllText($verrou, [Text.Encoding]::UTF8).Replace("`r`n", "`n")
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try { $empreinte = -join ($sha.ComputeHash([Text.Encoding]::UTF8.GetBytes($texteVerrou)) | ForEach-Object { $_.ToString('x2') }) }
+    finally { $sha.Dispose() }
+    $ecrite = [regex]::Match($licences, 'Cargo\.lock \(SHA-256, fins de ligne LF\) : ([0-9a-f]{64})')
+    if (-not $ecrite.Success) {
+        $problemes.Add("LICENCES-TIERS.txt n'a pas la liste des crates Rust : lance .\tools\licences-rust.ps1.")
+    }
+    elseif ($ecrite.Groups[1].Value -ne $empreinte) {
+        $problemes.Add("LICENCES-TIERS.txt ne correspond plus à Cargo.lock : relance .\tools\licences-rust.ps1.")
+    }
 }
 
 # Fiche projet : seules les lignes du tableau comptent, la phrase sous le tableau cite « à renseigner » exprès.

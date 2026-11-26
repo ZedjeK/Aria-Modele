@@ -26,20 +26,19 @@ Bibliothèque standard de Rust, compilée dans l'exe
   Licence      : MIT ou Apache-2.0
   Vérification : à renseigner
 
-Tauri (crates tauri, tauri-runtime, tauri-utils, wry, tao…), compilé dans l'exe
-  Version      : à renseigner : celle de Cargo.lock au moment de la version
-  Source       : https://github.com/tauri-apps/tauri
-  Licence      : MIT ou Apache-2.0
-  Vérification : à renseigner
-
-Autres crates compilées dans l'exe (Cargo.lock)
-  Version      : à renseigner : un bloc par crate, d'après Cargo.lock du build (cargo about peut les lister)
-  Source       : à renseigner
-  Licence      : à renseigner
-  Vérification : à renseigner
-
 Paquets npm embarqués dans l'interface (@tauri-apps/api, Svelte)
   Version      : à renseigner : celles de interface\package-lock.json au moment de la version
   Source       : https://github.com/tauri-apps/tauri et https://github.com/sveltejs/svelte
   Licence      : MIT ou Apache-2.0 (@tauri-apps/api), MIT (Svelte)
   Vérification : à renseigner
+
+Crates Rust compilées dans l'exe (dont Tauri : tauri, wry, tao…)
+  Version      : celles de Cargo.lock, dans la liste ci-dessous
+  Source       : crates.io, une adresse par crate dans la liste
+  Licence      : une par crate, puis le texte de chaque licence
+  Vérification : compilées depuis leurs sources, dont Cargo.lock fixe l'empreinte ; licences, failles connues et
+                 origine contrôlées par cargo deny (deny.toml) à chaque passage des tests
+
+[généré par tools\licences-rust.ps1 : ne pas modifier à la main]
+à renseigner : lance .\tools\licences-rust.ps1 avant la version
+[fin de la partie générée]

@@ -273,6 +273,10 @@ Les lignes « à renseigner » se complètent **avant la première ligne de code
 - La version vit à un seul endroit ; le tag `vX.Y.Z` doit lui correspondre.
 - Le job de CI s'appelle `tests` et **ne se renomme jamais** : le ruleset l'exige.
 - **À tenir à jour** : `README.md`, `docs/FICHE.md`, `LICENCES-TIERS.txt`, `CHANGELOG.md`, `docs/releases/<tag>.md`.
+- **Dépendances Rust** : `cargo deny` (`deny.toml`) passe à chaque test : licences d'une liste explicite, aucune
+  faille connue, crates.io pour seule origine. La liste des crates de `LICENCES-TIERS.txt` est générée par
+  `.\tools\licences-rust.ps1` (cargo-about) ; `verifier-release.ps1` refuse une liste qui ne correspond plus à
+  `Cargo.lock`.
 - **Branches, commits, PR, tags, releases** : voir `CONTRIBUTING.md`, sans exception pour les applis.
 
 ### Release d'une appli
