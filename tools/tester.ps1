@@ -16,7 +16,8 @@ Onze scénarios, les huit premiers et le dernier chacun dans sa propre copie du 
   7. verifier-release.ps1 refuse une version incomplète et accepte une version complète, dont la liste des crates
      Rust à jour de Cargo.lock ;
   8. une stack refuse ce qu'elle ne fournit pas encore (clé nonFournis de stack.json) ;
-  9. les actions recopiées dans les _socle\outils.txt gardent le SHA épinglé dans les workflows ;
+  9. les actions recopiées dans les _socle\outils.txt gardent le SHA épinglé dans les workflows ; setup-node lit la
+     version exacte de Node.js dans le .node-version de la stack ;
  10. chaque script PowerShell du dépôt se lit sans erreur de syntaxe ;
  11. le socle commun (tools\socle.txt) : une appli fraîchement créée est à jour, une appli modifiée est signalée.
 
@@ -301,6 +302,22 @@ try {
             $sha = $m.Groups[2].Value
             Verifier ($epingles.ContainsKey($action) -and $epingles[$action].Contains($sha)) "${relatif} : $action garde le SHA des workflows"
         }
+    }
+
+    # Node.js : setup-node lit la version exacte dans le .node-version de la stack, jamais une version écrite en dur.
+    $setupNode = @($fragments) + @(Get-ChildItem -LiteralPath (Join-Path $racine '.github\workflows') -Filter '*.yml')
+    foreach ($f in $setupNode) {
+        $texte = [IO.File]::ReadAllText($f.FullName)
+        if ($texte -notmatch 'actions/setup-node@') { continue }
+        $relatif = $f.FullName.Substring($racine.Length + 1)
+        Verifier ($texte -notmatch '(?m)^\s*node-version\s*:') "${relatif} : setup-node lit un fichier de version, pas une version écrite en dur"
+        Verifier ($texte -match '(?m)^\s*node-version-file\s*:') "${relatif} : setup-node a son node-version-file"
+    }
+    foreach ($f in $fragments) {
+        $versionNode = Join-Path $f.Directory.Parent.FullName '.node-version'
+        if ([IO.File]::ReadAllText($f.FullName) -notmatch 'actions/setup-node@') { continue }
+        $ok = (Test-Path -LiteralPath $versionNode) -and ([IO.File]::ReadAllText($versionNode).Trim() -match '\A\d+\.\d+\.\d+\z')
+        Verifier $ok "$($f.Directory.Parent.Name) : .node-version donne une version exacte (X.Y.Z)"
     }
 
     Write-Host "10. Chaque script PowerShell du dépôt se lit sans erreur de syntaxe"

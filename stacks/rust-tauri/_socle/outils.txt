@@ -1,6 +1,8 @@
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: "24"
+          # Version exacte de Node.js dans .node-version : à monter à la main, par une PR, comme rust-toolchain.toml
+          # (Dependabot ne le suit pas).
+          node-version-file: .node-version
 
       - name: Rust (la version de rust-toolchain.toml)
         run: rustup toolchain install

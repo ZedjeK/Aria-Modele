@@ -11,7 +11,7 @@
 > icône de notification, démarrage avec Windows, installation par l'exe, mises à
 > jour vérifiées), et son interface suit celle d'Aria Studio et d'Aria Cockpit.
 > Le détail est dans [stacks/LISEZ-MOI.md](stacks/LISEZ-MOI.md). Pour construire :
-> Rust (rustup) et Node.js 24.
+> Rust (rustup) et Node.js 24 (version exacte dans `stacks/rust-tauri/.node-version`).
 >
 > Le contrat des applis Aria, [docs/CONTRAT.md](docs/CONTRAT.md), fait foi : en
 > cas de doute, c'est lui qui tranche, pour le modèle comme pour chaque appli.
@@ -186,7 +186,8 @@ est dans [LICENCES-TIERS.txt](LICENCES-TIERS.txt).
 
 ## Compiler soi-même
 
-Il faut Rust, installé par [rustup](https://rustup.rs), et Node.js 24. Puis, dans
+Il faut Rust, installé par [rustup](https://rustup.rs), et Node.js 24 (la version
+exacte, celle de la CI, est dans `.node-version`). Puis, dans
 le dossier du dépôt :
 
 ```powershell
