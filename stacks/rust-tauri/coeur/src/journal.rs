@@ -4,10 +4,18 @@
 use std::fs;
 use std::sync::{Mutex, PoisonError};
 
-use chrono::{DateTime, Local, SecondsFormat};
 use serde::{Deserialize, Serialize};
+use time::OffsetDateTime;
+use time::format_description::BorrowedFormatItem;
+use time::macros::format_description;
 
 use crate::{Dossier, donnees};
+
+/// La forme d'une date du journal : `2026-11-21T19:05:00+01:00` (RFC 3339 à la seconde, décalage toujours chiffré,
+/// `+00:00` en UTC).
+const FORME_DATE: &[BorrowedFormatItem<'static>] = format_description!(
+    "[year]-[month]-[day]T[hour]:[minute]:[second][offset_hour sign:mandatory]:[offset_minute]"
+);
 
 /// Le plus d'opérations gardées.
 pub const OPERATIONS_MAX: usize = 500;
@@ -30,15 +38,16 @@ static VERROU: Mutex<()> = Mutex::new(());
 /// Ajoute une opération au journal. Ne renvoie pas d'erreur : un journal qui ne s'écrit pas ne doit pas faire
 /// échouer l'opération elle-même.
 pub fn consigner(dossier: &Dossier, genre: &str, bilan: &str) {
-    consigner_a(dossier, genre, bilan, Local::now());
+    consigner_a(dossier, genre, bilan, crate::maintenant());
 }
 
 /// [`consigner`], à une date donnée (tests).
-pub fn consigner_a(dossier: &Dossier, genre: &str, bilan: &str, quand: DateTime<Local>) {
+pub fn consigner_a(dossier: &Dossier, genre: &str, bilan: &str, quand: OffsetDateTime) {
     let _verrou = VERROU.lock().unwrap_or_else(PoisonError::into_inner);
     let mut operations = lire(dossier);
     operations.push(Operation {
-        date: quand.to_rfc3339_opts(SecondsFormat::Secs, false),
+        // La forme ne demande que des champs qu'une date a toujours : le formatage ne peut pas échouer.
+        date: quand.format(FORME_DATE).unwrap_or_default(),
         genre: genre.to_owned(),
         bilan: bilan.to_owned(),
     });
@@ -105,7 +114,20 @@ mod tests {
         let dossier = Dossier::a(temp.path());
         consigner(&dossier, "essai", "date");
         let date = &lire(&dossier)[0].date;
-        assert!(DateTime::parse_from_rfc3339(date).is_ok(), "{date}");
+        let rfc3339 = time::format_description::well_known::Rfc3339;
+        assert!(OffsetDateTime::parse(date, &rfc3339).is_ok(), "{date}");
+    }
+
+    #[test]
+    fn la_date_est_a_la_seconde_avec_un_decalage_chiffre() {
+        let temp = tempfile::tempdir().unwrap();
+        let dossier = Dossier::a(temp.path());
+        let quand = time::macros::datetime!(2026-11-21 19:05:00.123 +1);
+        consigner_a(&dossier, "essai", "heure locale", quand);
+        consigner_a(&dossier, "essai", "UTC", quand.to_offset(time::UtcOffset::UTC));
+        let ops = lire(&dossier);
+        assert_eq!(ops[0].date, "2026-11-21T19:05:00+01:00");
+        assert_eq!(ops[1].date, "2026-11-21T18:05:00+00:00");
     }
 
     #[test]

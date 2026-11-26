@@ -5,23 +5,29 @@ use std::fs::{self, OpenOptions};
 use std::io::{self, ErrorKind};
 use std::path::{Path, PathBuf};
 
-use chrono::{DateTime, Local};
+use time::OffsetDateTime;
+use time::format_description::BorrowedFormatItem;
+use time::macros::format_description;
 
 use crate::{Dossier, Erreur};
+
+/// L'horodatage en tête du nom d'une sauvegarde : `2026-11-21_19-05-00`.
+const FORME_HORODATAGE: &[BorrowedFormatItem<'static>] =
+    format_description!("[year]-[month]-[day]_[hour]-[minute]-[second]");
 
 /// Copie le fichier avant sa modification et renvoie le chemin de la copie.
 ///
 /// # Errors
 /// Une erreur si la copie échoue : sans sauvegarde, la modification ne doit pas avoir lieu.
 pub fn sauvegarder(dossier: &Dossier, fichier: &Path) -> Result<PathBuf, Erreur> {
-    sauvegarder_a(&dossier.sauvegardes(), fichier, Local::now())
+    sauvegarder_a(&dossier.sauvegardes(), fichier, crate::maintenant())
 }
 
 /// [`sauvegarder`], dans un dossier et à une date donnés (tests).
 ///
 /// # Errors
 /// [`Erreur::AbsentASauvegarder`] si le fichier n'existe pas, [`Erreur::Fichier`] si la copie échoue.
-pub fn sauvegarder_a(dossier: &Path, fichier: &Path, quand: DateTime<Local>) -> Result<PathBuf, Erreur> {
+pub fn sauvegarder_a(dossier: &Path, fichier: &Path, quand: OffsetDateTime) -> Result<PathBuf, Erreur> {
     if !fichier.is_file() {
         return Err(Erreur::AbsentASauvegarder(fichier.to_path_buf()));
     }
@@ -30,7 +36,8 @@ pub fn sauvegarder_a(dossier: &Path, fichier: &Path, quand: DateTime<Local>) -> 
         .file_name()
         .map(|n| n.to_string_lossy().into_owned())
         .unwrap_or_default();
-    let horodatage = quand.format("%Y-%m-%d_%H-%M-%S");
+    // La forme ne demande que des champs qu'une date a toujours : le formatage ne peut pas échouer.
+    let horodatage = quand.format(FORME_HORODATAGE).unwrap_or_default();
     let (base, extension) = match nom.rsplit_once('.') {
         Some((b, e)) if !b.is_empty() => (b.to_owned(), format!(".{e}")),
         _ => (nom.clone(), String::new()),
@@ -59,10 +66,9 @@ fn copier_sans_ecraser(source: &Path, cible: &Path) -> io::Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::TimeZone;
 
-    fn date() -> DateTime<Local> {
-        Local.with_ymd_and_hms(2026, 11, 21, 19, 5, 0).unwrap()
+    fn date() -> OffsetDateTime {
+        time::macros::datetime!(2026-11-21 19:05:00 +1)
     }
 
     #[test]

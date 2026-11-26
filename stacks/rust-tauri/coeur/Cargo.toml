@@ -8,11 +8,12 @@ license.workspace = true
 publish.workspace = true
 
 [dependencies]
-chrono = { version = "0.4.45", default-features = false, features = ["clock", "std"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 sha2 = "0.11.1"
 thiserror = "2.0.21"
+# Dates du journal et des sauvegardes, à l'heure locale. chrono n'est plus maintenu (RUSTSEC-2026-0543).
+time = { version = "0.3.55", features = ["formatting", "local-offset", "macros"] }
 # Le zip des mises à jour : décompression deflate seule, en Rust (sans C à compiler).
 zip = { version = "9.8.1", default-features = false, features = ["deflate-flate2-zlib-rs"] }
 
@@ -22,6 +23,8 @@ winreg = "0.56.0"
 
 [dev-dependencies]
 tempfile = "3.27.0"
+# Relire une date du journal dans les tests.
+time = { version = "0.3.55", features = ["parsing"] }
 
 [lints]
 workspace = true
