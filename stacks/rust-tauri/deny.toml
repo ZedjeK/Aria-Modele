@@ -20,17 +20,14 @@ yanked = "warn"
 ignore = []
 
 [licenses]
-# Liste explicite : une crate sous une autre licence fait échouer les tests. Relevé de Cargo.lock le 2026-11-26 ;
-# une crate sous plusieurs licences au choix (« MIT OR Apache-2.0 ») passe dès que l'une est ici.
+# Liste explicite : une crate sous une autre licence fait échouer les tests. Relevé de Cargo.lock le 2026-11-26,
+# limité aux crates compilées pour Windows ; une crate sous plusieurs licences au choix (« MIT OR Apache-2.0 ») passe
+# dès que l'une est ici.
 allow = [
     "MIT",
     "Apache-2.0",
-    # target-lexicon.
-    "Apache-2.0 WITH LLVM-exception",
     # brotli et ses allocateurs (décompression des ressources de l'interface).
     "BSD-3-Clause",
-    # libloading.
-    "ISC",
     # cssparser, selectors, dtoa-short (analyse du HTML par Tauri), option-ext : licence au fichier, sources
     # publiées sur crates.io.
     "MPL-2.0",
