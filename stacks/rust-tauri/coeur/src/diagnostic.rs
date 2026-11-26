@@ -66,18 +66,42 @@ pub fn texte(dossier: &Dossier, contexte: &Contexte) -> String {
         ));
     }
 
-    masquer_profil(&lignes.join("\n"), contexte.profil.as_deref())
+    // Le profil d'après le dossier de données (son parent), qui est la source de tous les chemins du texte, puis
+    // celui que donne Windows s'il diffère.
+    let profil_du_dossier = dossier.racine().parent().map(|p| p.display().to_string());
+    let texte = masquer_profil(&lignes.join("\n"), profil_du_dossier.as_deref());
+    masquer_profil(&texte, contexte.profil.as_deref())
 }
 
-/// Remplace le chemin du profil de l'utilisateur par `%USERPROFILE%`.
+/// Remplace le chemin du profil de l'utilisateur par `%USERPROFILE%`, sans tenir compte de la casse (comme Windows).
 pub fn masquer_profil(texte: &str, profil: Option<&str>) -> String {
-    let profil = profil
+    let Some(profil) = profil
         .map(|p| p.trim_end_matches(['\\', '/']))
-        .filter(|p| p.len() > 3);
-    match profil {
-        Some(profil) => texte.replace(profil, "%USERPROFILE%"),
-        None => texte.to_owned(),
+        .filter(|p| p.len() > 3)
+    else {
+        return texte.to_owned();
+    };
+    let mut resultat = String::with_capacity(texte.len());
+    let mut reste = texte;
+    while let Some(debut) = trouver(reste, profil) {
+        let (Some(avant), Some(apres)) = (reste.get(..debut), reste.get(debut + profil.len()..)) else {
+            break;
+        };
+        resultat.push_str(avant);
+        resultat.push_str("%USERPROFILE%");
+        reste = apres;
     }
+    resultat.push_str(reste);
+    resultat
+}
+
+/// La première position de `motif` dans `texte`, sans tenir compte de la casse des lettres ASCII.
+fn trouver(texte: &str, motif: &str) -> Option<usize> {
+    texte.char_indices().map(|(i, _)| i).find(|&i| {
+        texte
+            .get(i..i + motif.len())
+            .is_some_and(|s| s.eq_ignore_ascii_case(motif))
+    })
 }
 
 /// La version de Windows, lisible : « Windows 11 Pro 24H2 (build 26100.2894) ». Windows 11 se déclare encore
@@ -188,6 +212,36 @@ mod tests {
         assert!(texte.contains(r"%USERPROFILE%\.Aria-Essai"), "{texte}");
         assert!(texte.contains("Commit : abc"), "{texte}");
         assert!(texte.contains("WebView2 : 131.0.2903.70"), "{texte}");
+    }
+
+    #[test]
+    fn le_profil_est_masque_quelle_que_soit_la_casse() {
+        let texte = "installé dans c:\\USERS\\JDupont\\.Aria-Essai\\programme ; C:\\Users\\jdupont";
+        let masque = masquer_profil(texte, Some(r"C:\Users\jdupont\"));
+        assert_eq!(
+            masque,
+            "installé dans %USERPROFILE%\\.Aria-Essai\\programme ; %USERPROFILE%"
+        );
+        assert_eq!(masquer_profil("rien", Some("C:")), "rien");
+    }
+
+    #[test]
+    fn aucun_reglage_ne_porte_un_nom_de_secret() {
+        // Les secrets vivent dans secrets\, jamais dans reglages.json : le diagnostic recopie les réglages tels quels.
+        let json = serde_json::to_string(&Reglages::default()).unwrap();
+        let bas = json.to_lowercase();
+        for mot in [
+            "secret",
+            "jeton",
+            "token",
+            "password",
+            "motdepasse",
+            "mot_de_passe",
+            "cle",
+            "key",
+        ] {
+            assert!(!bas.contains(&format!("{mot}\"")), "{mot} : {json}");
+        }
     }
 
     #[test]

@@ -90,8 +90,9 @@ Si Windows ou ton antivirus bloque l'exe, voir « Si ça ne marche pas ».
 
 Pour signaler un problème : dans l'appli, page « Journal », bouton « Exporter le
 diagnostic ». Le texte copié (version, Windows, réglages, dernières lignes du
-journal, sans aucun secret ni ton nom de compte Windows) se colle dans le
-formulaire de bug du dépôt ; relis-le avant d'envoyer. L'appli n'envoie rien
+journal) ne contient aucun secret, et le chemin de ton profil Windows y devient
+`%USERPROFILE%`. Relis-le avant de le coller dans le formulaire de bug du dépôt :
+des noms de fichiers que tu as choisis peuvent y figurer. L'appli n'envoie rien
 elle-même.
 
 ## Premiers pas

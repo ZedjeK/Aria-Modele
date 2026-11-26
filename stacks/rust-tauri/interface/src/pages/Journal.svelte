@@ -4,7 +4,7 @@
   s'affiche dans un dialogue, à copier à la main.
 -->
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { diagnostic, lireJournal, messageErreur, type Operation } from '../lib/api';
   import { dateLisible } from '../lib/journal';
   import ASavoir from '../lib/composants/ASavoir.svelte';
@@ -19,6 +19,17 @@
   let { signaler }: Props = $props();
   let operations = $state<Operation[] | null>(null);
   let texteDiagnostic = $state<string | null>(null);
+  let zoneDiagnostic = $state<HTMLTextAreaElement | null>(null);
+
+  // Le texte est prêt à copier dès l'ouverture : focus et tout sélectionné, après le focus que pose le dialogue.
+  $effect(() => {
+    const zone = zoneDiagnostic;
+    if (zone === null) return;
+    void tick().then(() => {
+      zone.focus();
+      zone.select();
+    });
+  });
 
   async function relire() {
     try {
@@ -80,10 +91,17 @@
 {#if texteDiagnostic !== null}
   <Dialogue titre="Diagnostic" fermer={() => (texteDiagnostic = null)}>
     <ASavoir>
-      Le presse-papiers n'a pas pu être utilisé : clique dans le texte, sélectionne tout (Ctrl+A), copie-le (Ctrl+C) et
-      colle-le dans ton signalement. Rien n'a été envoyé ; aucun secret n'y figure.
+      Le presse-papiers n'a pas pu être utilisé : le texte est déjà sélectionné, copie-le (Ctrl+C) et colle-le dans ton
+      signalement. Rien n'a été envoyé ; aucun secret n'y figure.
     </ASavoir>
-    <textarea class="diagnostic" readonly rows="16" aria-label="Texte du diagnostic" value={texteDiagnostic}></textarea>
+    <textarea
+      class="diagnostic"
+      readonly
+      rows="16"
+      aria-label="Texte du diagnostic"
+      value={texteDiagnostic}
+      bind:this={zoneDiagnostic}
+    ></textarea>
     {#snippet pied()}
       <Bouton genre="discret" onclick={() => (texteDiagnostic = null)}>Fermer</Bouton>
     {/snippet}
