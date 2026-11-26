@@ -23,10 +23,10 @@ mais pas les fichiers à marqueurs (workflows, README, fiche, squelette) ni les 
 | #66 | CI : Node.js épinglé par `.node-version` |
 | #68 | Release : signature Authenticode par SignPath, préparée et coupée |
 | #69 | Diagnostic : bouton « Exporter le diagnostic » |
-| {{PR_FICHE}} | Fiche : cap de la prochaine version et budgets ; taille de l'exe dans `BUILDINFO.txt` |
-| {{PR_DECISIONS}} | Décisions d'architecture : `docs/decisions/` |
-| {{PR_CONTRIBUER}} | `CONTRIBUTING.md` |
-| {{PR_JOURNAL}} | Ce journal |
+| #70 | Fiche : cap de la prochaine version et budgets ; taille de l'exe dans `BUILDINFO.txt` |
+| #71 | Décisions d'architecture : `docs/decisions/` |
+| #72 | `CONTRIBUTING.md` |
+| #73 | Ce journal |
 
 Pas encore faits, faute des clés minisign : signature des mises à jour, canal d'essai, recette et chaîne de release
 complète.
