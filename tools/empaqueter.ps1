@@ -56,6 +56,13 @@ $lignes = @(
     "Commit : $commit",
     "Date   : $((Get-Date).ToUniversalTime().ToString('yyyy-MM-dd HH:mm')) UTC"
 )
+# La taille de l'exe, à comparer au budget de la fiche projet (docs\FICHE.md).
+$exe = Join-Path $dossier "$nom.exe"
+if (Test-Path -LiteralPath $exe -PathType Leaf) {
+    $octets = (Get-Item -LiteralPath $exe).Length
+    $mo = [math]::Round($octets / 1MB, 1).ToString([Globalization.CultureInfo]::InvariantCulture)
+    $lignes += "Taille de l'exe : $mo Mo ($octets octets)"
+}
 $outils = Join-Path $racine '.work\outils.txt'
 if (Test-Path -LiteralPath $outils) { $lignes += '', 'Outils :'; $lignes += Get-Content -LiteralPath $outils -Encoding UTF8 }
 [IO.File]::WriteAllLines((Join-Path $dossier 'BUILDINFO.txt'), [string[]]$lignes, (New-Object Text.UTF8Encoding($false)))
