@@ -1,6 +1,6 @@
 [package]
 name = "aria-coeur"
-description = "Le contrat des applis Aria : identité, dossier de données, réglages, journal, sauvegardes, secrets, démarrage automatique, icône, installation, mises à jour."
+description = "Le contrat des applis Aria : identité, dossier de données, réglages, journal, sauvegardes, secrets, démarrage automatique, icône, installation, désinstallation, mises à jour."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

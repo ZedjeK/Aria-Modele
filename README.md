@@ -87,11 +87,27 @@ Tout est dans `%USERPROFILE%\.Aria-{{NOM}}` :
 <!-- INSTALLATION:fin -->
 
 Supprimer ce dossier efface tes réglages et tes données : l'appli repart à neuf.
+Pour retirer l'appli elle-même, passe d'abord par « Désinstaller » (voir plus bas).
+
+## Désinstaller
+
+Dans les paramètres, le panneau « Installation » a un bouton « Désinstaller ». Il
+retire tout ce que l'appli a écrit hors de son dossier de données :
+
+- le démarrage avec Windows (ses entrées dans le registre de ton compte) ;
+- le raccourci du Bureau, seulement s'il pointe vers l'appli ;
 <!-- INSTALLATION:debut -->
-Si tu as installé l'appli, il contient aussi `programme\` : le supprimer la
-désinstalle. Quitte-la avant ; le raccourci du Bureau, s'il existe, se supprime
-à la main.
+- le dossier `programme\`, une fois l'appli fermée par le bouton « Fermer
+  l'appli » qui suit.
 <!-- INSTALLATION:fin -->
+
+Tes données restent dans `%USERPROFILE%\.Aria-{{NOM}}`, et l'appli te dit où
+elles sont : pour tout effacer, supprime ce dossier une fois l'appli fermée.
+
+Avec une version qui n'a pas encore ce bouton : décoche d'abord « Démarrer avec
+Windows » dans les paramètres (sinon son entrée reste dans le registre), quitte
+l'appli, puis supprime le dossier de données et, s'il existe, le raccourci du
+Bureau.
 
 ## Mises à jour
 

@@ -82,6 +82,15 @@ pub mod windows {
         desinscrire_sous(CLE_RUN)
     }
 
+    /// Retire toute trace du démarrage automatique, pour la désinstallation : l'entrée de `Run`, et la note que
+    /// Windows a pu poser dans `StartupApproved`. Sans effet si rien n'existe.
+    ///
+    /// # Errors
+    /// L'erreur du registre.
+    pub fn oublier() -> io::Result<()> {
+        oublier_sous(CLE_RUN, CLE_APPROUVES)
+    }
+
     pub(crate) fn est_inscrit_sous(run: &str, approuves: &str) -> bool {
         let hkcu = RegKey::predef(HKEY_CURRENT_USER);
         let commande: Option<String> = hkcu
@@ -119,6 +128,11 @@ pub mod windows {
             Err(e) if e.kind() == io::ErrorKind::NotFound => Ok(()),
             Err(e) => Err(e),
         }
+    }
+
+    pub(crate) fn oublier_sous(run: &str, approuves: &str) -> io::Result<()> {
+        desinscrire_sous(run)?;
+        desinscrire_sous(approuves)
     }
 
     /// Supprime la valeur ; sans effet si elle n'existe pas.
@@ -191,6 +205,28 @@ pub mod windows {
             assert!(!est_inscrit_sous(&cles.run, &cles.approuves));
             inscrire_sous(&cles.run, &cles.approuves, exe).unwrap();
             assert!(est_inscrit_sous(&cles.run, &cles.approuves));
+        }
+
+        #[test]
+        fn oublier_retire_run_et_startup_approved() {
+            let cles = ClesDeTest::nouvelles("oublier");
+            let exe = Path::new(r"C:\Essai\Aria-Essai.exe");
+            // Sans rien d'inscrit : rien à retirer, pas d'erreur.
+            oublier_sous(&cles.run, &cles.approuves).unwrap();
+            inscrire_sous(&cles.run, &cles.approuves, exe).unwrap();
+            let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+            let (approuve, _) = hkcu.create_subkey(&cles.approuves).unwrap();
+            let desactivee = winreg::RegValue {
+                vtype: winreg::enums::RegType::REG_BINARY,
+                bytes: vec![3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0].into(),
+            };
+            approuve.set_raw_value(NOM_VALEUR, &desactivee).unwrap();
+            oublier_sous(&cles.run, &cles.approuves).unwrap();
+            let run = hkcu.open_subkey(&cles.run).unwrap();
+            assert!(run.get_raw_value(NOM_VALEUR).is_err());
+            let approuves = hkcu.open_subkey(&cles.approuves).unwrap();
+            assert!(approuves.get_raw_value(NOM_VALEUR).is_err());
+            oublier_sous(&cles.run, &cles.approuves).unwrap();
         }
 
         #[test]

@@ -6,6 +6,7 @@
 
 mod commandes;
 mod demarrage_auto;
+mod desinstallation;
 mod disque;
 mod erreur_fatale;
 mod icone;
@@ -37,6 +38,12 @@ fn main() {
 
 fn lancer() -> Result<(), String> {
     let dossier = Dossier::du_profil().map_err(|e| e.to_string())?;
+    let arguments: Vec<String> = std::env::args().skip(1).collect();
+    // Copie de l'exe qui finit une désinstallation : ni fenêtre ni Tauri ; elle vide programme\ et s'arrête.
+    if let Some(processus) = aria_coeur::desinstallation::processus_a_attendre(&arguments) {
+        desinstallation::finir(&dossier, processus);
+        return Ok(());
+    }
     dossier.preparer().map_err(|e| e.to_string())?;
     journal::consigner(
         &dossier,
@@ -45,7 +52,8 @@ fn lancer() -> Result<(), String> {
     );
     // Restes d'un remplacement précédent, maintenant que l'ancienne version est arrêtée.
     aria_coeur::installation::nettoyer(&dossier.programme());
-    let arguments: Vec<String> = std::env::args().skip(1).collect();
+    // La copie qui a fini une désinstallation précédente : elle ne pouvait pas se supprimer elle-même.
+    aria_coeur::desinstallation::nettoyer_aide(&dossier.cache());
     // Lancé à l'ouverture de session : l'icône seule, la fenêtre reste rangée jusqu'à ce qu'on l'ouvre.
     let silencieux = identite::EN_FOND && demarrage::est_silencieux(&arguments);
     // Exe lancé hors de programme\ (zip décompressé) : proposition de s'installer, avant la fenêtre de l'appli.
@@ -78,6 +86,8 @@ fn lancer() -> Result<(), String> {
             commandes::quitter,
             demarrage_auto::lire_demarrage_auto,
             demarrage_auto::regler_demarrage_auto,
+            desinstallation::desinstaller,
+            desinstallation::fermer_apres_desinstallation,
             icone::etat_menu,
             icone::action_menu,
             icone::taille_menu,

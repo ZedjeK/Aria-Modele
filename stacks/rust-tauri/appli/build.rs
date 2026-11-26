@@ -19,6 +19,8 @@ fn main() {
         "mise_a_jour_disponible",
         "voir_notes",
         "installer_mise_a_jour",
+        "desinstaller",
+        "fermer_apres_desinstallation",
     ]);
     let attributs = tauri_build::Attributes::new().app_manifest(commandes);
     if let Err(erreur) = tauri_build::try_build(attributs) {

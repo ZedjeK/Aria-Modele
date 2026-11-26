@@ -44,7 +44,7 @@ pub struct InfosInstallation {
 }
 
 /// Le raccourci du Bureau : « Aria Nom.lnk ».
-fn chemin_raccourci(app: &AppHandle) -> Option<PathBuf> {
+pub fn chemin_raccourci(app: &AppHandle) -> Option<PathBuf> {
     app.path()
         .desktop_dir()
         .ok()
