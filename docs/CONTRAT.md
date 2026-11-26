@@ -17,6 +17,14 @@ par le dépôt modèle.
 5. **Moindre privilège** : pas de droits administrateur si on peut s'en passer.
 6. **Français et tutoiement** : interface, README, erreurs, commentaires, commits.
 
+**Sans dépendance** : l'appli ne demande rien à installer. Seule exception : WebView2 Evergreen, le moteur
+d'affichage de Windows, présent d'office sur Windows 11 et sur Windows 10 22H2 à jour. S'il manque, l'appli le dit et
+donne le lien de Microsoft. Le runtime Visual C++ est lié dans l'exe, et les tests le vérifient. Aucune bibliothèque
+n'est extraite dans `%TEMP%`.
+
+**Plateformes** : Windows 11 ; Windows 10 22H2 tant que WebView2 y reçoit des mises à jour (au moins jusqu'en octobre
+2028).
+
 Toute question de paramétrage se tranche en restant fidèle au contrat ci-dessous.
 
 ## Fiche projet

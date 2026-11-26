@@ -57,6 +57,12 @@ fn lancer() -> Result<(), String> {
     aria_coeur::installation::nettoyer(&dossier.programme());
     // La copie qui a fini une désinstallation précédente : elle ne pouvait pas se supprimer elle-même.
     aria_coeur::desinstallation::nettoyer_aide(&dossier.cache());
+    // Sans WebView2, la fenêtre ne peut pas s'afficher : l'appli le dit et propose la page de Microsoft.
+    if !webview2_present() {
+        journal::consigner(&dossier, "lancement", WEBVIEW2_ABSENT);
+        erreur_fatale::webview2_absent();
+        std::process::exit(1);
+    }
     // Lancé à l'ouverture de session : l'icône seule, la fenêtre reste rangée jusqu'à ce qu'on l'ouvre.
     let silencieux = identite::EN_FOND && demarrage::est_silencieux(&arguments);
     // Exe lancé hors de programme\ (zip décompressé) : proposition de s'installer, avant la fenêtre de l'appli.
@@ -120,6 +126,15 @@ fn lancer() -> Result<(), String> {
             }
         });
     Ok(())
+}
+
+/// La ligne du journal quand WebView2 manque.
+const WEBVIEW2_ABSENT: &str = "WebView2 absent : l'appli ne peut pas s'ouvrir";
+
+/// WebView2 est-il installé ? Par la méthode que documente Microsoft, `GetAvailableCoreWebView2BrowserVersionString`
+/// (appelée par `tauri::webview_version`) : sans moteur, pas de version.
+fn webview2_present() -> bool {
+    tauri::webview_version().is_ok_and(|version| !version.trim().is_empty())
 }
 
 /// Ouvre la fenêtre de l'appli et, pour une appli qui sert en arrière-plan, son icône de notification.
