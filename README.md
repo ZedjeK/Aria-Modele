@@ -164,6 +164,9 @@ de `sauvegardes\versions\<version>\` à la place de ceux de l'appli.
   ton compte Windows peut les déchiffrer : cette protection vise la copie du
   dossier sur un autre compte ou un autre PC. Dis ici ce que l'appli garde.
 
+Signature du code (code signing policy) : voir
+[docs/POLITIQUE-SIGNATURE.md](docs/POLITIQUE-SIGNATURE.md).
+
 Pour signaler une faille : voir [SECURITY.md](SECURITY.md).
 
 ## Limites à connaître

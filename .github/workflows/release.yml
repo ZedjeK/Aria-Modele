@@ -49,7 +49,8 @@ jobs:
     if: github.repository != 'ZedjeK/Aria-Modele'
     # <!-- MODELE:fin -->
     runs-on: windows-latest
-    timeout-minutes: 30
+    # 30 minutes de build, plus au plus 30 minutes d'attente de la signature (approbation dans SignPath).
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -89,6 +90,46 @@ jobs:
 
       - name: Construire l'exe portable
         run: ./build.ps1
+
+      # Signature Authenticode de l'exe par SignPath Foundation, avant le zip, l'empreinte et l'attestation, qui portent
+      # donc sur l'exe signé. Désactivée tant que la variable de dépôt SIGNPATH_ACTIF ne vaut pas « true ». Le reste se
+      # pose quand l'appli est acceptée par la fondation : les variables SIGNPATH_ORGANISATION, SIGNPATH_PROJET et
+      # SIGNPATH_POLITIQUE, et le secret SIGNPATH_JETON_API. Chaque demande attend l'approbation de l'auteur dans
+      # SignPath. Voir docs/POLITIQUE-SIGNATURE.md.
+      - name: Exe à signer
+        id: exe-a-signer
+        if: vars.SIGNPATH_ACTIF == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: exe-a-signer
+          path: .work/sortie/Aria-{{NOM}}.exe
+          include-hidden-files: true # .work commence par un point
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Signature Authenticode (SignPath)
+        if: vars.SIGNPATH_ACTIF == 'true'
+        uses: signpath/github-action-submit-signing-request@f6d04783b4569d051e0c80105fe66e82819d0092 # v3.0
+        with:
+          api-token: ${{ secrets.SIGNPATH_JETON_API }}
+          organization-id: ${{ vars.SIGNPATH_ORGANISATION }}
+          project-slug: ${{ vars.SIGNPATH_PROJET }}
+          signing-policy-slug: ${{ vars.SIGNPATH_POLITIQUE }}
+          github-artifact-id: ${{ steps.exe-a-signer.outputs.artifact-id }}
+          wait-for-completion: true
+          # Le temps que l'auteur approuve la demande dans SignPath.
+          wait-for-completion-timeout-in-seconds: 1800
+          output-artifact-directory: .work/signe
+
+      - name: L'exe signé remplace l'exe construit
+        if: vars.SIGNPATH_ACTIF == 'true'
+        run: |
+          $signe = '.work/signe/Aria-{{NOM}}.exe'
+          if (-not (Test-Path -LiteralPath $signe)) { throw "SignPath n'a pas rendu Aria-{{NOM}}.exe : aucune release." }
+          $signature = Get-AuthenticodeSignature -LiteralPath $signe
+          if ($signature.Status -ne 'Valid') { throw "La signature de l'exe n'est pas valide ($($signature.Status)) : aucune release." }
+          Write-Host "Exe signé ; certificat : $($signature.SignerCertificate.Subject)"
+          Copy-Item -LiteralPath $signe -Destination '.work/sortie/Aria-{{NOM}}.exe' -Force
 
       - name: Zip, empreinte et BUILDINFO
         run: ./tools/empaqueter.ps1

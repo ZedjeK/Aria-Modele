@@ -131,7 +131,11 @@ Les lignes « à renseigner » se complètent **avant la première ligne de code
 
 - **Appli à extension de navigateur** : l'exe est l'appli. Il range l'extension dans
   `%USERPROFILE%\.Aria-<Nom>\extension` et l'y met à jour.
-- **Signature de code** : pas prévue, elle n'est pas gratuite.
+- **Signature de code** : Authenticode par SignPath Foundation, appli par appli, une fois l'appli acceptée par la
+  fondation ; Windows affiche alors « SignPath Foundation » comme éditeur. Tant qu'une appli n'est pas signée, son
+  README explique l'avertissement SmartScreen. La politique de signature de chaque appli est dans
+  `docs/POLITIQUE-SIGNATURE.md` ; l'étape de signature de `release.yml` reste coupée tant que la variable de dépôt
+  `SIGNPATH_ACTIF` ne vaut pas `true`.
 - **Appli serveur du réseau local** (exception, par exemple un coffre joint par les téléphones) : seulement si la
   fiche projet le dit, en TLS, jamais exposée sur Internet, et son port est noté dans `docs/PORTS.md` du dépôt
   modèle.
