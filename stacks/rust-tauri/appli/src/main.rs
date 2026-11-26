@@ -6,6 +6,7 @@
 
 mod commandes;
 mod demarrage_auto;
+mod desinstallation;
 mod disque;
 mod erreur_fatale;
 mod icone;
@@ -13,6 +14,7 @@ mod installation;
 mod mise_a_jour;
 
 use std::path::PathBuf;
+use std::sync::atomic::AtomicBool;
 
 use aria_coeur::{Dossier, Reglages, demarrage, identite, journal};
 use tauri::window::Color;
@@ -26,6 +28,8 @@ pub struct Etat {
     pub dossier: Dossier,
     /// Contrat : WebView2 range ses données dans le dossier de l'appli, jamais dans %LOCALAPPDATA%.
     pub cache_webview: PathBuf,
+    /// Désinstallée, `programme\` reste à supprimer à la fermeture (voir `desinstallation::a_la_sortie`).
+    pub desinstallee: AtomicBool,
 }
 
 fn main() {
@@ -37,6 +41,12 @@ fn main() {
 
 fn lancer() -> Result<(), String> {
     let dossier = Dossier::du_profil().map_err(|e| e.to_string())?;
+    let arguments: Vec<String> = std::env::args().skip(1).collect();
+    // Copie de l'exe qui finit une désinstallation : ni fenêtre ni Tauri ; elle vide programme\ et s'arrête.
+    if let Some(processus) = aria_coeur::desinstallation::processus_a_attendre(&arguments) {
+        desinstallation::finir(&dossier, processus);
+        return Ok(());
+    }
     dossier.preparer().map_err(|e| e.to_string())?;
     journal::consigner(
         &dossier,
@@ -45,7 +55,8 @@ fn lancer() -> Result<(), String> {
     );
     // Restes d'un remplacement précédent, maintenant que l'ancienne version est arrêtée.
     aria_coeur::installation::nettoyer(&dossier.programme());
-    let arguments: Vec<String> = std::env::args().skip(1).collect();
+    // La copie qui a fini une désinstallation précédente : elle ne pouvait pas se supprimer elle-même.
+    aria_coeur::desinstallation::nettoyer_aide(&dossier.cache());
     // Lancé à l'ouverture de session : l'icône seule, la fenêtre reste rangée jusqu'à ce qu'on l'ouvre.
     let silencieux = identite::EN_FOND && demarrage::est_silencieux(&arguments);
     // Exe lancé hors de programme\ (zip décompressé) : proposition de s'installer, avant la fenêtre de l'appli.
@@ -66,6 +77,7 @@ fn lancer() -> Result<(), String> {
         .manage(Etat {
             dossier,
             cache_webview,
+            desinstallee: AtomicBool::new(false),
         })
         .manage(icone::Presence::default())
         .manage(mise_a_jour::Disponible::default())
@@ -78,6 +90,8 @@ fn lancer() -> Result<(), String> {
             commandes::quitter,
             demarrage_auto::lire_demarrage_auto,
             demarrage_auto::regler_demarrage_auto,
+            desinstallation::desinstaller,
+            desinstallation::fermer_apres_desinstallation,
             icone::etat_menu,
             icone::action_menu,
             icone::taille_menu,
@@ -100,7 +114,9 @@ fn lancer() -> Result<(), String> {
         .map_err(|e| format!("l'interface n'a pas pu démarrer : {e}"))?
         .run(|app, evenement| {
             if let RunEvent::Exit = evenement {
-                journal::consigner(&app.state::<Etat>().dossier, "arrêt", "appli fermée");
+                let etat = app.state::<Etat>();
+                journal::consigner(&etat.dossier, "arrêt", "appli fermée");
+                desinstallation::a_la_sortie(&etat);
             }
         });
     Ok(())

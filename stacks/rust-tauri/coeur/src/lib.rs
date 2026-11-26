@@ -4,6 +4,7 @@
 //! `cfg(windows)` et testés par la CI Windows.
 
 pub mod demarrage;
+pub mod desinstallation;
 pub mod donnees;
 pub mod identite;
 pub mod installation;

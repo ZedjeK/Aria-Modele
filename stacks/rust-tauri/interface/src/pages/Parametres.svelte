@@ -6,7 +6,9 @@
   import { onMount } from 'svelte';
   import { lireDemarrageAuto, messageErreur, reglerDemarrageAuto } from '../lib/api';
   import type { Identite, Reglages } from '../lib/api';
+  import DialogueDesinstallation from '../dialogues/Desinstallation.svelte';
   import ASavoir from '../lib/composants/ASavoir.svelte';
+  import Bouton from '../lib/composants/Bouton.svelte';
   import CarteChoix from '../lib/composants/CarteChoix.svelte';
   import Panneau from '../lib/composants/Panneau.svelte';
 
@@ -19,6 +21,7 @@
 
   let { identite, reglages = $bindable(), enregistrer, signaler }: Props = $props();
   let demarrageAuto = $state(false);
+  let dialogueDesinstallation = $state(false);
 
   async function relireDemarrageAuto() {
     if (!identite.enFond) return;
@@ -65,14 +68,20 @@
   </Panneau>
 {/if}
 
-{#if identite.installable}
-  <Panneau titre="Installation">
+<Panneau titre="Installation">
+  {#if identite.installable}
     <label class="ligne">
       <input type="checkbox" bind:checked={reglages.proposerInstallation} onchange={enregistrer} />
       Proposer l'installation quand l'exe est lancé hors de son dossier
     </label>
-  </Panneau>
-{/if}
+  {/if}
+  <div class="ligne desinstaller">
+    <Bouton onclick={() => (dialogueDesinstallation = true)}>Désinstaller</Bouton>
+    <span class="aide">
+      Retire le démarrage avec Windows, le raccourci du Bureau et le programme installé. Tes données restent.
+    </span>
+  </div>
+</Panneau>
 
 <Panneau titre="Mises à jour">
   <label class="ligne">
@@ -107,12 +116,33 @@
   </div>
 </Panneau>
 
+{#if dialogueDesinstallation}
+  <DialogueDesinstallation
+    nom={identite.nom}
+    donnees={identite.dossier}
+    installable={identite.installable}
+    fermer={() => {
+      dialogueDesinstallation = false;
+      // La désinstallation a pu retirer le démarrage avec Windows : la case suit.
+      void relireDemarrageAuto();
+    }}
+  />
+{/if}
+
 <style>
   .ligne {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 10px 16px;
+  }
+
+  .desinstaller {
+    margin-top: 14px;
+  }
+
+  .aide {
+    color: var(--texte-2);
   }
 
   .etiquette {

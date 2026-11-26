@@ -1,4 +1,5 @@
-// Les commandes Rust que l'interface peut appeler (appli\src\commandes.rs, demarrage_auto.rs, icone.rs), avec
+// Les commandes Rust que l'interface peut appeler (appli\src\commandes.rs, demarrage_auto.rs, icone.rs,
+// installation.rs, mise_a_jour.rs, desinstallation.rs), avec
 // leurs types. Une commande ajoutée ici doit aussi l'être dans appli\build.rs et dans la capacité de la fenêtre
 // qui l'appelle (appli\capabilities\principale.json, menu.json ou installation.json).
 import { invoke } from '@tauri-apps/api/core';
@@ -126,6 +127,30 @@ export const voirNotes = (): Promise<void> => invoke<void>('voir_notes');
 
 /** Télécharge, vérifie et installe, puis l'appli se relance : seul un échec revient ici. */
 export const installerMiseAJour = (): Promise<void> => invoke<void>('installer_mise_a_jour');
+
+/** Une étape de la désinstallation : ce qu'elle retire, si c'est fait, et le détail. */
+export interface EtapeDesinstallation {
+  etape: string;
+  reussie: boolean;
+  bilan: string;
+}
+
+export interface BilanDesinstallation {
+  etapes: EtapeDesinstallation[];
+  /** Le dossier de données, gardé. */
+  donnees: string;
+  /** programme\ sera supprimé une fois l'appli fermée par fermerApresDesinstallation. */
+  aLaFermeture: boolean;
+}
+
+/**
+ * Retire le démarrage automatique, le raccourci du Bureau s'il pointe vers l'appli, et programme\ (tout de suite, ou
+ * une fois l'appli fermée). Les données restent.
+ */
+export const desinstaller = (): Promise<BilanDesinstallation> => invoke<BilanDesinstallation>('desinstaller');
+
+/** Ferme l'appli ; si elle tourne depuis programme\, une copie de l'exe le supprime ensuite. */
+export const fermerApresDesinstallation = (): Promise<void> => invoke<void>('fermer_apres_desinstallation');
 
 /**
  * Événements envoyés par l'appli : « etat-icone » (le menu relit son état), « aller-a » (page ou dialogue à

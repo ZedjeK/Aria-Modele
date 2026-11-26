@@ -99,6 +99,10 @@ Les lignes « à renseigner » se complètent **avant la première ligne de code
   version, ne rien installer sans accord. L'empreinte prouve que le téléchargement est intact, pas d'où il vient : la
   provenance repose sur le compte de l'auteur, les releases immuables et l'attestation jointe, et le README le dit
   dans « Limites à connaître ».
+- **Désinstallation** : un bouton « Désinstaller » dans les Paramètres retire tout ce que l'appli a écrit hors de
+  son dossier de données (démarrage automatique, raccourci du Bureau s'il pointe vers elle), puis supprime
+  `programme\` une fois l'appli fermée. Les données restent, et l'appli dit où elles sont : les supprimer est un
+  geste de l'utilisateur.
 
 ### Réseau et droits
 

@@ -24,8 +24,8 @@ pub const DOSSIER_VERSIONS: &str = "versions";
 /// Argument qui dispense l'appli de proposer l'installation, pour ce lancement.
 pub const ARGUMENT_PORTABLE: &str = "--portable";
 
-const SUFFIXE_NOUVEAU: &str = ".nouveau";
-const SUFFIXE_ANCIEN: &str = ".ancien";
+pub(crate) const SUFFIXE_NOUVEAU: &str = ".nouveau";
+pub(crate) const SUFFIXE_ANCIEN: &str = ".ancien";
 const SUFFIXE_TEMPORAIRE: &str = ".tmp";
 
 /// Le nom de l'exe livré, sous lequel il est installé.
