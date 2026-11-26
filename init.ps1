@@ -184,7 +184,8 @@ Remove-Item -LiteralPath $dossierStacks -Recurse -Force
 $essais = Join-Path $racine 'tools\essais'
 if (Test-Path -LiteralPath $essais) { Remove-Item -LiteralPath $essais -Recurse -Force }
 # Les tests des squelettes et le journal du modèle ne servent qu'au dépôt modèle.
-foreach ($relatif in 'tools\tester-squelettes.ps1', '.github\workflows\squelettes.yml', 'docs\MODELE-JOURNAL.md') {
+foreach ($relatif in 'tools\tester-squelettes.ps1', '.github\workflows\squelettes.yml', 'docs\MODELE-JOURNAL.md',
+    'tools\etat-flotte.ps1', 'docs\APPLIS.md') {
     $chemin = Join-Path $racine $relatif
     if (Test-Path -LiteralPath $chemin) { Remove-Item -LiteralPath $chemin -Force }
 }
