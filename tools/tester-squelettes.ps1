@@ -93,8 +93,11 @@ try {
         $demarrage = if ($nonFournis -contains 'demarrageAuto') { 'non' } else { 'oui' }
         $installation = if ($nonFournis -contains 'installation') { 'non' } else { 'oui' }
 
+        # Une promesse plus longue que la largeur des lignes de code (110 caractères pour rustfmt) : elle est recopiée
+        # dans le code de la stack, dont la mise en forme est contrôlée par ses tests.
+        $promesse = "Une appli pour essayer le squelette, avec une promesse assez longue pour dépasser la largeur qu'un formateur de code accepte sur une ligne."
         & $hote -NoProfile -ExecutionPolicy Bypass -File (Join-Path $c 'init.ps1') `
-            -Nom Essai -Stack $s.Name -Promesse 'Une appli pour essayer le squelette.' -ElementOrange 'une clé' `
+            -Nom Essai -Stack $s.Name -Promesse $promesse -ElementOrange 'une clé' `
             -DemarrageAuto $demarrage -Installation $installation -Port 0 | Out-Host
         Verifier ($LASTEXITCODE -eq 0) "$($s.Name) : init.ps1 crée l'appli et ses tests passent"
         if ($LASTEXITCODE -ne 0) { continue }

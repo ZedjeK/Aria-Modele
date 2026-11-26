@@ -11,6 +11,9 @@ pub const NOM_EXE: &str = "Aria-{{NOM}}";
 pub const DOSSIER_DONNEES: &str = ".Aria-{{NOM}}";
 
 /// La promesse de l'appli, en une phrase.
+// Laissée sur une ligne quelle que soit sa longueur : init.ps1 y écrit une promesse de 200 caractères au plus, et
+// rustfmt couperait la ligne au-delà de la largeur fixée par rustfmt.toml (issue #57).
+#[rustfmt::skip]
 pub const PROMESSE: &str = "{{PROMESSE}}";
 
 /// Version X.Y.Z, celle de `[workspace.package]` dans Cargo.toml.

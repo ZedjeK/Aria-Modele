@@ -9,7 +9,8 @@ Onze scénarios, les huit premiers et le dernier chacun dans sa propre copie du 
   1. init.ps1 réussit : marqueurs remplis, blocs de stack fusionnés, fichiers du modèle retirés ;
   2. un port déjà pris est refusé, sans rien modifier ;
   3. un arbre de travail modifié est refusé, sans rien modifier ;
-  4. une promesse qui casserait un tableau ou un script est refusée ;
+  4. une promesse qui casserait un tableau ou un script est refusée ; la plus longue permise passe, et le Rust des
+     squelettes la garde sur une ligne, à l'abri de rustfmt ;
   5. un dossier qui contient une jonction est refusé ;
   6. sans installation par l'exe, le README et les notes de version gardent le bloc portable ;
   7. verifier-release.ps1 refuse une version incomplète et accepte une version complète ;
@@ -157,7 +158,7 @@ try {
     Verifier ($code -ne 0) "init.ps1 s'arrête en erreur"
     Verifier (Test-Path (Join-Path $c 'stacks')) "rien n'a été modifié : stacks\ est toujours là"
 
-    Write-Host "4. Une promesse qui casserait un tableau ou un script est refusée"
+    Write-Host "4. Une promesse qui casserait un tableau ou un script est refusée, une promesse longue passe"
     $c = Nouvelle-Copie
     $code = Lancer-Init $c 8123 'Une promesse | avec une barre verticale'
     Verifier ($code -ne 0) "init.ps1 s'arrête en erreur"
@@ -166,6 +167,22 @@ try {
     $code = Lancer-Init $c 8123 'Rapide & sans souci'
     Verifier ($code -ne 0) "une esperluette est refusée"
     Verifier (Test-Path (Join-Path $c 'stacks')) "rien n'a été modifié : stacks\ est toujours là"
+    # La plus longue promesse permise (200 caractères) : acceptée, et recopiée en entier.
+    $longue = ('Une appli pour essayer le modèle. ' * 6).Substring(0, 199) + '.'
+    $code = Lancer-Init $c 8123 $longue
+    Verifier ($code -eq 0) "une promesse de $($longue.Length) caractères est acceptée"
+    Verifier ((Texte $c 'README.md').Contains($longue)) "la promesse longue est recopiée en entier dans le README"
+    # Dans le Rust des squelettes, la promesse dépasse vite la largeur que rustfmt accepte : la ligne qui la reçoit
+    # doit suivre #[rustfmt::skip], sinon l'appli créée échoue à son premier contrôle de mise en forme (issue #57).
+    Get-ChildItem -LiteralPath (Join-Path $racine 'stacks') -Recurse -File -Filter '*.rs' | ForEach-Object {
+        $lignes = [IO.File]::ReadAllLines($_.FullName, [Text.Encoding]::UTF8)
+        for ($i = 0; $i -lt $lignes.Count; $i++) {
+            if ($lignes[$i].Contains('{{PROMESSE}}')) {
+                $protegee = $i -gt 0 -and $lignes[$i - 1].Trim() -eq '#[rustfmt::skip]'
+                Verifier $protegee "$($_.FullName.Substring($racine.Length + 1)):$($i + 1) : la promesse est sous #[rustfmt::skip]"
+            }
+        }
+    }
 
     Write-Host "5. Un dossier qui contient une jonction est refusé"
     $c = Nouvelle-Copie
