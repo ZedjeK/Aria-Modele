@@ -9,6 +9,7 @@
 
 .github/pull_request_template.md
 .github/release.yml
+docs/CONTRAT.md
 docs/releases/LISEZ-MOI.md
 tools/proteger-depot.ps1
 tools/socle.txt

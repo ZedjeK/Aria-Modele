@@ -13,6 +13,9 @@
 > Le détail est dans [stacks/LISEZ-MOI.md](stacks/LISEZ-MOI.md). Pour construire :
 > Rust (rustup) et Node.js 24.
 >
+> Le contrat des applis Aria, [docs/CONTRAT.md](docs/CONTRAT.md), fait foi : en
+> cas de doute, c'est lui qui tranche, pour le modèle comme pour chaque appli.
+>
 > Ce qui suit est le squelette du README de la future appli.
 
 <!-- MODELE:fin -->
@@ -164,9 +167,12 @@ appli/        l'exe Tauri : fenêtres, icône de notification, appels à Windows
   capabilities/   ce que chaque fenêtre a le droit d'appeler
 interface/    l'interface en Svelte et TypeScript (pages, dialogues, composants)
 tools/        contrôles, version, zip de release
-docs/         logo, fiche du projet, notes de version
+docs/         logo, fiche du projet, contrat, notes de version
 build.ps1     construction de l'exe
 ```
+
+Les règles communes à toutes les applis Aria (données, réseau, installation, mises
+à jour, interface) sont dans [docs/CONTRAT.md](docs/CONTRAT.md).
 
 ## Licence
 
