@@ -8,8 +8,8 @@ Le problème réglé ou le besoin couvert. `Closes #n` si une issue est liée.
 
 ## Preuve
 
-- [ ] `.\build.ps1`
 - [ ] `.\tools\tester.ps1`
+- [ ] `.\build.ps1`
 
 Sortie utile, réduite aux lignes qui comptent.
 

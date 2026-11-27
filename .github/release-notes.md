@@ -24,7 +24,7 @@
 <!-- INSTALLATION:debut -->
    Choisis « Installer » pour le ranger dans `%USERPROFILE%\.Aria-{{NOM}}\programme`, ou « Lancer sans installer ».
 <!-- INSTALLATION:fin -->
-4. L'exe n'est pas signé : si Windows affiche « Windows a protégé votre ordinateur », clique sur « Informations
+4. Si Windows affiche « Windows a protégé votre ordinateur » (exe pas encore signé), clique sur « Informations
    complémentaires », puis sur « Exécuter quand même ».
 
 ## Mise à jour depuis une version précédente

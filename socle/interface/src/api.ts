@@ -15,9 +15,13 @@ export interface ReglagesFond {
 }
 
 export interface Reglages {
+  /** Le numéro du format de reglages.json. */
+  format: number;
   fond: ReglagesFond;
   proposerInstallation: boolean;
   chercherMisesAJour: boolean;
+  /** Les réglages propres à l'appli, sous la clé « appli » du fichier. */
+  appli: Record<string, unknown>;
 }
 
 export interface Identite {
@@ -98,6 +102,8 @@ export interface InfosInstallation {
   versionInstallee: string | null;
   /** Le raccourci du Bureau qui serait créé ; null si le Bureau est introuvable. */
   raccourci: string | null;
+  /** Ce qui est déjà à sa place : rien, un raccourci vers l'appli (mis à jour), ou vers un autre programme (gardé). */
+  raccourciExistant: 'absent' | 'a-nous' | 'ailleurs';
 }
 
 export const infosInstallation = (): Promise<InfosInstallation> => invoke<InfosInstallation>('infos_installation');

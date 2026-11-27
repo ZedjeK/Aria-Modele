@@ -42,6 +42,17 @@ pub fn nom_valide(nom: &str) -> bool {
             .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || *c == b'-')
         && octets.first() != Some(&b'-')
         && octets.last() != Some(&b'-')
+        && !nom_reserve(nom)
+}
+
+/// Les noms que Windows réserve à ses périphériques, quelle que soit l'extension : un fichier `con.secret` ne
+/// s'écrit pas.
+fn nom_reserve(nom: &str) -> bool {
+    if matches!(nom, "con" | "prn" | "aux" | "nul") {
+        return true;
+    }
+    let numero = nom.strip_prefix("com").or_else(|| nom.strip_prefix("lpt"));
+    numero.is_some_and(|n| n.len() == 1 && n.as_bytes()[0].is_ascii_digit())
 }
 
 /// Le coffre des secrets d'une appli.
@@ -279,10 +290,34 @@ mod tests {
 
     #[test]
     fn un_nom_qui_sortirait_du_dossier_est_refuse() {
-        for nom in ["", "../x", "a/b", "A", "-a", "a-", "é", &"a".repeat(65)] {
+        for nom in [
+            "",
+            "../x",
+            "a/b",
+            "A",
+            "-a",
+            "a-",
+            "é",
+            &"a".repeat(65),
+            "con",
+            "nul",
+            "aux",
+            "prn",
+            "com1",
+            "lpt9",
+        ] {
             assert!(!nom_valide(nom), "{nom}");
         }
-        for nom in ["a", "jeton-github", "cle2", &"a".repeat(64)] {
+        for nom in [
+            "a",
+            "jeton-github",
+            "cle2",
+            &"a".repeat(64),
+            "console",
+            "com10",
+            "lpt",
+            "nul-2",
+        ] {
             assert!(nom_valide(nom), "{nom}");
         }
         let temp = tempfile::tempdir().unwrap();

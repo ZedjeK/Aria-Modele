@@ -52,7 +52,9 @@ pub enum Erreur {
     AbsentASauvegarder(PathBuf),
 
     /// Un nom de secret qui pourrait sortir du dossier des secrets.
-    #[error("nom de secret refusé : « {0} » (lettres minuscules, chiffres et tirets, 64 caractères au plus)")]
+    #[error(
+        "nom de secret refusé : « {0} » (minuscules, chiffres et tirets, 64 au plus, sans nom réservé de Windows)"
+    )]
     NomDeSecret(String),
 }
 

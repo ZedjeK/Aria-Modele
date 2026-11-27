@@ -11,7 +11,7 @@ use serde::Serialize;
 use tauri::window::Color;
 use tauri::{AppHandle, Manager, State, Theme, WebviewUrl, WebviewWindowBuilder};
 
-use super::{Etat, erreur_fatale, ouvrir_principale};
+use super::{Etat, erreur_fatale, ouvrir_principale, raccourci};
 
 /// L'étiquette de la fenêtre, citée par capabilities\installation.json.
 pub const FENETRE_INSTALLATION: &str = "installation";
@@ -40,32 +40,41 @@ pub struct InfosInstallation {
     version: &'static str,
     dossier: String,
     version_installee: Option<String>,
+    /// Le raccourci du Bureau ; `None` si le Bureau est introuvable.
     raccourci: Option<String>,
+    /// Ce qui est déjà à la place du raccourci : rien, un raccourci vers l'appli, ou vers un autre programme.
+    raccourci_existant: raccourci::Existant,
 }
 
-/// Le raccourci du Bureau : « Aria Nom.lnk ».
-pub fn chemin_raccourci(app: &AppHandle) -> Option<PathBuf> {
-    app.path()
-        .desktop_dir()
-        .ok()
-        .map(|bureau| bureau.join(format!("{}.lnk", identite::nom())))
+/// L'exe installé et l'exe en cours : un raccourci vers l'un des deux est celui de l'appli.
+fn exes_de_l_appli(etat: &Etat) -> Vec<PathBuf> {
+    let mut exes = vec![etat.dossier.programme().join(installation::nom_exe())];
+    exes.extend(std::env::current_exe().ok());
+    exes
 }
 
 #[tauri::command]
 pub fn infos_installation(app: AppHandle, etat: State<'_, Etat>) -> InfosInstallation {
     let programme = etat.dossier.programme();
+    let lien = raccourci::chemin(&app);
+    let exes = exes_de_l_appli(&etat);
+    let exes: Vec<&Path> = exes.iter().map(PathBuf::as_path).collect();
     InfosInstallation {
         nom: identite::nom(),
         version: identite::version(),
         dossier: programme.display().to_string(),
         version_installee: installation::version_installee(&programme),
-        raccourci: chemin_raccourci(&app).map(|c| c.display().to_string()),
+        raccourci_existant: lien
+            .as_deref()
+            .map_or(raccourci::Existant::Absent, |l| raccourci::existant(l, &exes)),
+        raccourci: lien.map(|c| c.display().to_string()),
     }
 }
 
 /// Installe, puis relance l'appli depuis `programme\` et arrête ce lancement. En cas d'échec, rien n'a changé et
 /// le message dit pourquoi.
-#[tauri::command]
+// Sur un fil à part : la copie ne fige pas la fenêtre.
+#[tauri::command(async)]
 pub fn installer(app: AppHandle, etat: State<'_, Etat>, raccourci: bool) -> Result<(), String> {
     // Contrat : un exe élevé ne se lance pas depuis un dossier qu'un programme sans droits peut modifier. Une
     // appli lancée normalement n'a pas besoin des droits administrateur pour se ranger dans le dossier de données.
@@ -84,8 +93,18 @@ pub fn installer(app: AppHandle, etat: State<'_, Etat>, raccourci: bool) -> Resu
         etat.dossier.programme().display()
     );
     if raccourci {
-        match chemin_raccourci(&app).map(|lien| systeme::creer_raccourci(&lien, &installe)) {
+        let exes = exes_de_l_appli(&etat);
+        let exes: Vec<&Path> = exes.iter().map(PathBuf::as_path).collect();
+        let lien = raccourci::chemin(&app);
+        let existait = lien
+            .as_deref()
+            .is_some_and(|l| raccourci::existant(l, &exes) == raccourci::Existant::ANous);
+        match lien.map(|lien| raccourci::creer_ou_mettre_a_jour(&lien, &installe, &exes)) {
+            Some(Ok(())) if existait => bilan.push_str(", raccourci du Bureau mis à jour"),
             Some(Ok(())) => bilan.push_str(", raccourci du Bureau créé"),
+            Some(Err(e)) if e.kind() == std::io::ErrorKind::AlreadyExists => {
+                bilan.push_str(", raccourci du Bureau laissé tel quel (il pointe vers un autre programme)");
+            }
             Some(Err(e)) => {
                 bilan.push_str(", raccourci non créé");
                 erreur_fatale::avertir(&format!(
@@ -145,16 +164,7 @@ pub fn lancer_sans_installer(
 /// Ce que l'installation demande à Windows.
 #[cfg(windows)]
 mod systeme {
-    use std::io;
-    use std::path::Path;
-
-    use crate::identite;
-    use windows::Win32::System::Com::{
-        CLSCTX_INPROC_SERVER, COINIT_APARTMENTTHREADED, CoCreateInstance, CoInitializeEx, CoUninitialize,
-        IPersistFile,
-    };
-    use windows::Win32::UI::Shell::{IShellLinkW, IsUserAnAdmin, ShellLink};
-    use windows::core::{HSTRING, Interface};
+    use windows::Win32::UI::Shell::IsUserAnAdmin;
 
     /// L'appli tourne-t-elle avec les droits administrateur ?
     #[allow(unsafe_code)]
@@ -162,50 +172,12 @@ mod systeme {
         // SAFETY : fonction sans paramètre, qui ne fait que lire le jeton du processus.
         unsafe { IsUserAnAdmin() }.as_bool()
     }
-
-    /// Crée ou remplace le raccourci `lien` vers `cible`, avec l'icône de l'exe. Sur un fil à part, qui prépare
-    /// COM pour lui seul.
-    pub fn creer_raccourci(lien: &Path, cible: &Path) -> io::Result<()> {
-        let (lien, cible) = (HSTRING::from(lien), cible.to_path_buf());
-        std::thread::spawn(move || ecrire_raccourci(&lien, &cible))
-            .join()
-            .map_err(|_| io::Error::other("création du raccourci interrompue"))?
-            .map_err(io::Error::other)
-    }
-
-    #[allow(unsafe_code)]
-    fn ecrire_raccourci(lien: &HSTRING, cible: &Path) -> windows::core::Result<()> {
-        // SAFETY : COM est préparé puis libéré sur ce fil, qui ne sert qu'à ça ; les objets COM sont relâchés
-        // avant CoUninitialize, à la fin de la fermeture ; les textes sont des HSTRING valides pendant les appels.
-        unsafe {
-            CoInitializeEx(None, COINIT_APARTMENTTHREADED).ok()?;
-            let resultat = (|| {
-                let raccourci: IShellLinkW = CoCreateInstance(&ShellLink, None, CLSCTX_INPROC_SERVER)?;
-                raccourci.SetPath(&HSTRING::from(cible))?;
-                if let Some(dossier) = cible.parent() {
-                    raccourci.SetWorkingDirectory(&HSTRING::from(dossier))?;
-                }
-                raccourci.SetIconLocation(&HSTRING::from(cible), 0)?;
-                raccourci.SetDescription(&HSTRING::from(identite::nom()))?;
-                raccourci.cast::<IPersistFile>()?.Save(lien, true)
-            })();
-            CoUninitialize();
-            resultat
-        }
-    }
 }
 
-/// Hors de Windows (tests, outils) : ni droits administrateur ni raccourci.
+/// Hors de Windows (tests, outils) : pas de droits administrateur.
 #[cfg(not(windows))]
 mod systeme {
-    use std::io;
-    use std::path::Path;
-
     pub fn est_eleve() -> bool {
         false
-    }
-
-    pub fn creer_raccourci(_lien: &Path, _cible: &Path) -> io::Result<()> {
-        Err(io::Error::new(io::ErrorKind::Unsupported, "Windows seulement"))
     }
 }

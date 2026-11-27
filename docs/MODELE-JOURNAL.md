@@ -20,6 +20,7 @@ Socle partagé au lieu de copié, installation pour toutes les applis, modèles 
 | #78 | Socle Rust partagé : crate `aria-coeur` dans `socle/coeur`, fenêtre Tauri comprise ; le squelette ne garde que son identité et ses commandes |
 | #79 | Interface partagée : paquet `aria-interface` dans `socle/interface` (thème, composants, fenêtre, dialogues, Journal, Paramètres, installation, menu de l'icône) |
 | #80 | Publication du socle : release du dépôt modèle avec l'archive `aria-interface-X.Y.Z.tgz` (`socle-release.yml`), PR hebdomadaire « Monter le socle » dans chaque appli (`monter-socle.yml`), CodeQL du modèle sur le Rust et le TypeScript du socle |
+| #81 | Corrections de l'audit : raccourci du Bureau jamais remplacé s'il pointe ailleurs (I1), réglages au format versionné, lus champ par champ et sauvegardés avant réécriture (I2), tailles plafonnées des mises à jour (M4), copies et mesures hors du fil de la fenêtre (M5), noms réservés de Windows refusés pour les secrets (M6), notes, init.ps1 et modèle de PR (M3, M8 à M12) |
 
 ### À reporter dans les applis
 
@@ -29,7 +30,7 @@ Socle partagé au lieu de copié, installation pour toutes les applis, modèles 
   `0009-modeles-et-moteurs-partages.md`, `0010-windows-x64-seul.md` ;
 - nouveau : `docs/RECETTE.md` ;
 - modifiés : `docs/CONTRAT.md` (v2), `docs/decisions/0002-exe-portable.md`, `docs/decisions/LISEZ-MOI.md`,
-  `tools/socle.txt`.
+  `tools/socle.txt`, `.github/pull_request_template.md`.
 
 ## v1.1.0 (proposée, pas encore taguée)
 

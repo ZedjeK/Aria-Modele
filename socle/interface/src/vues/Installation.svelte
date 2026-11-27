@@ -62,10 +62,19 @@
 
   <div class="options">
     <label class="ligne">
-      <input type="checkbox" bind:checked={raccourci} disabled={!infos?.raccourci} />
-      Créer un raccourci sur le Bureau
+      <input
+        type="checkbox"
+        bind:checked={raccourci}
+        disabled={!infos?.raccourci || infos.raccourciExistant === 'ailleurs'}
+      />
+      {infos?.raccourciExistant === 'a-nous'
+        ? 'Mettre à jour le raccourci du Bureau'
+        : 'Créer un raccourci sur le Bureau'}
     </label>
     {#if infos?.raccourci}<p class="aide code">{infos.raccourci}</p>{/if}
+    {#if infos?.raccourciExistant === 'ailleurs'}
+      <p class="aide">Un raccourci du même nom pointe vers un autre programme : il reste tel quel.</p>
+    {/if}
 
     <label class="ligne">
       <input type="checkbox" bind:checked={nePlusProposer} />
