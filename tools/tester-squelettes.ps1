@@ -166,7 +166,23 @@ try {
 
         & $hote -NoProfile -ExecutionPolicy Bypass -File (Join-Path $c 'build.ps1') | Out-Host
         Verifier ($LASTEXITCODE -eq 0) "$($s.Name) : build.ps1 compile l'exe"
-        Verifier (Test-Path (Join-Path $c '.work\sortie\Aria-Essai.exe')) "$($s.Name) : Aria-Essai.exe est dans .work\sortie\"
+        $exeSortie = Join-Path $c '.work\sortie\Aria-Essai.exe'
+        Verifier (Test-Path $exeSortie) "$($s.Name) : Aria-Essai.exe est dans .work\sortie\"
+
+        # L'exe se lance et tient : un plantage au démarrage (capacité refusée, panique) l'arrêterait aussitôt. Lancé
+        # hors de son dossier, il montre la proposition d'installation et attend ; on l'arrête ensuite.
+        if ((Test-Path $exeSortie) -and $env:OS -eq 'Windows_NT') {
+            $journal = Join-Path $env:USERPROFILE '.Aria-Essai\journal.json'
+            $avant = if (Test-Path $journal) { (Get-Item $journal).LastWriteTimeUtc } else { [datetime]::MinValue }
+            $processus = Start-Process -FilePath $exeSortie -PassThru
+            Start-Sleep -Seconds 15
+            $tient = -not $processus.HasExited
+            Verifier $tient "$($s.Name) : l'exe se lance et tient 15 secondes (code de sortie : $(if ($tient) { 'aucun' } else { $processus.ExitCode }))"
+            $ecrit = (Test-Path $journal) -and (Get-Item $journal).LastWriteTimeUtc -gt $avant -and
+                ([IO.File]::ReadAllText($journal) -match '"lancement"')
+            Verifier $ecrit "$($s.Name) : l'exe note son lancement dans son journal"
+            if ($tient) { Stop-Process -Id $processus.Id -Force -ErrorAction SilentlyContinue }
+        }
 
         & $hote -NoProfile -ExecutionPolicy Bypass -File (Join-Path $c 'tools\empaqueter.ps1') | Out-Host
         $zip = Join-Path $c ".work\release\Aria-Essai-$version.zip"
