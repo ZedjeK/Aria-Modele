@@ -356,7 +356,13 @@ if (Test-Path -LiteralPath $paquetsInterface) {
     $texte = $lu.Texte.Replace('"aria-interface": "file:../../../socle/interface"', "`"aria-interface`": `"$origine`"")
     if ($texte -ceq $lu.Texte) { Arreter "interface\package.json ne prend pas le socle par son chemin dans le dépôt modèle." }
     Ecrire-Texte $paquetsInterface $texte $lu.Bom
-    # package-lock.json nommait le paquet par son chemin : npm le relie à sa nouvelle origine, sans rien monter d'autre.
+    # package-lock.json nommait le paquet par son chemin : sans cette origine-là, npm ne relirait pas son verrou.
+    $verrouInterface = Join-Path $racine 'interface\package-lock.json'
+    if (Test-Path -LiteralPath $verrouInterface) {
+        $lu = Lire-Texte $verrouInterface
+        Ecrire-Texte $verrouInterface ($lu.Texte.Replace('file:../../../socle/interface', $origine)) $lu.Bom
+    }
+    # npm relie le paquet à sa nouvelle origine, sans rien monter d'autre.
     Push-Location -LiteralPath (Join-Path $racine 'interface')
     try {
         $ErrorActionPreference = 'Continue'
