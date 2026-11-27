@@ -159,6 +159,9 @@ try {
 
         Verifier (-not (Test-Path (Join-Path $c 'tools\tester-squelettes.ps1'))) "$($s.Name) : tester-squelettes.ps1 n'est pas copié dans l'appli"
         Verifier (-not (Test-Path (Join-Path $c '.github\workflows\squelettes.yml'))) "$($s.Name) : squelettes.yml n'est pas copié dans l'appli"
+        Verifier (-not (Test-Path (Join-Path $c '.github\workflows\socle-release.yml'))) "$($s.Name) : socle-release.yml n'est pas copié dans l'appli"
+        $monter = Join-Path $c '.github\workflows\monter-socle.yml'
+        Verifier ((Test-Path $monter) -and ([IO.File]::ReadAllText($monter) -cnotmatch 'MODELE:|Aria-Essai')) "$($s.Name) : monter-socle.yml est dans l'appli, sans bloc du modèle, et vise le dépôt modèle"
 
         # La liste des crates Rust de LICENCES-TIERS.txt, générée par cargo-about, si la stack fournit le script.
         $outilLicences = Join-Path $c 'tools\licences-rust.ps1'

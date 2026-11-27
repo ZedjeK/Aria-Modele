@@ -9,6 +9,8 @@ on:
     branches: [main]
   schedule:
     - cron: "17 5 * * 1"
+  # Lancé par « Monter le socle » sur sa branche : une PR ouverte par le jeton d'un workflow ne déclenche rien.
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -27,6 +29,13 @@ jobs:
         include:
           - language: actions
             build-mode: none
+          # <!-- MODELE:debut -->
+          # Dépôt modèle seulement : le Rust et le TypeScript du socle (socle\). Dans l'appli, la stack ajoute les siens.
+          - language: rust
+            build-mode: none
+          - language: javascript-typescript
+            build-mode: none
+          # <!-- MODELE:fin -->
           # <<STACK:codeql>>
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

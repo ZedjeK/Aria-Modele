@@ -19,6 +19,7 @@ Socle partagé au lieu de copié, installation pour toutes les applis, modèles 
 | #77 | Contrat v2 et recette commune (`docs/RECETTE.md`) |
 | #78 | Socle Rust partagé : crate `aria-coeur` dans `socle/coeur`, fenêtre Tauri comprise ; le squelette ne garde que son identité et ses commandes |
 | #79 | Interface partagée : paquet `aria-interface` dans `socle/interface` (thème, composants, fenêtre, dialogues, Journal, Paramètres, installation, menu de l'icône) |
+| #80 | Publication du socle : release du dépôt modèle avec l'archive `aria-interface-X.Y.Z.tgz` (`socle-release.yml`), PR hebdomadaire « Monter le socle » dans chaque appli (`monter-socle.yml`), CodeQL du modèle sur le Rust et le TypeScript du socle |
 
 ### À reporter dans les applis
 
