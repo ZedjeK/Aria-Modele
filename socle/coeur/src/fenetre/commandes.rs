@@ -4,9 +4,10 @@
 //! Les erreurs remontent en texte français : l'interface les montre telles quelles. Jamais de secret dedans.
 
 use crate::journal::Operation;
-use crate::{Reglages, diagnostic, identite, installation, journal};
+use crate::sauvegardes::{self, Sauvegarde};
+use crate::{Reglages, diagnostic, identite, installation, journal, reprise};
 use serde::Serialize;
-use tauri::{AppHandle, State};
+use tauri::{AppHandle, Emitter, State};
 
 use super::Etat;
 
@@ -77,4 +78,25 @@ pub fn diagnostic(etat: State<'_, Etat>) -> String {
         profil: std::env::var("USERPROFILE").ok(),
     };
     diagnostic::texte(&etat.dossier, &contexte)
+}
+
+/// Les sauvegardes du dossier de données, la plus récente d'abord.
+#[tauri::command]
+pub fn lister_sauvegardes(etat: State<'_, Etat>) -> Vec<Sauvegarde> {
+    sauvegardes::lister(&etat.dossier)
+}
+
+/// Restaure une sauvegarde après avoir sauvegardé l'état actuel ; l'interface relit ce qui a pu changer
+/// (événement « restauree »).
+#[tauri::command(async)]
+pub fn restaurer_sauvegarde(app: AppHandle, etat: State<'_, Etat>, nom: String) -> Result<String, String> {
+    let fichier = sauvegardes::restaurer(&etat.dossier, &nom)?;
+    let _ = app.emit("restauree", fichier.display().to_string());
+    Ok(fichier.display().to_string())
+}
+
+/// Le bilan de la reprise des données d'une ancienne version, si elle a eu lieu.
+#[tauri::command]
+pub fn bilan_reprise(etat: State<'_, Etat>) -> Option<reprise::Bilan> {
+    reprise::bilan(&etat.dossier)
 }

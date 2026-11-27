@@ -17,9 +17,11 @@
     reglages: Reglages;
     enregistrer: () => void;
     signaler: (texte: string, erreur?: boolean) => void;
+    /** Rouvre l'assistant de premier lancement. */
+    ouvrirAssistant: () => void;
   }
 
-  let { identite, reglages = $bindable(), enregistrer, signaler }: Props = $props();
+  let { identite, reglages = $bindable(), enregistrer, signaler, ouvrirAssistant }: Props = $props();
   let demarrageAuto = $state(false);
   let dialogueDesinstallation = $state(false);
 
@@ -69,7 +71,7 @@
 </script>
 
 <h1>Paramètres</h1>
-<p class="sous-titre">{identite.nom} elle-même : démarrage, installation, mises à jour, affichage.</p>
+<p class="sous-titre">{identite.nom} elle-même : démarrage, installation, mises à jour, affichage, assistant.</p>
 <ASavoir>
   {identite.enFond
     ? 'Chaque changement est enregistré tout de suite : dans reglages.json, et dans Windows pour le démarrage.'
@@ -146,6 +148,13 @@
         onchange={(e) => enregistrerNombre(e, 'maximum')}
       />
     </label>
+  </div>
+</Panneau>
+
+<Panneau titre="Assistant">
+  <div class="ligne">
+    <Bouton onclick={ouvrirAssistant}>Revoir l'assistant</Bouton>
+    <span class="aide">Les premiers pas avec l'appli, et ses réglages essentiels.</span>
   </div>
 </Panneau>
 

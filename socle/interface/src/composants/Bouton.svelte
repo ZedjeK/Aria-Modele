@@ -79,6 +79,15 @@
     --texte-bouton: var(--texte-2);
   }
 
+  /* Le biais rognerait le contour de focus : il se dessine à l'intérieur du bouton. */
+  .bouton:focus-visible {
+    outline: none;
+  }
+
+  .bouton:focus-visible::before {
+    box-shadow: inset 0 0 0 2px var(--ambre);
+  }
+
   .bouton:hover:not(:disabled) {
     filter: brightness(1.15);
   }

@@ -77,6 +77,15 @@
     background: var(--cyan);
   }
 
+  /* L'encoche rognerait le contour de focus : il se dessine à l'intérieur de l'onglet. */
+  .onglet:focus-visible {
+    outline: none;
+  }
+
+  .onglet:focus-visible span {
+    box-shadow: inset 0 0 0 2px var(--ambre);
+  }
+
   .onglet:hover:not(.actif) {
     color: var(--texte);
   }

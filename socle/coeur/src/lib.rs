@@ -16,6 +16,7 @@ pub mod journal;
 pub mod mises_a_jour;
 pub mod presence;
 pub mod reglages;
+pub mod reprise;
 pub mod sauvegardes;
 pub mod secrets;
 

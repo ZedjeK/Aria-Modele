@@ -9,5 +9,7 @@ export default defineConfig({
   test: {
     include: ['src/**/*.test.ts'],
     environment: 'node',
+    // theme.css est lu tel quel par le test de contraste (« ?raw ») : vitest ne doit pas le vider.
+    css: { include: [/theme\.css/] },
   },
 });

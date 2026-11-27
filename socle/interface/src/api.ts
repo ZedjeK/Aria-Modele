@@ -19,6 +19,8 @@ export interface Reglages {
   format: number;
   fond: ReglagesFond;
   chercherMisesAJour: boolean;
+  /** L'assistant de premier lancement a été vu : il ne s'ouvre plus de lui-même. */
+  assistantVu: boolean;
   /** Les réglages propres à l'appli, sous la clé « appli » du fichier. */
   appli: Record<string, unknown>;
 }
@@ -154,12 +156,50 @@ export const desinstaller = (): Promise<BilanDesinstallation> => invoke<BilanDes
 /** Ferme l'appli ; si elle tourne depuis programme\, une copie de l'exe le supprime ensuite. */
 export const fermerApresDesinstallation = (): Promise<void> => invoke<void>('fermer_apres_desinstallation');
 
+/** Une copie du dossier de sauvegardes. */
+export interface Sauvegarde {
+  nom: string;
+  /** Le fichier d'où elle vient ; null si l'appli ne le sait pas (copie d'une ancienne version). */
+  origine: string | null;
+  taille: number;
+}
+
+/** Les sauvegardes, la plus récente d'abord. */
+export const listerSauvegardes = (): Promise<Sauvegarde[]> => invoke<Sauvegarde[]>('lister_sauvegardes');
+
+/** Sauvegarde l'état actuel, puis remet la copie à sa place ; renvoie le fichier restauré. */
+export const restaurerSauvegarde = (nom: string): Promise<string> => invoke<string>('restaurer_sauvegarde', { nom });
+
+/** Ce que la reprise des données d'une ancienne version a fait. */
+export interface BilanReprise {
+  ancien: string;
+  copie: string;
+  repris: string[];
+  nonRepris: string[];
+}
+
+export const bilanReprise = (): Promise<BilanReprise | null> => invoke<BilanReprise | null>('bilan_reprise');
+
+/** Une tâche longue, telle que l'appli la décrit (événement « tache »). */
+export interface Avancement {
+  id: number;
+  libelle: string;
+  /** Entre 0 et 1 ; null tant que la durée est inconnue. */
+  progression: number | null;
+  detail: string;
+  etape: 'en-cours' | 'finie' | 'annulee' | 'echec';
+}
+
+/** Demande l'annulation d'une tâche : elle s'arrête à son prochain pas. */
+export const annulerTache = (id: number): Promise<boolean> => invoke<boolean>('annuler_tache', { id });
+
 /**
  * Événements envoyés par l'appli : « etat-icone » (le menu relit son état), « aller-a » (page ou dialogue à
- * montrer : « parametres », « mise-a-jour »), « mise-a-jour » (version disponible).
+ * montrer : « parametres », « mise-a-jour »), « mise-a-jour » (version disponible), « tache » (une tâche longue
+ * avance), « restauree » (un fichier a été restauré).
  */
 export const ecouter = <T>(
-  evenement: 'etat-icone' | 'aller-a' | 'mise-a-jour',
+  evenement: 'etat-icone' | 'aller-a' | 'mise-a-jour' | 'tache' | 'restauree',
   rappel: (charge: T) => void,
 ): Promise<UnlistenFn> =>
   listen<T>(evenement, (e) => rappel(e.payload));

@@ -5,7 +5,16 @@
 -->
 <script lang="ts">
   import { onMount, tick } from 'svelte';
-  import { diagnostic, lireJournal, messageErreur, type Operation } from '../api';
+  import {
+    diagnostic,
+    lireJournal,
+    listerSauvegardes,
+    messageErreur,
+    restaurerSauvegarde,
+    type Operation,
+    type Sauvegarde,
+  } from '../api';
+  import { octetsLisibles } from '../jauge';
   import { dateLisible } from '../journal';
   import ASavoir from '../composants/ASavoir.svelte';
   import Bouton from '../composants/Bouton.svelte';
@@ -18,6 +27,9 @@
 
   let { signaler }: Props = $props();
   let operations = $state<Operation[] | null>(null);
+  let sauvegardes = $state<Sauvegarde[] | null>(null);
+  let aRestaurer = $state<Sauvegarde | null>(null);
+  let restauration = $state(false);
   let texteDiagnostic = $state<string | null>(null);
   let zoneDiagnostic = $state<HTMLTextAreaElement | null>(null);
 
@@ -33,9 +45,23 @@
 
   async function relire() {
     try {
-      operations = await lireJournal();
+      [operations, sauvegardes] = await Promise.all([lireJournal(), listerSauvegardes()]);
     } catch (e) {
       signaler(messageErreur(e), true);
+    }
+  }
+
+  async function restaurer(sauvegarde: Sauvegarde) {
+    restauration = true;
+    try {
+      const fichier = await restaurerSauvegarde(sauvegarde.nom);
+      signaler(`${fichier} restauré ; son état d'avant est gardé dans les sauvegardes.`);
+      aRestaurer = null;
+      await relire();
+    } catch (e) {
+      signaler(messageErreur(e), true);
+    } finally {
+      restauration = false;
     }
   }
 
@@ -87,6 +113,52 @@
     <Bouton onclick={() => void exporterDiagnostic()}>Exporter le diagnostic</Bouton>
   </div>
 </Panneau>
+
+<Panneau titre="Sauvegardes">
+  <p class="discret">
+    Une copie datée de chaque fichier, faite avant de le modifier. Restaurer sauvegarde d'abord l'état actuel : rien
+    n'est perdu.
+  </p>
+  {#if sauvegardes === null}
+    <p class="discret">Lecture…</p>
+  {:else if sauvegardes.length === 0}
+    <p class="discret">Aucune sauvegarde pour l'instant.</p>
+  {:else}
+    <table>
+      <thead><tr><th>Copie</th><th>Fichier d'origine</th><th>Taille</th><th></th></tr></thead>
+      <tbody>
+        {#each sauvegardes as sauvegarde (sauvegarde.nom)}
+          <tr>
+            <td class="code">{sauvegarde.nom}</td>
+            <td class="code">{sauvegarde.origine ?? 'inconnu : à restaurer à la main'}</td>
+            <td>{octetsLisibles(sauvegarde.taille)}</td>
+            <td>
+              {#if sauvegarde.origine}
+                <Bouton petit onclick={() => (aRestaurer = sauvegarde)}>Restaurer</Bouton>
+              {/if}
+            </td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
+  {/if}
+</Panneau>
+
+{#if aRestaurer}
+  <Dialogue titre="Restaurer une sauvegarde" fermer={() => !restauration && (aRestaurer = null)}>
+    <ASavoir>L'état actuel du fichier est d'abord sauvegardé : tu pourras revenir en arrière.</ASavoir>
+    <Panneau titre="Ce qui sera remis" accentue>
+      <p class="code">{aRestaurer.origine}</p>
+      <p class="discret">depuis la copie <span class="code">{aRestaurer.nom}</span></p>
+    </Panneau>
+    {#snippet pied()}
+      <Bouton genre="discret" desactive={restauration} onclick={() => (aRestaurer = null)}>Annuler</Bouton>
+      <Bouton genre="principal" desactive={restauration} onclick={() => aRestaurer && void restaurer(aRestaurer)}>
+        Restaurer
+      </Bouton>
+    {/snippet}
+  </Dialogue>
+{/if}
 
 {#if texteDiagnostic !== null}
   <Dialogue titre="Diagnostic" fermer={() => (texteDiagnostic = null)}>

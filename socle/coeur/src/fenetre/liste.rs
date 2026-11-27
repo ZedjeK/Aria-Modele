@@ -21,4 +21,8 @@ pub const COMMANDES: &[&str] = &[
     "installer_mise_a_jour",
     "desinstaller",
     "fermer_apres_desinstallation",
+    "lister_sauvegardes",
+    "restaurer_sauvegarde",
+    "bilan_reprise",
+    "annuler_tache",
 ];

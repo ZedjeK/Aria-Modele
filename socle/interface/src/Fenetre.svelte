@@ -26,7 +26,9 @@
   import EtatDirect from './composants/EtatDirect.svelte';
   import FondAnime from './composants/FondAnime.svelte';
   import MenuLateral from './composants/MenuLateral.svelte';
+  import DialogueAssistant from './dialogues/Assistant.svelte';
   import DialogueMiseAJour from './dialogues/MiseAJour.svelte';
+  import { suivreTaches, taches, tachesEnCours } from './taches.svelte';
   import Journal from './pages/Journal.svelte';
   import Parametres from './pages/Parametres.svelte';
 
@@ -60,6 +62,7 @@
   let miseAJour = $state<InfosMiseAJour | null>(null);
   let bandeauRange = $state(false);
   let dialogueMiseAJour = $state(false);
+  let assistant = $state(false);
   let etat = $state('');
   let erreur = $state(false);
 
@@ -68,6 +71,14 @@
   const titrePage = $derived(famille?.pages.find((p) => p.id === page)?.titre ?? '');
   const toutesPastilles: Pastille[] = $derived([
     ...pastilles,
+    // Une tâche longue en cours : pastille cyan tant qu'elle tourne.
+    ...tachesEnCours(taches).map(
+      (t): Pastille => ({
+        nom: t.libelle,
+        detail: t.progression === null ? t.detail || 'en cours' : `${Math.round(t.progression * 100)} %`,
+        ton: 'actif',
+      }),
+    ),
     {
       nom: 'Mises à jour',
       detail: miseAJour
@@ -98,6 +109,8 @@
     void (async () => {
       try {
         [identite, reglages] = await Promise.all([lireIdentite(), lireReglages()]);
+        // Premier lancement : l'assistant présente l'appli et règle l'essentiel.
+        if (!reglages.assistantVu) assistant = true;
         miseAJour ??= await miseAJourDisponible();
       } catch (e) {
         signaler(`Démarrage incomplet : ${messageErreur(e)}`, true);
@@ -108,6 +121,11 @@
       if (cible === 'parametres') page = 'parametres';
       if (cible === 'mise-a-jour' && miseAJour) dialogueMiseAJour = true;
     });
+    suivreTaches();
+    // Une sauvegarde restaurée a pu remettre les réglages : ils sont relus.
+    const arretRestauree = ecouter<string>('restauree', () => {
+      void lireReglages().then((lus) => (reglages = lus));
+    });
     // Une version plus récente trouvée au lancement (la recherche ne bloque pas l'appli).
     const arretMiseAJour = ecouter<string>('mise-a-jour', () => {
       void miseAJourDisponible().then((infos) => (miseAJour = infos));
@@ -115,6 +133,7 @@
     return () => {
       void arretAllerA.then((f) => f());
       void arretMiseAJour.then((f) => f());
+      void arretRestauree.then((f) => f());
     };
   });
 
@@ -166,7 +185,7 @@
         <Journal {signaler} />
       {:else if page === 'parametres'}
         {#if identite && reglages}
-          <Parametres {identite} bind:reglages {enregistrer} {signaler} />
+          <Parametres {identite} bind:reglages {enregistrer} {signaler} ouvrirAssistant={() => (assistant = true)} />
         {/if}
       {:else}
         {@render contenu(page, outils)}
@@ -176,6 +195,10 @@
     </div>
   </main>
 </div>
+
+{#if assistant && identite && reglages}
+  <DialogueAssistant {identite} bind:reglages {enregistrer} {signaler} fermer={() => (assistant = false)} />
+{/if}
 
 {#if dialogueMiseAJour && miseAJour}
   <DialogueMiseAJour infos={miseAJour} fermer={() => (dialogueMiseAJour = false)} />
