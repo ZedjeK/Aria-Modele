@@ -55,8 +55,8 @@ function Demander([string]$question) {
     return (Read-Host $question).Trim()
 }
 
-# La promesse et l'élément orange sont recopiés dans du Markdown, du HTML, du XML, du XAML et des scripts : une ligne
-# de texte simple. « & » casserait un fichier XML (Directory.Build.props), une accolade ouvrirait une extension XAML.
+# La promesse et l'élément orange sont recopiés dans du Markdown, du HTML, du JSON, du TOML, du Rust, du Svelte et des
+# scripts : une ligne de texte simple. Un guillemet fermerait une chaîne, une accolade ouvrirait une expression Svelte.
 function Verifier-Texte([string]$quoi, [string]$valeur) {
     if (-not $valeur) { Arreter "$quoi est vide." }
     if ($valeur.Length -gt 200) { Arreter "$quoi dépasse 200 caractères." }
@@ -393,7 +393,7 @@ Write-Host "La suite :"
 Write-Host "  1. Relis ce qui a changé : git status"
 Write-Host "  2. Dessine l'élément orange dans docs\logo.svg, puis lance .\tools\icone.ps1 (icône Windows, docs\logo.png, logo du menu)."
 Write-Host "  3. Complète les lignes « à renseigner » de la fiche projet, dans docs\FICHE.md."
-Write-Host "  4. Fais le premier commit sur une branche init/$($Nom.ToLowerInvariant()) et amène-le par une PR."
+Write-Host "  4. Fais le premier commit sur une branche feat/creation et amène-le par une PR (CONTRIBUTING.md)."
 Write-Host "  5. Après le premier passage vert de la CI sur main : .\tools\proteger-depot.ps1"
 if ($Port -ne 0) {
     Write-Host "  6. Ajoute le port $Port au registre docs\PORTS.md du dépôt modèle."

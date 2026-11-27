@@ -22,6 +22,7 @@ pub mod icone;
 pub mod installation;
 mod liste;
 pub mod mise_a_jour;
+pub mod raccourci;
 
 use std::path::PathBuf;
 use std::sync::atomic::AtomicBool;

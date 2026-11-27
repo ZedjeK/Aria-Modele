@@ -17,7 +17,7 @@ use tauri::{AppHandle, Emitter, State};
 
 use super::Etat;
 use super::icone::MENU;
-use super::installation::chemin_raccourci;
+use super::raccourci;
 
 /// Le genre des lignes du journal.
 const GENRE: &str = "désinstallation";
@@ -77,7 +77,8 @@ impl Suivi<'_> {
 
 /// Désinstalle : démarrage automatique, raccourci du Bureau, puis `programme\` (tout de suite, ou une fois l'appli
 /// fermée). Chaque étape est tentée même si une autre échoue ; le bilan dit laquelle. Les données restent.
-#[tauri::command]
+// Sur un fil à part : la copie ne fige pas la fenêtre.
+#[tauri::command(async)]
 pub fn desinstaller(app: AppHandle, etat: State<'_, Etat>) -> Result<BilanDesinstallation, String> {
     let exe = std::env::current_exe().map_err(|e| format!("L'exe de l'appli est introuvable : {e}"))?;
     let programme = etat.dossier.programme();
@@ -118,16 +119,13 @@ pub fn desinstaller(app: AppHandle, etat: State<'_, Etat>) -> Result<BilanDesins
 
 /// Retire le raccourci du Bureau s'il pointe vers l'appli ; un raccourci vers autre chose reste.
 fn retirer_raccourci(app: &AppHandle, exes: &[&Path]) -> Result<String, String> {
-    let Some(lien) = chemin_raccourci(app) else {
+    let Some(lien) = raccourci::chemin(app) else {
         return Ok("Bureau introuvable, rien à retirer".to_owned());
     };
     if !lien.is_file() {
         return Ok("aucun raccourci".to_owned());
     }
-    let cible = systeme::cible_raccourci(&lien).map_err(|e| format!("cible illisible, gardé : {e}"))?;
-    if cible.as_os_str().is_empty() {
-        return Ok("cible illisible, gardé".to_owned());
-    }
+    let cible = raccourci::cible(&lien).map_err(|e| format!("cible illisible, gardé : {e}"))?;
     if !desinstallation::raccourci_a_nous(&cible, exes) {
         return Ok("il pointe vers un autre programme : gardé".to_owned());
     }
@@ -206,50 +204,14 @@ pub fn finir(dossier: &Dossier, processus: u32) {
 #[cfg(windows)]
 mod systeme {
     use std::io;
-    use std::path::{Path, PathBuf};
     use std::time::Duration;
 
     use windows::Win32::Foundation::{CloseHandle, ERROR_INVALID_PARAMETER, WAIT_OBJECT_0};
-    use windows::Win32::System::Com::{
-        CLSCTX_INPROC_SERVER, COINIT_APARTMENTTHREADED, CoCreateInstance, CoInitializeEx, CoUninitialize,
-        IPersistFile, STGM_READ,
-    };
     use windows::Win32::System::Threading::{OpenProcess, PROCESS_SYNCHRONIZE, WaitForSingleObject};
-    use windows::Win32::UI::Shell::{IShellLinkW, ShellLink};
-    use windows::core::{HSTRING, Interface};
 
     /// Retire le démarrage automatique : `Run` et `StartupApproved`.
     pub fn oublier_demarrage() -> io::Result<()> {
         crate::demarrage::windows::oublier()
-    }
-
-    /// La cible d'un raccourci `.lnk`. Sur un fil à part, qui prépare COM pour lui seul.
-    pub fn cible_raccourci(lien: &Path) -> io::Result<PathBuf> {
-        let lien = HSTRING::from(lien);
-        std::thread::spawn(move || lire_cible(&lien))
-            .join()
-            .map_err(|_| io::Error::other("lecture du raccourci interrompue"))?
-            .map_err(io::Error::other)
-    }
-
-    #[allow(unsafe_code)]
-    fn lire_cible(lien: &HSTRING) -> windows::core::Result<PathBuf> {
-        // SAFETY : COM est préparé puis libéré sur ce fil, qui ne sert qu'à ça ; les objets COM sont relâchés avant
-        // CoUninitialize, à la fin de la fermeture ; le tampon vit pendant tout l'appel à GetPath, qui en reçoit la
-        // taille ; aucune donnée de recherche n'est demandée (pointeur nul).
-        unsafe {
-            CoInitializeEx(None, COINIT_APARTMENTTHREADED).ok()?;
-            let resultat = (|| -> windows::core::Result<PathBuf> {
-                let raccourci: IShellLinkW = CoCreateInstance(&ShellLink, None, CLSCTX_INPROC_SERVER)?;
-                raccourci.cast::<IPersistFile>()?.Load(lien, STGM_READ)?;
-                let mut tampon = vec![0u16; 32_768];
-                raccourci.GetPath(&mut tampon, std::ptr::null_mut(), 0)?;
-                let utile = tampon.split(|&c| c == 0).next().unwrap_or_default();
-                Ok(PathBuf::from(String::from_utf16_lossy(utile)))
-            })();
-            CoUninitialize();
-            resultat
-        }
     }
 
     /// Attend la fin du processus, au plus `delai`. Vrai s'il s'est terminé, ou si son numéro n'existe plus (déjà
@@ -271,19 +233,14 @@ mod systeme {
     }
 }
 
-/// Hors de Windows (tests, outils) : ni registre, ni raccourci, ni attente.
+/// Hors de Windows (tests, outils) : ni registre ni attente.
 #[cfg(not(windows))]
 mod systeme {
     use std::io;
-    use std::path::{Path, PathBuf};
     use std::time::Duration;
 
     pub fn oublier_demarrage() -> io::Result<()> {
         Ok(())
-    }
-
-    pub fn cible_raccourci(_lien: &Path) -> io::Result<PathBuf> {
-        Err(io::Error::new(io::ErrorKind::Unsupported, "Windows seulement"))
     }
 
     pub fn attendre_fin(_processus: u32, _delai: Duration) -> bool {

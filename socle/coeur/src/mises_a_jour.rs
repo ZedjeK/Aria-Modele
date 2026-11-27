@@ -38,6 +38,14 @@ pub fn adresse_derniere_release() -> String {
     )
 }
 
+/// La plus grande taille acceptée pour le zip d'une mise à jour : au-delà, la release est anormale et rien n'est
+/// téléchargé.
+pub const TAILLE_ZIP_MAX: u64 = 500 * 1024 * 1024;
+
+/// La plus grande taille acceptée une fois le zip décompressé : au-delà, l'extraction s'arrête et rien n'est
+/// installé (un zip piégé ne remplit pas le disque).
+pub const TAILLE_EXTRAITE_MAX: u64 = 2 * 1024 * 1024 * 1024;
+
 /// Une version X.Y.Z.
 pub type Version = (u32, u32, u32);
 
@@ -116,7 +124,10 @@ pub fn analyser(json: &str, actuelle: Version) -> Option<MiseAJour> {
         .find(|a| texte(a, "name") == Some(attendu.as_str()))?;
     let adresse =
         texte(paquet, "browser_download_url").filter(|u| u.starts_with(&prefixe_telechargement()))?;
-    let taille = paquet.get("size").and_then(Value::as_u64).filter(|t| *t > 0)?;
+    let taille = paquet
+        .get("size")
+        .and_then(Value::as_u64)
+        .filter(|t| (1..=TAILLE_ZIP_MAX).contains(t))?;
     let sha256 = texte(paquet, "digest").and_then(lire_sha256)?;
     // Seule une page de ce dépôt est proposée à l'ouverture.
     let depot = depot();
@@ -192,9 +203,16 @@ pub fn recevoir(mut flux: impl Read, paquet: &Paquet, cible: &Path) -> io::Resul
     resultat
 }
 
-/// Extrait le zip dans `vers`, sans rien laisser sortir de ce dossier.
+/// Extrait le zip dans `vers`, sans rien laisser sortir de ce dossier ni dépasser [`TAILLE_EXTRAITE_MAX`].
 fn extraire(zip: &Path, vers: &Path) -> io::Result<()> {
+    extraire_au_plus(zip, vers, TAILLE_EXTRAITE_MAX)
+}
+
+/// [`extraire`], avec un plafond donné (tests). La taille comptée est celle réellement écrite, pas celle que le zip
+/// annonce.
+fn extraire_au_plus(zip: &Path, vers: &Path, plafond: u64) -> io::Result<()> {
     let mut archive = zip::ZipArchive::new(File::open(zip)?).map_err(io::Error::other)?;
+    let mut ecrit: u64 = 0;
     for i in 0..archive.len() {
         let mut entree = archive.by_index(i).map_err(io::Error::other)?;
         let relatif = entree
@@ -208,7 +226,13 @@ fn extraire(zip: &Path, vers: &Path) -> io::Result<()> {
         if let Some(parent) = chemin.parent() {
             fs::create_dir_all(parent)?;
         }
-        io::copy(&mut entree, &mut File::create(&chemin)?)?;
+        let reste = plafond.saturating_sub(ecrit);
+        // Un octet de plus que ce qui reste : s'il est lu, le plafond est dépassé.
+        let copie = io::copy(&mut (&mut entree).take(reste + 1), &mut File::create(&chemin)?)?;
+        if copie > reste {
+            return Err(invalide("le zip décompressé dépasse la taille permise"));
+        }
+        ecrit += copie;
     }
     Ok(())
 }
@@ -449,6 +473,42 @@ mod tests {
         assert_eq!(
             fs::read_to_string(programme.join(installation::nom_exe())).unwrap(),
             "exe 1"
+        );
+    }
+
+    #[test]
+    fn un_zip_trop_gros_n_est_pas_propose() {
+        let nom = format!("{}-9.0.0.zip", identite::nom_exe());
+        let adresse = format!("{}v9.0.0/{nom}", prefixe_telechargement());
+        let digest = format!("sha256:{}", "a".repeat(64));
+        for taille in [0, TAILLE_ZIP_MAX + 1] {
+            let json = serde_json::json!({
+                "tag_name": "v9.0.0",
+                "html_url": format!("{}/releases/tag/v9.0.0", depot()),
+                "assets": [{ "name": nom, "browser_download_url": adresse, "size": taille, "digest": digest }]
+            })
+            .to_string();
+            assert!(analyser(&json, (1, 0, 0)).is_none(), "{taille}");
+        }
+    }
+
+    #[test]
+    fn un_zip_qui_se_decompresse_trop_gros_est_refuse() {
+        let temp = tempfile::tempdir().unwrap();
+        let zip = temp.path().join("gros.zip");
+        let mut ecrivain = zip::ZipWriter::new(File::create(&zip).unwrap());
+        let options =
+            zip::write::SimpleFileOptions::default().compression_method(zip::CompressionMethod::Deflated);
+        ecrivain.start_file("zeros.bin", options).unwrap();
+        ecrivain.write_all(&vec![0u8; 10_000]).unwrap();
+        ecrivain.finish().unwrap();
+        assert!(extraire_au_plus(&zip, &temp.path().join("petit"), 9_999).is_err());
+        extraire_au_plus(&zip, &temp.path().join("assez"), 10_000).unwrap();
+        assert_eq!(
+            fs::metadata(temp.path().join("assez").join("zeros.bin"))
+                .unwrap()
+                .len(),
+            10_000
         );
     }
 }

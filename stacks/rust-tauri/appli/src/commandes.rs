@@ -11,7 +11,8 @@ use crate::disque::{self, Espace};
 
 /// Exemple d'action à remplacer : la place sur le disque du dossier de données. Lecture seule. Pendant l'action,
 /// l'icône de notification porte la pastille cyan (l'appli agit).
-#[tauri::command]
+// Sur un fil à part : une mesure lente ne fige pas la fenêtre.
+#[tauri::command(async)]
 pub fn mesurer_disque(app: AppHandle, etat: State<'_, Etat>) -> Result<Espace, String> {
     icone::changer(&app, |icone| icone.en_cours = Some("mesure du disque".to_owned()));
     let mesure = disque::espace(etat.dossier.racine());

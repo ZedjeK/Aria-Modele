@@ -42,6 +42,23 @@
     }
   }
 
+  /** La valeur d'un champ nombre au moment où il prend le focus. */
+  let avant = 0;
+
+  function retenir(evenement: Event) {
+    avant = (evenement.currentTarget as HTMLInputElement).valueAsNumber;
+  }
+
+  /** Un nombre vidé (null pour Svelte) n'est pas envoyé : le champ reprend sa valeur d'avant. */
+  function enregistrerNombre(evenement: Event, cle: 'minimum' | 'maximum') {
+    const champ = evenement.currentTarget as HTMLInputElement;
+    if (Number.isNaN(champ.valueAsNumber)) {
+      reglages.fond[cle] = avant;
+      return;
+    }
+    enregistrer();
+  }
+
   onMount(() => {
     void relireDemarrageAuto();
     // « Démarrer avec Windows » se change aussi dans Windows et dans le menu de l'icône : relu au retour.
@@ -78,7 +95,8 @@
   <div class="ligne desinstaller">
     <Bouton onclick={() => (dialogueDesinstallation = true)}>Désinstaller</Bouton>
     <span class="aide">
-      Retire le démarrage avec Windows, le raccourci du Bureau et le programme installé. Tes données restent.
+      Retire {identite.enFond ? 'le démarrage avec Windows, ' : ''}le raccourci du Bureau et le programme installé. Tes
+      données restent.
     </span>
   </div>
 </Panneau>
@@ -111,8 +129,28 @@
 
   <p class="etiquette">Éléments par passage</p>
   <div class="ligne">
-    <label>Au moins <input type="number" min="1" max="12" bind:value={reglages.fond.minimum} onchange={enregistrer} /></label>
-    <label>au plus <input type="number" min="1" max="12" bind:value={reglages.fond.maximum} onchange={enregistrer} /></label>
+    <label>
+      Au moins
+      <input
+        type="number"
+        min="1"
+        max="12"
+        bind:value={reglages.fond.minimum}
+        onfocus={retenir}
+        onchange={(e) => enregistrerNombre(e, 'minimum')}
+      />
+    </label>
+    <label>
+      au plus
+      <input
+        type="number"
+        min="1"
+        max="12"
+        bind:value={reglages.fond.maximum}
+        onfocus={retenir}
+        onchange={(e) => enregistrerNombre(e, 'maximum')}
+      />
+    </label>
   </div>
 </Panneau>
 
