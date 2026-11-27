@@ -91,11 +91,6 @@ pub struct Reglages {
     /// Fond animé ; absent du fichier, c'est celui par défaut.
     pub fond: ReglagesFond,
 
-    /// Proposer de s'installer quand l'exe est lancé hors de `programme\` (zip décompressé). Décoché par « Ne plus
-    /// me proposer » ; se recoche dans les réglages.
-    #[serde(rename = "proposerInstallation")]
-    pub proposer_installation: bool,
-
     /// Chercher une nouvelle version au lancement : une requête vers l'API GitHub. Décoché : plus aucune connexion
     /// pour ça.
     #[serde(rename = "chercherMisesAJour")]
@@ -110,7 +105,6 @@ impl Default for Reglages {
         Self {
             format: FORMAT,
             fond: ReglagesFond::default(),
-            proposer_installation: true,
             chercher_mises_a_jour: true,
             appli: serde_json::Map::new(),
         }
@@ -192,12 +186,6 @@ impl Reglages {
             fond: objet.get("fond").map_or(defaut.fond, |fond| {
                 ReglagesFond::depuis_valeur(fond, &mut intacte)
             }),
-            proposer_installation: champ(
-                objet,
-                "proposerInstallation",
-                defaut.proposer_installation,
-                &mut intacte,
-            ),
             chercher_mises_a_jour: champ(
                 objet,
                 "chercherMisesAJour",
@@ -339,7 +327,6 @@ mod tests {
                 minimum: 3,
                 maximum: 9,
             },
-            proposer_installation: false,
             chercher_mises_a_jour: false,
             ..Reglages::default()
         };
@@ -354,7 +341,6 @@ mod tests {
             "\"fond\"",
             "\"actif\"",
             "\"vitesse\": \"normale\"",
-            "\"proposerInstallation\"",
             "\"chercherMisesAJour\"",
             "\"format\": 1",
             "\"appli\": {}",
@@ -389,19 +375,20 @@ mod tests {
     fn un_champ_manquant_prend_sa_valeur_par_defaut() {
         let r = Reglages::depuis_json(r#"{ "chercherMisesAJour": false }"#);
         assert!(!r.chercher_mises_a_jour);
-        assert!(r.proposer_installation);
         assert_eq!(r.fond, ReglagesFond::default());
+        let r = Reglages::depuis_json(r#"{ "fond": { "actif": false } }"#);
+        assert!(r.chercher_mises_a_jour);
     }
 
     #[test]
     fn un_champ_illisible_n_emporte_pas_les_autres() {
         let lecture = Reglages::lire_json(
-            r#"{ "proposerInstallation": "oui", "chercherMisesAJour": false, "fond": { "actif": false, "minimum": "x" } }"#,
+            r#"{ "chercherMisesAJour": "non", "fond": { "actif": false, "minimum": "x", "maximum": 9 } }"#,
         );
         assert!(!lecture.intacte);
-        assert!(lecture.reglages.proposer_installation, "valeur par défaut");
-        assert!(!lecture.reglages.chercher_mises_a_jour, "gardé");
+        assert!(lecture.reglages.chercher_mises_a_jour, "valeur par défaut");
         assert!(!lecture.reglages.fond.actif, "gardé");
+        assert_eq!(lecture.reglages.fond.maximum, 9, "gardé");
         assert_eq!(lecture.reglages.fond.minimum, ReglagesFond::default().minimum);
     }
 
@@ -425,7 +412,7 @@ mod tests {
         let temp = tempfile::tempdir().unwrap();
         let dossier = Dossier::a(temp.path());
         dossier.preparer().unwrap();
-        fs::write(dossier.reglages(), r#"{ "proposerInstallation": "oui" }"#).unwrap();
+        fs::write(dossier.reglages(), r#"{ "chercherMisesAJour": "oui" }"#).unwrap();
         Reglages::default().enregistrer(&dossier).unwrap();
         let copies: Vec<_> = fs::read_dir(dossier.sauvegardes())
             .unwrap()

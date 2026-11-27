@@ -91,6 +91,21 @@ function Reussit([scriptblock]$commande) {
     return ($code -eq 0)
 }
 
+# Lance l'exe, vérifie qu'il tient 15 secondes et qu'il note son lancement dans son journal, puis l'arrête.
+function Essayer-Exe([string]$exe, [string]$quoi) {
+    if ($env:OS -ne 'Windows_NT' -or -not (Test-Path -LiteralPath $exe)) { return }
+    $journal = Join-Path $env:USERPROFILE '.Aria-Essai\journal.json'
+    $avant = if (Test-Path $journal) { (Get-Item $journal).LastWriteTimeUtc } else { [datetime]::MinValue }
+    $processus = Start-Process -FilePath $exe -PassThru
+    Start-Sleep -Seconds 15
+    $tient = -not $processus.HasExited
+    Verifier $tient "$quoi se lance et tient 15 secondes (code de sortie : $(if ($tient) { 'aucun' } else { $processus.ExitCode }))"
+    $ecrit = (Test-Path $journal) -and (Get-Item $journal).LastWriteTimeUtc -gt $avant -and
+        ([IO.File]::ReadAllText($journal) -match '"lancement"')
+    Verifier $ecrit "$quoi note son lancement dans son journal"
+    if ($tient) { Stop-Process -Id $processus.Id -Force -ErrorAction SilentlyContinue }
+}
+
 # ----- Le socle partagé -----
 
 $socle = Join-Path $racine 'socle\coeur'
@@ -139,19 +154,12 @@ try {
         Write-Host "Squelette « $($s.Name) »"
         $c = Nouvelle-Copie
 
-        # Toutes les options que le squelette fournit ; celles de nonFournis (stack.json) restent à « non ».
-        $reglagesStack = Get-Content -LiteralPath (Join-Path $s.FullName '_socle\stack.json') -Raw -Encoding UTF8 | ConvertFrom-Json
-        $nonFournis = @()
-        if ($reglagesStack.PSObject.Properties['nonFournis']) { $nonFournis = @($reglagesStack.nonFournis | ForEach-Object { [string]$_ }) }
-        $demarrage = if ($nonFournis -contains 'demarrageAuto') { 'non' } else { 'oui' }
-        $installation = if ($nonFournis -contains 'installation') { 'non' } else { 'oui' }
-
         # Une promesse plus longue que la largeur des lignes de code (110 caractères pour rustfmt) : elle est recopiée
         # dans le code de la stack, dont la mise en forme est contrôlée par ses tests.
         $promesse = "Une appli pour essayer le squelette, avec une promesse assez longue pour dépasser la largeur qu'un formateur de code accepte sur une ligne."
         & $hote -NoProfile -ExecutionPolicy Bypass -File (Join-Path $c 'init.ps1') `
             -Nom Essai -Stack $s.Name -Promesse $promesse -ElementOrange 'une clé' `
-            -DemarrageAuto $demarrage -Installation $installation -Port 0 -Socle $racine | Out-Host
+            -DemarrageAuto oui -Port 0 -Socle $racine | Out-Host
         Verifier ($LASTEXITCODE -eq 0) "$($s.Name) : init.ps1 crée l'appli et ses tests passent"
         if ($LASTEXITCODE -ne 0) { continue }
 
@@ -188,20 +196,9 @@ try {
         $exeSortie = Join-Path $c '.work\sortie\Aria-Essai.exe'
         Verifier (Test-Path $exeSortie) "$($s.Name) : Aria-Essai.exe est dans .work\sortie\"
 
-        # L'exe se lance et tient : un plantage au démarrage (capacité refusée, panique) l'arrêterait aussitôt. Lancé
-        # hors de son dossier, il montre la proposition d'installation et attend ; on l'arrête ensuite.
-        if ((Test-Path $exeSortie) -and $env:OS -eq 'Windows_NT') {
-            $journal = Join-Path $env:USERPROFILE '.Aria-Essai\journal.json'
-            $avant = if (Test-Path $journal) { (Get-Item $journal).LastWriteTimeUtc } else { [datetime]::MinValue }
-            $processus = Start-Process -FilePath $exeSortie -PassThru
-            Start-Sleep -Seconds 15
-            $tient = -not $processus.HasExited
-            Verifier $tient "$($s.Name) : l'exe se lance et tient 15 secondes (code de sortie : $(if ($tient) { 'aucun' } else { $processus.ExitCode }))"
-            $ecrit = (Test-Path $journal) -and (Get-Item $journal).LastWriteTimeUtc -gt $avant -and
-                ([IO.File]::ReadAllText($journal) -match '"lancement"')
-            Verifier $ecrit "$($s.Name) : l'exe note son lancement dans son journal"
-            if ($tient) { Stop-Process -Id $processus.Id -Force -ErrorAction SilentlyContinue }
-        }
+        # L'exe se lance et tient : un plantage au démarrage (capacité refusée, panique) l'arrêterait aussitôt. Compilé
+        # sans fichiers.txt à côté de lui, il ouvre sa fenêtre principale et attend.
+        Essayer-Exe $exeSortie "$($s.Name) : l'exe compilé (fenêtre principale)"
 
         & $hote -NoProfile -ExecutionPolicy Bypass -File (Join-Path $c 'tools\empaqueter.ps1') | Out-Host
         $zip = Join-Path $c ".work\release\Aria-Essai-$version.zip"
@@ -221,6 +218,8 @@ try {
             Verifier ($infos -match "Taille de l'exe : \d+(\.\d)? Mo \(\d+ octets\)") "$($s.Name) : BUILDINFO.txt relève la taille de l'exe"
             $exe = Get-Item -LiteralPath (Join-Path $extrait "Aria-Essai-$version\Aria-Essai.exe") -ErrorAction SilentlyContinue
             if ($exe) { Write-Host "        taille de l'exe : $([math]::Round($exe.Length / 1MB, 1)) Mo, zip : $([math]::Round((Get-Item $zip).Length / 1MB, 1)) Mo" }
+            # Décompressé en entier, avec son fichiers.txt : l'exe propose de s'installer et attend.
+            if ($exe) { Essayer-Exe $exe.FullName "$($s.Name) : l'exe du zip décompressé (proposition d'installation)" }
         }
     }
 }

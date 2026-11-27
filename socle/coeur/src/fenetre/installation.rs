@@ -1,17 +1,17 @@
 //! La proposition d'installation (fenêtre « installation », vue `Installation.svelte`) : montrée au lancement d'un
-//! exe hors de `programme\`, avant la fenêtre de l'appli. « Installer » range l'appli dans le dossier de données et
-//! la relance de là ; « Lancer sans installer » ouvre l'appli sur place ; la croix ferme tout.
+//! exe hors de `programme\` (zip décompressé), avant la fenêtre de l'appli. « Installer » range l'appli dans le
+//! dossier de données et la relance de là ; « Annuler » ou la croix ferment l'appli (décision 0008).
 
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use crate::installation::{self, Chemins};
-use crate::{Reglages, identite, journal};
+use crate::{identite, journal};
 use serde::Serialize;
 use tauri::window::Color;
 use tauri::{AppHandle, Manager, State, Theme, WebviewUrl, WebviewWindowBuilder};
 
-use super::{Etat, erreur_fatale, ouvrir_principale, raccourci};
+use super::{Etat, erreur_fatale, raccourci};
 
 /// L'étiquette de la fenêtre, citée par capabilities\installation.json.
 pub const FENETRE_INSTALLATION: &str = "installation";
@@ -136,29 +136,12 @@ pub fn relancer(app: &AppHandle, exe: &Path) -> Result<(), String> {
     Ok(())
 }
 
-/// Ouvre l'appli sur place. « Ne plus me proposer » est enregistré dans les réglages.
+/// L'installation est refusée : l'appli se ferme (décision 0008), sans rien avoir écrit hors de son dossier de
+/// données.
 #[tauri::command]
-pub fn lancer_sans_installer(
-    app: AppHandle,
-    etat: State<'_, Etat>,
-    ne_plus_proposer: bool,
-) -> Result<(), String> {
-    if ne_plus_proposer {
-        let reglages = Reglages {
-            proposer_installation: false,
-            ..Reglages::charger(&etat.dossier)
-        };
-        reglages
-            .enregistrer(&etat.dossier)
-            .map_err(|e| format!("réglages non enregistrés : {e}"))?;
-        journal::consigner(&etat.dossier, "réglages", "proposition d'installation coupée");
-    }
-    // La fenêtre de l'appli d'abord : fermer la dernière fenêtre arrêterait l'appli.
-    ouvrir_principale(&app, true).map_err(|e| e.to_string())?;
-    if let Some(fenetre) = app.get_webview_window(FENETRE_INSTALLATION) {
-        let _ = fenetre.destroy();
-    }
-    Ok(())
+pub fn refuser_installation(app: AppHandle, etat: State<'_, Etat>) {
+    journal::consigner(&etat.dossier, "installation", "refusée : l'appli se ferme");
+    app.exit(0);
 }
 
 /// Ce que l'installation demande à Windows.

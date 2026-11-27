@@ -6,7 +6,7 @@ Transforme ce dépôt modèle en appli Aria, puis se supprime.
 À lancer une seule fois, dans le dossier du clone :
 
     .\init.ps1
-    .\init.ps1 -Nom Atlas -Stack rust-tauri -Promesse "..." -ElementOrange "une boussole" -DemarrageAuto non -Installation oui -Port 8123
+    .\init.ps1 -Nom Atlas -Stack rust-tauri -Promesse "..." -ElementOrange "une boussole" -DemarrageAuto non -Port 8123
 
 Le script choisit la stack, remplit le nom et la promesse, fusionne les blocs propres à la stack, lance les tests,
 puis se supprime. Il ne fait aucun git add, aucun commit, aucun push et aucun appel à GitHub.
@@ -15,10 +15,6 @@ Il refuse de tourner si l'arbre de travail n'est pas propre. Pour tout annuler e
 
     git restore .
     git clean -fd
-
-.PARAMETER Installation
-oui : l'exe propose de se ranger dans %USERPROFILE%\.Aria-<Nom>\programme (appli de bureau). non : exe portable
-seulement. Le README et les notes de version gardent les blocs INSTALLATION ou PORTABLE selon la réponse.
 
 .PARAMETER Port
 Port local de l'interface web. 0 : l'appli n'a pas d'interface web.
@@ -35,7 +31,6 @@ param(
     [string]$Promesse,
     [string]$ElementOrange,
     [ValidateSet('oui', 'non')][string]$DemarrageAuto,
-    [ValidateSet('oui', 'non')][string]$Installation,
     [int]$Port,
     [string]$Socle
 )
@@ -134,11 +129,6 @@ if (-not $DemarrageAuto) {
     if ($reponse -match '^[oOyY]') { $DemarrageAuto = 'oui' } else { $DemarrageAuto = 'non' }
 }
 
-if (-not $Installation) {
-    $reponse = Demander "L'exe propose-t-il de s'installer dans le dossier de données (appli de bureau) ? (O/n)"
-    if ($reponse -match '^[nN]') { $Installation = 'non' } else { $Installation = 'oui' }
-}
-
 if (-not $PSBoundParameters.ContainsKey('Port')) {
     $reponse = Demander "Port local de l'interface web (vide si l'appli n'en a pas)"
     if ($reponse) {
@@ -182,20 +172,6 @@ if ($Socle) {
 $reglages = Get-Content -LiteralPath (Join-Path $source '_socle\stack.json') -Raw -Encoding UTF8 | ConvertFrom-Json
 $nomStack = $Stack
 if ($reglages.PSObject.Properties['nom']) { $nomStack = [string]$reglages.nom }
-
-# Ce que le squelette ne tient pas encore (clé nonFournis de stack.json) : init.ps1 refuse de le promettre, avant de
-# rien modifier. Les mises à jour intégrées sont obligatoires pour toute appli Aria : leur absence est signalée.
-$nonFournis = @()
-if ($reglages.PSObject.Properties['nonFournis']) { $nonFournis = @($reglages.nonFournis | ForEach-Object { [string]$_ }) }
-if ($Installation -eq 'oui' -and $nonFournis -contains 'installation') {
-    Arreter "la stack « $Stack » ne fournit pas encore l'installation par l'exe : relance avec -Installation non."
-}
-if ($DemarrageAuto -eq 'oui' -and $nonFournis -contains 'demarrageAuto') {
-    Arreter "la stack « $Stack » ne fournit pas encore le démarrage automatique ni l'icône de notification : relance avec -DemarrageAuto non."
-}
-if ($nonFournis -contains 'misesAJour') {
-    Write-Host "Attention : la stack « $Stack » ne fournit pas encore les mises à jour intégrées, obligatoires pour toute appli Aria. Pas de release publique tant qu'elles manquent." -ForegroundColor Yellow
-}
 
 $fragments = @{}
 Get-ChildItem -LiteralPath (Join-Path $source '_socle') -Filter '*.txt' | ForEach-Object {
@@ -256,19 +232,6 @@ $demarrage = 'non'
 # {{EN_FOND}} : un booléen pour le code des stacks (icône de notification, démarrage automatique proposé)
 $enFond = 'false'
 if ($DemarrageAuto -eq 'oui') { $demarrage = 'oui, désactivé par défaut'; $enFond = 'true' }
-# Blocs du README et des notes de version : on garde celui qui correspond à la réponse, on retire l'autre.
-$installationTexte = 'non : exe portable seulement'
-$blocGarde = 'PORTABLE'
-$blocRetire = 'INSTALLATION'
-# {{INSTALLABLE}} : le même choix, en booléen pour le code des stacks
-$installable = 'false'
-if ($Installation -eq 'oui') {
-    $installationTexte = "oui : l'exe propose de se ranger dans le dossier ``programme\`` du dossier de données"
-    $blocGarde = 'INSTALLATION'
-    $blocRetire = 'PORTABLE'
-    $installable = 'true'
-}
-
 $valeurs = [ordered]@{
     '{{NOM_MIN}}'        = $Nom.ToLowerInvariant()
     '{{NOM}}'            = $Nom
@@ -279,8 +242,6 @@ $valeurs = [ordered]@{
     '{{STACK}}'          = $nomStack
     '{{DEMARRAGE_AUTO}}' = $demarrage
     '{{EN_FOND}}'        = $enFond
-    '{{INSTALLATION}}'   = $installationTexte
-    '{{INSTALLABLE}}'    = $installable
     'Aria-Modele'        = "Aria-$Nom"
 }
 $binaires = '.png', '.ico', '.gz', '.dll', '.ttf', '.woff2', '.zip', '.exe', '.jpg', '.jpeg', '.syso', '.pdf'
@@ -302,9 +263,6 @@ $suivis | ForEach-Object { Join-Path $racine $_ } |
         # Blocs réservés au dépôt modèle (README.md, dependabot.yml) : retirés avec les lignes entières de leurs balises,
         # pour qu'une balise écrite dans un commentaire YAML (« # <!-- MODELE:debut --> ») ne laisse rien derrière elle.
         $texte = [regex]::Replace($texte, '(?ms)^[^\r\n]*<!-- MODELE:debut -->.*?<!-- MODELE:fin -->[^\r\n]*\r?\n?', '')
-        # Installation par l'exe (README.md, notes de version) : un bloc retiré en entier, l'autre perd ses balises.
-        $texte = [regex]::Replace($texte, "(?s)<!-- ${blocRetire}:debut -->.*?<!-- ${blocRetire}:fin -->\r?\n?", '')
-        $texte = [regex]::Replace($texte, "<!-- ${blocGarde}:(debut|fin) -->\r?\n?", '')
         foreach ($cle in $valeurs.Keys) { $texte = $texte.Replace($cle, $valeurs[$cle]) }
         if ($texte -cne $lu.Texte) { Ecrire-Texte $_.FullName $texte $lu.Bom }
     }

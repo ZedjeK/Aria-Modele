@@ -5,21 +5,19 @@ Tests du dépôt modèle : rejoue init.ps1 sur une stack d'essai, dans un dossie
 .DESCRIPTION
 Ce fichier est celui du dépôt modèle. Dans une appli, init.ps1 le remplace par le tester.ps1 de la stack choisie.
 
-Onze scénarios, les huit premiers et le dernier chacun dans sa propre copie du dépôt :
+Neuf scénarios, les six premiers et le dernier chacun dans sa propre copie du dépôt :
   1. init.ps1 réussit : marqueurs remplis, blocs de stack fusionnés, fichiers du modèle retirés ;
   2. un port déjà pris est refusé, sans rien modifier ;
   3. un arbre de travail modifié est refusé, sans rien modifier ;
   4. une promesse qui casserait un tableau ou un script est refusée ; la plus longue permise passe, et le Rust des
      squelettes la garde sur une ligne, à l'abri de rustfmt ;
   5. un dossier qui contient une jonction est refusé ;
-  6. sans installation par l'exe, le README et les notes de version gardent le bloc portable ;
-  7. verifier-release.ps1 refuse une version incomplète et accepte une version complète, dont la liste des crates
+  6. verifier-release.ps1 refuse une version incomplète et accepte une version complète, dont la liste des crates
      Rust à jour de Cargo.lock ;
-  8. une stack refuse ce qu'elle ne fournit pas encore (clé nonFournis de stack.json) ;
-  9. les actions recopiées dans les _socle\outils.txt gardent le SHA épinglé dans les workflows ; setup-node lit la
+  7. les actions recopiées dans les _socle\outils.txt gardent le SHA épinglé dans les workflows ; setup-node lit la
      version exacte de Node.js dans le .node-version de la stack ;
- 10. chaque script PowerShell du dépôt se lit sans erreur de syntaxe ;
- 11. le socle commun (tools\socle.txt) : une appli fraîchement créée est à jour, une appli modifiée est signalée.
+  8. chaque script PowerShell du dépôt se lit sans erreur de syntaxe ;
+  9. le socle commun (tools\socle.txt) : une appli fraîchement créée est à jour, une appli modifiée est signalée.
 
 Tous les scénarios tournent ; le code de retour est non nul si un seul contrôle est manqué.
 #>
@@ -66,10 +64,10 @@ function Nouvelle-Copie {
     return $copie
 }
 
-function Lancer-Init([string]$copie, [int]$port, [string]$promesse = 'Une appli pour essayer le modèle.', [string]$installation = 'oui') {
+function Lancer-Init([string]$copie, [int]$port, [string]$promesse = 'Une appli pour essayer le modèle.') {
     & $hote -NoProfile -ExecutionPolicy Bypass -File (Join-Path $copie 'init.ps1') `
         -Nom Essai -Stack essai -Promesse $promesse -ElementOrange 'une clé' `
-        -DemarrageAuto non -Installation $installation -Port $port | Out-Host
+        -DemarrageAuto non -Port $port | Out-Host
     return $LASTEXITCODE
 }
 
@@ -107,11 +105,9 @@ try {
     Verifier ((Texte $c 'README.md').Contains('Une appli pour essayer le modèle.')) "le README porte la promesse"
     Verifier ((Texte $c 'docs\FICHE.md').Contains("| Stack | Stack d'essai |")) "la fiche projet porte le nom de la stack"
     Verifier ((Texte $c 'docs\FICHE.md').Contains('| Port local (interface web) | 8123 |')) "la fiche projet porte le port"
-    Verifier ((Texte $c 'docs\FICHE.md').Contains("| Installation par l'exe | oui :")) "la fiche projet porte l'installation par l'exe"
-    Verifier ((Texte $c 'README.md').Contains('.Aria-Essai\programme')) "le README garde le bloc d'installation"
-    Verifier (-not (Texte $c 'README.md').Contains('Choisis un dossier stable')) "le README retire le bloc portable"
-    Verifier ((Texte $c '.github\release-notes.md').Contains('choisis « Installer »')) "les notes de version gardent le bloc d'installation"
-    Verifier (-not (Texte $c '.github\release-notes.md').Contains('Choisis un dossier stable')) "les notes de version retirent le bloc portable"
+    Verifier ((Texte $c 'docs\FICHE.md').Contains('| Installation | dans `%USERPROFILE%\.Aria-Essai\programme`')) "la fiche projet porte le dossier d'installation"
+    Verifier ((Texte $c 'README.md').Contains('.Aria-Essai\programme')) "le README dit où l'appli s'installe"
+    Verifier ((Texte $c '.github\release-notes.md').Contains('choisis « Installer »')) "les notes de version disent d'installer"
     Verifier ((Texte $c 'LICENSE').Contains("Copyright (c) $((Get-Date).Year) ZedjeK")) "la licence porte l'année en cours"
     Verifier ((Texte $c '.gitignore').Contains('essai-ignore/')) "le bloc de la stack est dans .gitignore"
     Verifier ((Texte $c '.gitattributes').Contains('*.essai text')) "le bloc de la stack est dans .gitattributes"
@@ -212,19 +208,7 @@ try {
     # La jonction est retirée avant le ménage, pour que la suppression de la copie ne la traverse pas.
     [IO.Directory]::Delete((Join-Path $c '.work\lien'))
 
-    Write-Host "6. Une appli sans installation par l'exe garde seulement le bloc portable"
-    $c = Nouvelle-Copie
-    $code = Lancer-Init $c 8123 -installation non
-    Verifier ($code -eq 0) "init.ps1 se termine sans erreur"
-    Verifier ((Texte $c 'docs\FICHE.md').Contains("| Installation par l'exe | non :")) "la fiche projet dit que l'exe ne s'installe pas"
-    Verifier (-not (Texte $c 'README.md').Contains('programme')) "le README retire le bloc d'installation"
-    Verifier ((Texte $c 'README.md').Contains('Choisis un dossier stable')) "le README garde le bloc portable"
-    Verifier (-not (Texte $c '.github\release-notes.md').Contains('Installer')) "les notes de version retirent le bloc d'installation"
-    Verifier ((Texte $c '.github\release-notes.md').Contains('Choisis un dossier stable')) "les notes de version gardent le bloc portable"
-    $restes = @('README.md', '.github\release-notes.md' | Where-Object { (Texte $c $_) -match '<!-- (INSTALLATION|PORTABLE):' })
-    Verifier ($restes.Count -eq 0) "aucune balise d'installation ne reste ($($restes -join ', '))"
-
-    Write-Host "7. verifier-release.ps1 refuse une version incomplète"
+    Write-Host "6. verifier-release.ps1 refuse une version incomplète"
     $c = Nouvelle-Copie
     $code = Lancer-Init $c 8123
     Verifier ($code -eq 0) "init.ps1 se termine sans erreur"
@@ -270,28 +254,7 @@ try {
     & $hote -NoProfile -ExecutionPolicy Bypass -File $verif -Tag v1.2.3 | Out-Host
     Verifier ($LASTEXITCODE -ne 0) "un Cargo.lock modifié après la liste : refusé"
 
-    Write-Host "8. Une stack refuse ce qu'elle ne fournit pas encore"
-    $c = Nouvelle-Copie
-    $socle = Join-Path $c 'stacks\essai\_socle\stack.json'
-    [IO.File]::WriteAllText($socle, '{ "nom": "Stack d''essai", "runsOn": "ubuntu-24.04", "nonFournis": ["installation", "misesAJour"] }')
-    Push-Location -LiteralPath $c
-    try {
-        # Le changement est validé dans le dépôt jetable : init.ps1 exige un arbre de travail propre.
-        $ErrorActionPreference = 'Continue'
-        git add -A 2>&1 | Out-Null
-        git -c user.name=essai -c user.email=essai@example.invalid -c commit.gpgsign=false commit --quiet -m nonFournis 2>&1 | Out-Null
-    }
-    finally {
-        $ErrorActionPreference = 'Stop'
-        Pop-Location
-    }
-    $code = Lancer-Init $c 8123
-    Verifier ($code -ne 0) "installation demandée à une stack qui ne la fournit pas : refusé"
-    Verifier (Test-Path (Join-Path $c 'stacks')) "rien n'a été modifié : stacks\ est toujours là"
-    $code = Lancer-Init $c 8123 -installation non
-    Verifier ($code -eq 0) "sans installation : init.ps1 se termine sans erreur"
-
-    Write-Host "9. Les actions des blocs de stack gardent le SHA des workflows"
+    Write-Host "7. Les actions des blocs de stack gardent le SHA des workflows"
     # Dependabot ne lit que .github\workflows : un SHA recopié dans un _socle\outils.txt resterait en arrière.
     $motif = 'uses:\s*([^\s@]+)@([0-9a-f]{40})'
     $epingles = @{}
@@ -331,7 +294,7 @@ try {
         Verifier $ok "$($f.Directory.Parent.Name) : .node-version donne une version exacte (X.Y.Z)"
     }
 
-    Write-Host "10. Chaque script PowerShell du dépôt se lit sans erreur de syntaxe"
+    Write-Host "8. Chaque script PowerShell du dépôt se lit sans erreur de syntaxe"
     # Certains scripts ne tournent pas en CI (proteger-depot.ps1 écrit sur GitHub) : leur syntaxe, au moins, est relue.
     $scripts = @(Get-ChildItem -LiteralPath $racine -Recurse -File -Filter '*.ps1' |
         Where-Object { $_.FullName -notmatch '[\\/]\.(git|work)[\\/]' })
@@ -344,7 +307,7 @@ try {
         Verifier ($erreurs.Count -eq 0) "$($s.FullName.Substring($racine.Length + 1)) se lit sans erreur de syntaxe$detail"
     }
 
-    Write-Host "11. Le socle commun : une appli fraîchement créée est à jour, une appli modifiée ne l'est pas"
+    Write-Host "9. Le socle commun : une appli fraîchement créée est à jour, une appli modifiée ne l'est pas"
     $socle = @([IO.File]::ReadAllLines((Join-Path $racine 'tools\socle.txt'), [Text.Encoding]::UTF8) |
         ForEach-Object { $_.Trim() } | Where-Object { $_ -and -not $_.StartsWith('#') })
     Verifier ($socle.Count -gt 0) "tools\socle.txt liste des fichiers"

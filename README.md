@@ -2,13 +2,12 @@
 > **Ce dépôt est le modèle des applis Aria.** Il ne se lance pas tel quel.
 > Crée ton appli avec « Use this template », clone-la, puis lance `.\init.ps1`
 > dans le dossier du clone : le script demande le nom, la stack, la promesse,
-> l'élément orange du logo, si l'appli sert en arrière-plan, si elle s'installe et
-> son port local s'il y en a un,
-> remplit tout et se supprime.
+> l'élément orange du logo, si l'appli sert en arrière-plan et son port local
+> s'il y en a un, remplit tout et se supprime.
 >
 > Une stack : `rust-tauri` (Rust, Tauri 2, Svelte 5 en TypeScript). Elle tient
 > tout le contrat des applis Aria (dossier de données, journal, secrets chiffrés,
-> icône de notification, démarrage avec Windows, installation par l'exe, mises à
+> icône de notification, démarrage avec Windows, installation, mises à
 > jour vérifiées), et son interface suit celle d'Aria Studio et d'Aria Cockpit.
 > Le détail est dans [stacks/LISEZ-MOI.md](stacks/LISEZ-MOI.md). Pour construire :
 > Rust (rustup) et Node.js 24 (version exacte dans `stacks/rust-tauri/.node-version`).
@@ -47,24 +46,18 @@ manque, voir « Si ça ne marche pas »). Droits, ports et matériel nécessaire
 
 1. Télécharge `Aria-{{NOM}}-<version>.zip` depuis la page des versions.
 2. Décompresse d'abord le zip en entier : clic droit, « Extraire tout ».
-<!-- PORTABLE:debut -->
-   Choisis un dossier stable (pas Téléchargements).
-<!-- PORTABLE:fin -->
-   Ne lance pas l'exe depuis l'aperçu du zip dans l'Explorateur : Windows n'en
-   extrait que l'exe, sans les fichiers livrés à côté de lui.
-3. Lance `Aria-{{NOM}}.exe`.
-<!-- INSTALLATION:debut -->
-4. L'appli propose « Installer » ou « Lancer sans installer ».
+   Lancé depuis l'aperçu du zip dans l'Explorateur, l'exe ne s'installe pas : il
+   te demande de décompresser d'abord.
+3. Lance `Aria-{{NOM}}.exe` depuis le dossier obtenu. L'appli s'installe avant
+   de s'ouvrir :
    - **Installer** range l'exe et ses fichiers dans
      `%USERPROFILE%\.Aria-{{NOM}}\programme`, garde la version précédente, puis
      relance l'appli depuis là. La case « Créer un raccourci sur le Bureau »,
-     décochée d'office, ajoute un raccourci sur ton Bureau seulement.
-   - **Lancer sans installer** utilise l'exe là où il est.
+     décochée d'office, ajoute un raccourci sur ton Bureau seulement ; un
+     raccourci du même nom qui pointe vers un autre programme reste tel quel.
+   - **Annuler** ferme l'appli sans rien installer.
 
-   La case « Ne plus me proposer » coupe la question ; tu peux la réactiver dans
-   les paramètres. `Aria-{{NOM}}.exe --portable` lance l'appli sans rien
-   proposer.
-<!-- INSTALLATION:fin -->
+   Le dossier décompressé ne sert plus ensuite : tu peux le supprimer.
 
 Si Windows ou ton antivirus bloque l'exe, voir « Si ça ne marche pas ».
 
@@ -84,13 +77,10 @@ Si Windows ou ton antivirus bloque l'exe, voir « Si ça ne marche pas ».
   `.sha256` publié avec la version, et `gh attestation verify` confirme sa
   provenance (voir les notes de version). Restaure-le ensuite depuis la
   quarantaine, et signale le faux positif à l'éditeur de ton antivirus.
-- **Lancé depuis l'aperçu du zip** : l'Explorateur n'extrait que l'exe, dans un
-  dossier temporaire, sans les fichiers livrés à côté de lui.
-<!-- INSTALLATION:debut -->
-  L'appli ne propose alors pas de s'installer.
-<!-- INSTALLATION:fin -->
-  Ferme-la, décompresse le zip en entier (clic droit, « Extraire tout »), puis
-  lance l'exe du dossier obtenu.
+- **« Aria {{NOM}} doit d'abord être décompressé »** : l'exe a été lancé depuis
+  l'aperçu du zip, et l'Explorateur n'en a extrait que l'exe, sans les fichiers
+  livrés à côté de lui. Ferme le message, décompresse le zip en entier (clic
+  droit, « Extraire tout »), puis lance l'exe du dossier obtenu.
 
 Pour signaler un problème : dans l'appli, page « Journal », bouton « Exporter le
 diagnostic ». Le texte copié (version, Windows, réglages, dernières lignes du
@@ -115,10 +105,8 @@ Tout est dans `%USERPROFILE%\.Aria-{{NOM}}` :
 - `journal.json` : les 500 dernières opérations ;
 - `sauvegardes\` : une copie datée avant chaque modification, et la version précédente de l'appli ;
 - `secrets\` : ce que l'appli garde de secret, chiffré pour ton compte Windows (supprime la ligne si elle n'en garde pas) ;
-- `cache\` : données de l'interface et fichiers de travail, recréés au besoin.
-<!-- INSTALLATION:debut -->
+- `cache\` : données de l'interface et fichiers de travail, recréés au besoin ;
 - `programme\` : l'appli installée.
-<!-- INSTALLATION:fin -->
 
 Supprimer ce dossier efface tes réglages et tes données : l'appli repart à neuf.
 Pour retirer l'appli elle-même, passe d'abord par « Désinstaller » (voir plus bas).
@@ -128,23 +116,20 @@ Pour retirer l'appli elle-même, passe d'abord par « Désinstaller » (voir plu
 Dans les paramètres, le panneau « Installation » a un bouton « Désinstaller ». Il
 retire tout ce que l'appli a écrit hors de son dossier de données :
 
-- le démarrage avec Windows (ses entrées dans le registre de ton compte) ;
+- le démarrage avec Windows, si l'appli en a un (ses entrées dans le registre de
+  ton compte) ;
 - le raccourci du Bureau, seulement s'il pointe vers l'appli ;
-<!-- INSTALLATION:debut -->
 - les fichiers de l'appli dans `programme\`, une fois l'appli fermée ; ce que tu
   y as ajouté toi-même reste. Pour cela, l'appli laisse une copie de son exe
   dans `cache\` : elle part avec le dossier de données.
-<!-- INSTALLATION:fin -->
 
 Tes données restent dans `%USERPROFILE%\.Aria-{{NOM}}`, et l'appli te dit où
 elles sont : pour tout effacer, supprime ce dossier une fois l'appli fermée.
 
 Avec une version qui n'a pas encore ce bouton : décoche d'abord « Démarrer avec
 Windows » dans les paramètres (sinon son entrée reste dans le registre), quitte
-l'appli, puis supprime le raccourci du Bureau s'il existe.
-<!-- INSTALLATION:debut -->
-Supprime aussi le dossier `programme\` du dossier de données.
-<!-- INSTALLATION:fin -->
+l'appli, puis supprime le raccourci du Bureau s'il existe et le dossier
+`programme\` du dossier de données.
 Tes données restent tant que tu ne supprimes pas tout le dossier de données.
 
 ## Mises à jour

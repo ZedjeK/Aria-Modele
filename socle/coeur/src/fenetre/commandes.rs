@@ -18,7 +18,6 @@ pub struct Identite {
     version: &'static str,
     promesse: &'static str,
     en_fond: bool,
-    installable: bool,
     dossier: String,
 }
 
@@ -29,7 +28,6 @@ pub fn identite(etat: State<'_, Etat>) -> Identite {
         version: identite::version(),
         promesse: identite::promesse(),
         en_fond: identite::en_fond(),
-        installable: identite::installable(),
         dossier: etat.dossier.racine().display().to_string(),
     }
 }

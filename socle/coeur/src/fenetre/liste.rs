@@ -15,7 +15,7 @@ pub const COMMANDES: &[&str] = &[
     "taille_menu",
     "infos_installation",
     "installer",
-    "lancer_sans_installer",
+    "refuser_installation",
     "mise_a_jour_disponible",
     "voir_notes",
     "installer_mise_a_jour",

@@ -86,12 +86,7 @@
 {/if}
 
 <Panneau titre="Installation">
-  {#if identite.installable}
-    <label class="ligne">
-      <input type="checkbox" bind:checked={reglages.proposerInstallation} onchange={enregistrer} />
-      Proposer l'installation quand l'exe est lancé hors de son dossier
-    </label>
-  {/if}
+  <p class="code discret">{identite.dossier}\programme</p>
   <div class="ligne desinstaller">
     <Bouton onclick={() => (dialogueDesinstallation = true)}>Désinstaller</Bouton>
     <span class="aide">
@@ -158,7 +153,7 @@
   <DialogueDesinstallation
     nom={identite.nom}
     donnees={identite.dossier}
-    installable={identite.installable}
+    enFond={identite.enFond}
     fermer={() => {
       dialogueDesinstallation = false;
       // La désinstallation a pu retirer le démarrage avec Windows : la case suit.
