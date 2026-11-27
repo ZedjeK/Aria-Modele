@@ -24,10 +24,10 @@ Dans le dépôt modèle, le squelette prend le socle par son chemin (`appli/Carg
 dépendance git du dépôt modèle, épinglée sur le tag de la version du socle (`socle/coeur/Cargo.toml`), ou, avec
 `-Socle <clone>`, par le chemin du socle de ce clone (ce que font les tests). De même, `interface/package.json` prend
 `aria-interface` par son chemin ; `init.ps1` le remplace par l'archive `aria-interface-X.Y.Z.tgz` jointe à la release
-du dépôt modèle, ou par le dossier du socle du clone. La crate et le paquet ont la même version. Le code du socle n'est jamais copié
-dans l'appli. Les commandes du socle et ses capacités viennent de lui (`DEP_ARIA_COEUR_COMMANDES`, capacités ajoutées
-au lancement) : l'appli n'autorise que les siennes. `rust-toolchain.toml`, `clippy.toml` et `rustfmt.toml` sont les
-mêmes dans le socle et dans le squelette, et `tester-squelettes.ps1` le vérifie.
+du dépôt modèle, ou par le dossier du socle du clone. La crate et le paquet ont la même version. Le code du socle
+n'est jamais copié dans l'appli. Les commandes du socle et ses capacités viennent de lui (`DEP_ARIA_COEUR_COMMANDES`,
+capacités ajoutées au lancement) : l'appli n'autorise que les siennes. `rust-toolchain.toml`, `clippy.toml` et
+`rustfmt.toml` sont les mêmes dans le socle et dans le squelette, et `tester-squelettes.ps1` le vérifie.
 
 ## Ce qu'un squelette doit fournir
 
