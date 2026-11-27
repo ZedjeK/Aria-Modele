@@ -1,4 +1,4 @@
-//! Le dossier de données, `%USERPROFILE%\.Aria-{{NOM}}`, et ce qu'il contient. Tout ce que l'appli écrit va là :
+//! Le dossier de données, `%USERPROFILE%\.Aria-<Nom>`, et ce qu'il contient. Tout ce que l'appli écrit va là :
 //! rien dans `%APPDATA%`, `%LOCALAPPDATA%` ni `%TEMP%`.
 
 use std::fs;
@@ -36,7 +36,7 @@ impl Dossier {
             .or_else(|| std::env::var_os("HOME"))
             .filter(|p| !p.is_empty())
             .ok_or(Erreur::ProfilIntrouvable)?;
-        Ok(Self::a(PathBuf::from(profil).join(identite::DOSSIER_DONNEES)))
+        Ok(Self::a(PathBuf::from(profil).join(identite::dossier_donnees())))
     }
 
     /// Un dossier de données à un endroit donné (tests, outils).

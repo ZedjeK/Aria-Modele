@@ -30,7 +30,7 @@ const SUFFIXE_TEMPORAIRE: &str = ".tmp";
 
 /// Le nom de l'exe livré, sous lequel il est installé.
 pub fn nom_exe() -> String {
-    format!("{}.exe", identite::NOM_EXE)
+    format!("{}.exe", identite::nom_exe())
 }
 
 /// Où tourne l'exe.
@@ -122,7 +122,7 @@ where
     I: IntoIterator<Item = S>,
     S: AsRef<str>,
 {
-    identite::INSTALLABLE
+    identite::installable()
         && reglages.proposer_installation
         && !arguments
             .into_iter()
@@ -358,7 +358,7 @@ mod tests {
         fs::write(dossier.join("LICENCES-TIERS.txt"), "licences").unwrap();
         fs::write(
             dossier.join(INFOS_BUILD),
-            format!("{} {version}\nCommit : abc\n", identite::NOM),
+            format!("{} {version}\nCommit : abc\n", identite::nom()),
         )
         .unwrap();
         let liste = [INFOS_BUILD.to_owned(), "LICENCES-TIERS.txt".to_owned(), nom_exe()].join("\n");
@@ -480,7 +480,7 @@ mod tests {
         let reglages = Reglages::default();
         assert_eq!(
             doit_proposer(&exe, &dossier, &reglages, ["x"]),
-            identite::INSTALLABLE
+            identite::installable()
         );
         assert!(!doit_proposer(&exe, &dossier, &reglages, ["--PORTABLE"]));
         let coupe = Reglages {

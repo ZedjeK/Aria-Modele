@@ -22,6 +22,11 @@ seulement. Le README et les notes de version gardent les blocs INSTALLATION ou P
 
 .PARAMETER Port
 Port local de l'interface web. 0 : l'appli n'a pas d'interface web.
+
+.PARAMETER Socle
+Dossier d'un clone du dépôt modèle dont l'appli prend le socle par son chemin, pour essayer un socle pas encore
+publié (les tests du modèle s'en servent). Sans lui, l'appli prend le socle publié : la dépendance git du dépôt
+modèle, épinglée par le tag de la version de ce clone (socle\coeur\Cargo.toml).
 #>
 [CmdletBinding()]
 param(
@@ -31,7 +36,8 @@ param(
     [string]$ElementOrange,
     [ValidateSet('oui', 'non')][string]$DemarrageAuto,
     [ValidateSet('oui', 'non')][string]$Installation,
-    [int]$Port
+    [int]$Port,
+    [string]$Socle
 )
 
 Set-StrictMode -Version Latest
@@ -152,6 +158,25 @@ if ($Port -ne 0) {
     }
 }
 
+# Le socle partagé (décision 0007) : sa version, celle du dépôt modèle, donne le tag que l'appli épingle.
+$depotModele = 'https://github.com/ZedjeK/' + 'Aria-' + 'Modele'
+$manifesteSocle = Join-Path $racine 'socle\coeur\Cargo.toml'
+if (-not (Test-Path -LiteralPath $manifesteSocle)) { Arreter "le socle (socle\coeur\Cargo.toml) est introuvable." }
+$versionSocle = ''
+foreach ($ligne in (Get-Content -LiteralPath $manifesteSocle -Encoding UTF8)) {
+    if ($ligne -match '^version\s*=\s*"(\d+\.\d+\.\d+)"') { $versionSocle = $Matches[1]; break }
+}
+if (-not $versionSocle) { Arreter "la version du socle est illisible dans socle\coeur\Cargo.toml." }
+$cheminSocle = ''
+if ($Socle) {
+    if (Test-Path -LiteralPath $Socle -PathType Container) {
+        $cheminSocle = Join-Path (Resolve-Path -LiteralPath $Socle).Path 'socle\coeur'
+    }
+    if (-not $cheminSocle -or -not (Test-Path -LiteralPath (Join-Path $cheminSocle 'Cargo.toml'))) {
+        Arreter "le dossier « $Socle » n'est pas un clone du dépôt modèle (socle\coeur\Cargo.toml introuvable)."
+    }
+}
+
 # ----- 1. La stack choisie passe à la racine -----
 
 $reglages = Get-Content -LiteralPath (Join-Path $source '_socle\stack.json') -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -181,6 +206,8 @@ Get-ChildItem -LiteralPath $source -Force | Where-Object Name -ne '_socle' | For
     Copy-Item -LiteralPath $_.FullName -Destination $racine -Recurse -Force
 }
 Remove-Item -LiteralPath $dossierStacks -Recurse -Force
+# Le code du socle reste dans le dépôt modèle : l'appli le reçoit par sa dépendance (étape 5).
+Remove-Item -LiteralPath (Join-Path $racine 'socle') -Recurse -Force
 $essais = Join-Path $racine 'tools\essais'
 if (Test-Path -LiteralPath $essais) { Remove-Item -LiteralPath $essais -Recurse -Force }
 # Les tests des squelettes et le journal du modèle ne servent qu'au dépôt modèle.
@@ -292,7 +319,32 @@ Get-ChildItem -LiteralPath $racine -Recurse -Force |
 $registre = Join-Path $racine 'docs\PORTS.md'
 if (Test-Path -LiteralPath $registre) { Remove-Item -LiteralPath $registre -Force }
 
-# ----- 5. Tests de la stack -----
+# ----- 5. Le socle partagé -----
+
+# Après les marqueurs : l'adresse du dépôt modèle ne doit pas devenir celle de l'appli.
+$manifesteAppli = Join-Path $racine 'appli\Cargo.toml'
+if (Test-Path -LiteralPath $manifesteAppli) {
+    $lu = Lire-Texte $manifesteAppli
+    $origine = "git = `"$depotModele`", tag = `"v$versionSocle`""
+    if ($cheminSocle) { $origine = "path = `"$($cheminSocle.Replace('\', '/'))`"" }
+    $texte = $lu.Texte.Replace('path = "../../../socle/coeur"', $origine)
+    if ($texte -ceq $lu.Texte) { Arreter "appli\Cargo.toml ne prend pas le socle par son chemin dans le dépôt modèle." }
+    Ecrire-Texte $manifesteAppli $texte $lu.Bom
+    # cargo-deny : le dépôt modèle est la seule origine git permise.
+    $deny = Join-Path $racine 'deny.toml'
+    if (Test-Path -LiteralPath $deny) {
+        $lu = Lire-Texte $deny
+        Ecrire-Texte $deny ($lu.Texte.Replace('allow-git = []', "allow-git = [`"$depotModele`"]")) $lu.Bom
+    }
+    # Cargo.lock nommait le socle par son chemin : cargo le relie à sa nouvelle origine, sans rien monter d'autre.
+    if (-not $cheminSocle) {
+        Write-Host "Le socle v$versionSocle, depuis le dépôt modèle..."
+        cargo fetch --quiet
+        if ($LASTEXITCODE -ne 0) { Arreter "le socle v$versionSocle n'a pas pu être téléchargé (le tag existe-t-il ?)." }
+    }
+}
+
+# ----- 6. Tests de la stack -----
 
 Write-Host "Tests de la stack « $nomStack »..."
 & (Join-Path $racine 'tools\tester.ps1')
@@ -300,7 +352,7 @@ if ($LASTEXITCODE -ne 0) {
     Arreter "les tests ont échoué. init.ps1 n'a pas été supprimé : corrige, ou annule avec « git restore . » puis « git clean -fd »."
 }
 
-# ----- 6. Le script se supprime et dit la suite -----
+# ----- 7. Le script se supprime et dit la suite -----
 
 Remove-Item -LiteralPath $moi -Force
 

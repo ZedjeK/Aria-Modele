@@ -32,8 +32,8 @@ pub fn texte(dossier: &Dossier, contexte: &Contexte) -> String {
             .to_owned()
     };
     let mut lignes = vec![
-        format!("Diagnostic de {}", identite::NOM),
-        format!("Version : {}", identite::VERSION),
+        format!("Diagnostic de {}", identite::nom()),
+        format!("Version : {}", identite::version()),
         format!("Windows : {}", valeur(&contexte.windows)),
         format!("WebView2 : {}", valeur(&contexte.webview2)),
         format!("Dossier de données : {}", dossier.racine().display()),

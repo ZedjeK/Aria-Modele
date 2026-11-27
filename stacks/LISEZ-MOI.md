@@ -10,6 +10,20 @@ qu'au dépôt modèle : `init.ps1` les supprime dans l'appli créée.
 | --- | --- | --- |
 | `rust-tauri/` | Rust, Tauri 2, Svelte 5 en TypeScript | socle posé : dossier de données, réglages, journal, sauvegardes, fond animé, instance unique, icône de notification et son menu, démarrage automatique, secrets (DPAPI), installation par l'exe, mises à jour intégrées (release GitHub, taille et SHA-256 vérifiées), interface sur le modèle d'Aria Studio et d'Aria Cockpit (logo et icône Windows de la famille tirés de `docs/logo.svg` par `tools/icone.ps1`, fenêtre sans cadre, menu latéral par familles, état en direct, bandeau de mise à jour, dialogues posés sur la page), exe en un seul fichier (WebView2 de Windows, données de WebView2 dans le dossier de l'appli) ; contrat complet |
 
+## Socle partagé
+
+Le code que toute appli a toujours vit hors des squelettes, dans `socle/` (décision 0007) : la crate `aria-coeur`
+(`socle/coeur`) porte le contrat en Rust et, avec sa fonction `fenetre`, la fenêtre Tauri, ses commandes, le
+lancement, l'installation, les mises à jour, l'icône et la désinstallation. Le squelette `rust-tauri` n'apporte que
+l'identité de l'appli et ses propres commandes.
+
+Dans le dépôt modèle, le squelette prend le socle par son chemin (`appli/Cargo.toml`). `init.ps1` le remplace par la
+dépendance git du dépôt modèle, épinglée sur le tag de la version du socle (`socle/coeur/Cargo.toml`), ou, avec
+`-Socle <clone>`, par le chemin du socle de ce clone (ce que font les tests). Le code du socle n'est jamais copié
+dans l'appli. Les commandes du socle et ses capacités viennent de lui (`DEP_ARIA_COEUR_COMMANDES`, capacités ajoutées
+au lancement) : l'appli n'autorise que les siennes. `rust-toolchain.toml`, `clippy.toml` et `rustfmt.toml` sont les
+mêmes dans le socle et dans le squelette, et `tester-squelettes.ps1` le vérifie.
+
 ## Ce qu'un squelette doit fournir
 
 Trois scripts, toujours au même endroit, pour que la CI soit la même quelle que soit la stack :

@@ -22,7 +22,7 @@ pub const PROPRIETAIRE: &str = "ZedjeK";
 
 /// Le dépôt de l'appli.
 pub fn depot() -> String {
-    format!("https://github.com/{PROPRIETAIRE}/{}", identite::NOM_EXE)
+    format!("https://github.com/{PROPRIETAIRE}/{}", identite::nom_exe())
 }
 
 /// Le seul début d'adresse accepté pour un téléchargement : une release de ce dépôt.
@@ -34,7 +34,7 @@ pub fn prefixe_telechargement() -> String {
 pub fn adresse_derniere_release() -> String {
     format!(
         "https://api.github.com/repos/{PROPRIETAIRE}/{}/releases/latest",
-        identite::NOM_EXE
+        identite::nom_exe()
     )
 }
 
@@ -108,7 +108,7 @@ pub fn analyser(json: &str, actuelle: Version) -> Option<MiseAJour> {
     if version <= actuelle {
         return None;
     }
-    let attendu = format!("{}-{}.zip", identite::NOM_EXE, ecrire_version(version));
+    let attendu = format!("{}-{}.zip", identite::nom_exe(), ecrire_version(version));
     let paquet = racine
         .get("assets")?
         .as_array()?
@@ -299,7 +299,7 @@ mod tests {
     }
 
     fn zip_attendu(version: &str) -> String {
-        format!("{}-{version}.zip", identite::NOM_EXE)
+        format!("{}-{version}.zip", identite::nom_exe())
     }
 
     #[test]
@@ -408,14 +408,14 @@ mod tests {
         fs::write(programme.join(&exe), "exe 1").unwrap();
         fs::write(
             programme.join("BUILDINFO.txt"),
-            format!("{} 1.0.0", identite::NOM),
+            format!("{} 1.0.0", identite::nom()),
         )
         .unwrap();
         fs::write(programme.join(LISTE), format!("{exe}\nBUILDINFO.txt")).unwrap();
 
         let zip = travail.join("maj.zip");
         let liste = format!("{exe}\nBUILDINFO.txt");
-        let infos = format!("{} 1.1.0", identite::NOM);
+        let infos = format!("{} 1.1.0", identite::nom());
         let dans = |nom: &str| format!("Aria-Essai-1.1.0/{nom}");
         ecrire_zip(
             &zip,

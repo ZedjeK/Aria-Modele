@@ -10,6 +10,7 @@ dist/
 # Dépôt modèle seulement : ce que compilent les squelettes quand on les essaie sur place.
 stacks/*/target/
 stacks/*/appli/gen/
+socle/*/target/
 # <!-- MODELE:fin -->
 
 # <<STACK:gitignore>>

@@ -1,9 +1,9 @@
-# Espace de travail Rust d'Aria {{NOM}} : le cœur (coeur\, testable partout) et l'appli Windows (appli\).
+# Espace de travail Rust d'Aria {{NOM}} : l'appli Windows (appli\), posée sur le socle partagé (crate aria-coeur).
 #
 # La version de l'appli vit ici, dans [workspace.package], et nulle part ailleurs : tools\version.ps1 la lit, Tauri
 # la reprend pour l'exe, et le tag vX.Y.Z doit lui correspondre.
 [workspace]
-members = ["coeur", "appli"]
+members = ["appli"]
 resolver = "3"
 
 [workspace.package]

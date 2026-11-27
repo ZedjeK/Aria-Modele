@@ -1,4 +1,4 @@
-//! L'icône de notification et son menu, pour une appli qui sert en arrière-plan (`identite::EN_FOND`).
+//! L'icône de notification et son menu, pour une appli qui sert en arrière-plan (`identite::en_fond()`).
 //!
 //! Le menu est une petite fenêtre aux couleurs de l'appli (étiquette « menu », vue `MenuIcone.svelte`), ouverte au
 //! clic droit près de l'icône et rangée dès qu'elle perd le focus : le menu natif de Windows ne prend pas les
@@ -7,8 +7,8 @@
 use std::path::PathBuf;
 use std::sync::Mutex;
 
-use aria_coeur::identite;
-use aria_coeur::presence::{self, EtatIcone, Ton};
+use crate::identite;
+use crate::presence::{self, EtatIcone, Ton};
 use serde::{Deserialize, Serialize};
 use tauri::image::Image;
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
@@ -18,8 +18,8 @@ use tauri::{
     WebviewWindowBuilder, WindowEvent,
 };
 
-use crate::mise_a_jour::{self, Disponible};
-use crate::{FENETRE, demarrage_auto, ramener};
+use super::mise_a_jour::{self, Disponible};
+use super::{FENETRE, demarrage_auto, ramener};
 
 /// L'identifiant de l'icône de notification.
 const ICONE: &str = "principale";
@@ -63,7 +63,7 @@ pub fn changer(app: &AppHandle, modifier: impl FnOnce(&mut EtatIcone)) {
         if let Some(image) = image(app, &etat) {
             let _ = icone.set_icon(Some(image));
         }
-        let _ = icone.set_tooltip(Some(etat.infobulle(identite::NOM)));
+        let _ = icone.set_tooltip(Some(etat.infobulle(identite::nom())));
     }
     let _ = app.emit_to(MENU, RELIRE, ());
 }
@@ -85,7 +85,7 @@ fn image(app: &AppHandle, etat: &EtatIcone) -> Option<Image<'static>> {
 pub fn creer(app: &AppHandle, cache_webview: PathBuf) -> tauri::Result<()> {
     let etat = app.state::<Presence>().lire();
     let mut icone = TrayIconBuilder::with_id(ICONE)
-        .tooltip(etat.infobulle(identite::NOM))
+        .tooltip(etat.infobulle(identite::nom()))
         .on_tray_icon_event(|icone, evenement| {
             if let TrayIconEvent::Click {
                 button,
@@ -107,7 +107,7 @@ pub fn creer(app: &AppHandle, cache_webview: PathBuf) -> tauri::Result<()> {
     icone.build(app)?;
 
     let menu = WebviewWindowBuilder::new(app, MENU, WebviewUrl::default())
-        .title(identite::NOM)
+        .title(identite::nom())
         .inner_size(LARGEUR_MENU, 240.0)
         .resizable(false)
         .decorations(false)
@@ -194,7 +194,7 @@ pub fn etat_menu(presence: State<'_, Presence>, disponible: State<'_, Disponible
         })
         .collect();
     EtatMenu {
-        nom: identite::NOM,
+        nom: identite::nom(),
         lignes,
         demarrage_auto: demarrage_auto::est_actif(),
         mise_a_jour: mise_a_jour::mise_a_jour_disponible(disponible).map(|m| m.version),

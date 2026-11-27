@@ -1,17 +1,17 @@
 //! « Démarrer avec Windows », côté appli : l'état relu dans le registre à chaque fois, et la case des réglages et
-//! du menu de l'icône. Seulement pour une appli qui sert en arrière-plan (`identite::EN_FOND`).
+//! du menu de l'icône. Seulement pour une appli qui sert en arrière-plan (`identite::en_fond()`).
 
-use aria_coeur::{identite, journal};
+use crate::{identite, journal};
 use tauri::{AppHandle, Emitter, State};
 
-use crate::Etat;
-use crate::icone::MENU;
+use super::Etat;
+use super::icone::MENU;
 
 /// Windows lancera-t-il l'appli à l'ouverture de session ?
 pub fn est_actif() -> bool {
     #[cfg(windows)]
     {
-        identite::EN_FOND && aria_coeur::demarrage::windows::est_inscrit()
+        identite::en_fond() && crate::demarrage::windows::est_inscrit()
     }
     #[cfg(not(windows))]
     {
@@ -20,12 +20,12 @@ pub fn est_actif() -> bool {
 }
 
 fn inscrire(actif: bool) -> Result<(), String> {
-    if !identite::EN_FOND {
+    if !identite::en_fond() {
         return Err("cette appli ne démarre pas avec Windows".to_owned());
     }
     #[cfg(windows)]
     {
-        use aria_coeur::demarrage::windows;
+        use crate::demarrage::windows;
         let resultat = if actif {
             std::env::current_exe().and_then(|exe| windows::inscrire(&exe))
         } else {
