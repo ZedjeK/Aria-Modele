@@ -91,6 +91,21 @@ function Reussit([scriptblock]$commande) {
     return ($code -eq 0)
 }
 
+# Lance l'exe, vérifie qu'il tient 15 secondes et qu'il note son lancement dans son journal, puis l'arrête.
+function Essayer-Exe([string]$exe, [string]$quoi) {
+    if ($env:OS -ne 'Windows_NT' -or -not (Test-Path -LiteralPath $exe)) { return }
+    $journal = Join-Path $env:USERPROFILE '.Aria-Essai\journal.json'
+    $avant = if (Test-Path $journal) { (Get-Item $journal).LastWriteTimeUtc } else { [datetime]::MinValue }
+    $processus = Start-Process -FilePath $exe -PassThru
+    Start-Sleep -Seconds 15
+    $tient = -not $processus.HasExited
+    Verifier $tient "$quoi se lance et tient 15 secondes (code de sortie : $(if ($tient) { 'aucun' } else { $processus.ExitCode }))"
+    $ecrit = (Test-Path $journal) -and (Get-Item $journal).LastWriteTimeUtc -gt $avant -and
+        ([IO.File]::ReadAllText($journal) -match '"lancement"')
+    Verifier $ecrit "$quoi note son lancement dans son journal"
+    if ($tient) { Stop-Process -Id $processus.Id -Force -ErrorAction SilentlyContinue }
+}
+
 # ----- Le socle partagé -----
 
 $socle = Join-Path $racine 'socle\coeur'
@@ -182,19 +197,8 @@ try {
         Verifier (Test-Path $exeSortie) "$($s.Name) : Aria-Essai.exe est dans .work\sortie\"
 
         # L'exe se lance et tient : un plantage au démarrage (capacité refusée, panique) l'arrêterait aussitôt. Compilé
-        # sans fichiers.txt à côté de lui, il ouvre sa fenêtre et attend ; on l'arrête ensuite.
-        if ((Test-Path $exeSortie) -and $env:OS -eq 'Windows_NT') {
-            $journal = Join-Path $env:USERPROFILE '.Aria-Essai\journal.json'
-            $avant = if (Test-Path $journal) { (Get-Item $journal).LastWriteTimeUtc } else { [datetime]::MinValue }
-            $processus = Start-Process -FilePath $exeSortie -PassThru
-            Start-Sleep -Seconds 15
-            $tient = -not $processus.HasExited
-            Verifier $tient "$($s.Name) : l'exe se lance et tient 15 secondes (code de sortie : $(if ($tient) { 'aucun' } else { $processus.ExitCode }))"
-            $ecrit = (Test-Path $journal) -and (Get-Item $journal).LastWriteTimeUtc -gt $avant -and
-                ([IO.File]::ReadAllText($journal) -match '"lancement"')
-            Verifier $ecrit "$($s.Name) : l'exe note son lancement dans son journal"
-            if ($tient) { Stop-Process -Id $processus.Id -Force -ErrorAction SilentlyContinue }
-        }
+        # sans fichiers.txt à côté de lui, il ouvre sa fenêtre principale et attend.
+        Essayer-Exe $exeSortie "$($s.Name) : l'exe compilé (fenêtre principale)"
 
         & $hote -NoProfile -ExecutionPolicy Bypass -File (Join-Path $c 'tools\empaqueter.ps1') | Out-Host
         $zip = Join-Path $c ".work\release\Aria-Essai-$version.zip"
@@ -214,6 +218,8 @@ try {
             Verifier ($infos -match "Taille de l'exe : \d+(\.\d)? Mo \(\d+ octets\)") "$($s.Name) : BUILDINFO.txt relève la taille de l'exe"
             $exe = Get-Item -LiteralPath (Join-Path $extrait "Aria-Essai-$version\Aria-Essai.exe") -ErrorAction SilentlyContinue
             if ($exe) { Write-Host "        taille de l'exe : $([math]::Round($exe.Length / 1MB, 1)) Mo, zip : $([math]::Round((Get-Item $zip).Length / 1MB, 1)) Mo" }
+            # Décompressé en entier, avec son fichiers.txt : l'exe propose de s'installer et attend.
+            if ($exe) { Essayer-Exe $exe.FullName "$($s.Name) : l'exe du zip décompressé (proposition d'installation)" }
         }
     }
 }
