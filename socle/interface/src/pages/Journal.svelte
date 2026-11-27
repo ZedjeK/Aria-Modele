@@ -5,12 +5,12 @@
 -->
 <script lang="ts">
   import { onMount, tick } from 'svelte';
-  import { diagnostic, lireJournal, messageErreur, type Operation } from '../lib/api';
-  import { dateLisible } from '../lib/journal';
-  import ASavoir from '../lib/composants/ASavoir.svelte';
-  import Bouton from '../lib/composants/Bouton.svelte';
-  import Dialogue from '../lib/composants/Dialogue.svelte';
-  import Panneau from '../lib/composants/Panneau.svelte';
+  import { diagnostic, lireJournal, messageErreur, type Operation } from '../api';
+  import { dateLisible } from '../journal';
+  import ASavoir from '../composants/ASavoir.svelte';
+  import Bouton from '../composants/Bouton.svelte';
+  import Dialogue from '../composants/Dialogue.svelte';
+  import Panneau from '../composants/Panneau.svelte';
 
   interface Props {
     signaler: (texte: string, erreur?: boolean) => void;

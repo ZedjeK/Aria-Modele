@@ -1,7 +1,7 @@
-// Les commandes Rust que l'interface peut appeler (appli\src\commandes.rs, demarrage_auto.rs, icone.rs,
-// installation.rs, mise_a_jour.rs, desinstallation.rs), avec
-// leurs types. Une commande ajoutée ici doit aussi l'être dans appli\build.rs et dans la capacité de la fenêtre
-// qui l'appelle (appli\capabilities\principale.json, menu.json ou installation.json).
+// Les commandes Rust du socle que l'interface peut appeler (crate aria-coeur, module fenetre), avec leurs types.
+// Une commande ajoutée ici doit aussi l'être dans socle\coeur\src\fenetre\liste.rs et dans la capacité de la
+// fenêtre qui l'appelle (capacite-principale.json, capacite-menu.json ou capacite-installation.json). Les commandes
+// propres à une appli sont dans l'api.ts de son interface.
 import { invoke } from '@tauri-apps/api/core';
 import { listen, type UnlistenFn } from '@tauri-apps/api/event';
 
@@ -29,12 +29,6 @@ export interface Identite {
   dossier: string;
 }
 
-/** Place libre et taille du disque, en octets. */
-export interface Espace {
-  libre: number;
-  total: number;
-}
-
 export const identite = (): Promise<Identite> => invoke<Identite>('identite');
 
 export const lireReglages = (): Promise<Reglages> => invoke<Reglages>('lire_reglages');
@@ -42,8 +36,6 @@ export const lireReglages = (): Promise<Reglages> => invoke<Reglages>('lire_regl
 /** Renvoie les réglages vraiment enregistrés : les bornes peuvent avoir été ramenées. */
 export const enregistrerReglages = (reglages: Reglages): Promise<Reglages> =>
   invoke<Reglages>('enregistrer_reglages', { reglages });
-
-export const mesurerDisque = (): Promise<Espace> => invoke<Espace>('mesurer_disque');
 
 /** Une opération du journal (journal.json). */
 export interface Operation {

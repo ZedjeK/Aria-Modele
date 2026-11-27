@@ -15,11 +15,16 @@ qu'au dépôt modèle : `init.ps1` les supprime dans l'appli créée.
 Le code que toute appli a toujours vit hors des squelettes, dans `socle/` (décision 0007) : la crate `aria-coeur`
 (`socle/coeur`) porte le contrat en Rust et, avec sa fonction `fenetre`, la fenêtre Tauri, ses commandes, le
 lancement, l'installation, les mises à jour, l'icône et la désinstallation. Le squelette `rust-tauri` n'apporte que
-l'identité de l'appli et ses propres commandes.
+l'identité de l'appli et ses propres commandes. Le paquet npm `aria-interface` (`socle/interface`) porte le thème, les
+composants, la fenêtre principale (`Fenetre`), les dialogues, le Journal, les Paramètres, la proposition
+d'installation et le menu de l'icône : l'interface du squelette n'apporte que son logo, ses familles de pages, ses
+pastilles d'état et ses pages.
 
 Dans le dépôt modèle, le squelette prend le socle par son chemin (`appli/Cargo.toml`). `init.ps1` le remplace par la
 dépendance git du dépôt modèle, épinglée sur le tag de la version du socle (`socle/coeur/Cargo.toml`), ou, avec
-`-Socle <clone>`, par le chemin du socle de ce clone (ce que font les tests). Le code du socle n'est jamais copié
+`-Socle <clone>`, par le chemin du socle de ce clone (ce que font les tests). De même, `interface/package.json` prend
+`aria-interface` par son chemin ; `init.ps1` le remplace par l'archive `aria-interface-X.Y.Z.tgz` jointe à la release
+du dépôt modèle, ou par le dossier du socle du clone. La crate et le paquet ont la même version. Le code du socle n'est jamais copié
 dans l'appli. Les commandes du socle et ses capacités viennent de lui (`DEP_ARIA_COEUR_COMMANDES`, capacités ajoutées
 au lancement) : l'appli n'autorise que les siennes. `rust-toolchain.toml`, `clippy.toml` et `rustfmt.toml` sont les
 mêmes dans le socle et dans le squelette, et `tester-squelettes.ps1` le vérifie.

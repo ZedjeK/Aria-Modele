@@ -5,11 +5,11 @@
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { infosInstallation, installer, lancerSansInstaller, messageErreur } from './lib/api';
-  import type { InfosInstallation } from './lib/api';
-  import ASavoir from './lib/composants/ASavoir.svelte';
-  import Bouton from './lib/composants/Bouton.svelte';
-  import Panneau from './lib/composants/Panneau.svelte';
+  import { infosInstallation, installer, lancerSansInstaller, messageErreur } from '../api';
+  import type { InfosInstallation } from '../api';
+  import ASavoir from '../composants/ASavoir.svelte';
+  import Bouton from '../composants/Bouton.svelte';
+  import Panneau from '../composants/Panneau.svelte';
 
   let infos = $state<InfosInstallation | null>(null);
   let raccourci = $state(false);

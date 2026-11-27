@@ -339,9 +339,33 @@ if (Test-Path -LiteralPath $manifesteAppli) {
     # Cargo.lock nommait le socle par son chemin : cargo le relie à sa nouvelle origine, sans rien monter d'autre.
     if (-not $cheminSocle) {
         Write-Host "Le socle v$versionSocle, depuis le dépôt modèle..."
-        cargo fetch --quiet
-        if ($LASTEXITCODE -ne 0) { Arreter "le socle v$versionSocle n'a pas pu être téléchargé (le tag existe-t-il ?)." }
+        # Sous PowerShell 5.1, la sortie d'erreur de cargo arrêterait le script : on lit son code de retour.
+        $ErrorActionPreference = 'Continue'
+        cargo fetch --quiet 2>&1 | Out-Host
+        $code = $LASTEXITCODE
+        $ErrorActionPreference = 'Stop'
+        if ($code -ne 0) { Arreter "le socle v$versionSocle n'a pas pu être téléchargé (le tag existe-t-il ?)." }
     }
+}
+# Le paquet de l'interface : l'archive jointe à la release du dépôt modèle, ou le dossier du socle de ce clone.
+$paquetsInterface = Join-Path $racine 'interface\package.json'
+if (Test-Path -LiteralPath $paquetsInterface) {
+    $lu = Lire-Texte $paquetsInterface
+    $origine = "$depotModele/releases/download/v$versionSocle/aria-interface-$versionSocle.tgz"
+    if ($cheminSocle) { $origine = 'file:' + (Join-Path (Split-Path -Parent $cheminSocle) 'interface').Replace('\', '/') }
+    $texte = $lu.Texte.Replace('"aria-interface": "file:../../../socle/interface"', "`"aria-interface`": `"$origine`"")
+    if ($texte -ceq $lu.Texte) { Arreter "interface\package.json ne prend pas le socle par son chemin dans le dépôt modèle." }
+    Ecrire-Texte $paquetsInterface $texte $lu.Bom
+    # package-lock.json nommait le paquet par son chemin : npm le relie à sa nouvelle origine, sans rien monter d'autre.
+    Push-Location -LiteralPath (Join-Path $racine 'interface')
+    try {
+        $ErrorActionPreference = 'Continue'
+        npm install --no-audit --no-fund --loglevel=error | Out-Host
+        $code = $LASTEXITCODE
+        $ErrorActionPreference = 'Stop'
+    }
+    finally { Pop-Location }
+    if ($code -ne 0) { Arreter "le paquet de l'interface v$versionSocle n'a pas pu être installé." }
 }
 
 # ----- 6. Tests de la stack -----
