@@ -8,7 +8,7 @@
       - appli\icons\icon.ico : 16, 24, 32, 48, 64, 128 et 256 pixels, en PNG (exe, barre des tâches, raccourci,
         icône de notification) ;
       - docs\logo.png : 512 pixels (README) ;
-      - interface\src\lib\logo.svg : la copie que lit le menu latéral.
+      - interface\src\logo.svg : la copie que lit le menu latéral.
     Les rendus passent par .work\icone\, vidé à chaque lancement. Rien d'autre n'est modifié.
 
 .PARAMETER Navigateur
@@ -29,7 +29,7 @@ $racine = Split-Path -Parent $PSScriptRoot
 $source = Join-Path $racine 'docs\logo.svg'
 $icone = Join-Path $racine 'appli\icons\icon.ico'
 $png = Join-Path $racine 'docs\logo.png'
-$copieMenu = Join-Path $racine 'interface\src\lib\logo.svg'
+$copieMenu = Join-Path $racine 'interface\src\logo.svg'
 $travail = Join-Path $racine '.work\icone'
 $tailles = @(16, 24, 32, 48, 64, 128, 256)
 
@@ -172,4 +172,4 @@ Copy-Item -LiteralPath $source -Destination $copieMenu -Force
 # Le dossier de travail (gardé si un processus le tient encore : .work\ n'est pas suivi par git).
 Remove-Item -LiteralPath $travail -Recurse -Force -ErrorAction SilentlyContinue
 
-Write-Host "Écrits : appli\icons\icon.ico ($($tailles -join ', ') px), docs\logo.png (512 px), interface\src\lib\logo.svg."
+Write-Host "Écrits : appli\icons\icon.ico ($($tailles -join ', ') px), docs\logo.png (512 px), interface\src\logo.svg."

@@ -3,12 +3,12 @@
   données restent, et le dialogue dit où elles sont.
 -->
 <script lang="ts">
-  import { desinstaller, fermerApresDesinstallation, messageErreur } from '../lib/api';
-  import type { BilanDesinstallation } from '../lib/api';
-  import ASavoir from '../lib/composants/ASavoir.svelte';
-  import Bouton from '../lib/composants/Bouton.svelte';
-  import Dialogue from '../lib/composants/Dialogue.svelte';
-  import Panneau from '../lib/composants/Panneau.svelte';
+  import { desinstaller, fermerApresDesinstallation, messageErreur } from '../api';
+  import type { BilanDesinstallation } from '../api';
+  import ASavoir from '../composants/ASavoir.svelte';
+  import Bouton from '../composants/Bouton.svelte';
+  import Dialogue from '../composants/Dialogue.svelte';
+  import Panneau from '../composants/Panneau.svelte';
 
   interface Props {
     nom: string;

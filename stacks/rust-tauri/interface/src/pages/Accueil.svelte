@@ -3,13 +3,8 @@
   ce qu'elle produit, puis le dossier de données.
 -->
 <script lang="ts">
-  import { mesurerDisque, messageErreur, type Identite } from '../lib/api';
-  import { octetsLisibles } from '../lib/jauge';
-  import ASavoir from '../lib/composants/ASavoir.svelte';
-  import Bouton from '../lib/composants/Bouton.svelte';
-  import Jauge from '../lib/composants/Jauge.svelte';
-  import Panneau from '../lib/composants/Panneau.svelte';
-  import SousOnglets from '../lib/composants/SousOnglets.svelte';
+  import { ASavoir, Bouton, Jauge, Panneau, SousOnglets, messageErreur, octetsLisibles, type Identite } from 'aria-interface';
+  import { mesurerDisque } from '../api';
 
   interface Props {
     identite: Identite | null;

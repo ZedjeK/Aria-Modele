@@ -5,9 +5,9 @@
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { actionMenu, ecouter, etatMenu, messageErreur, reglerDemarrageAuto, tailleMenu } from './lib/api';
-  import type { ActionMenu, EtatMenu } from './lib/api';
-  import { couleurTon, ligneErreur } from './lib/menu';
+  import { actionMenu, ecouter, etatMenu, messageErreur, reglerDemarrageAuto, tailleMenu } from '../api';
+  import type { ActionMenu, EtatMenu } from '../api';
+  import { couleurTon, ligneErreur } from '../menu';
 
   let etat = $state<EtatMenu | null>(null);
   let boite = $state<HTMLElement | null>(null);

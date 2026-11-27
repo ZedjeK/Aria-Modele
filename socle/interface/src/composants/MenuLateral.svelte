@@ -12,6 +12,8 @@
   }
 
   interface Props {
+    /** Le logo de l'appli (voir Logo.svelte). */
+    logo: string;
     nom: string;
     version: string;
     familles: Famille[];
@@ -20,12 +22,12 @@
     quitter?: (() => void) | undefined;
   }
 
-  let { nom, version, familles, page = $bindable(), quitter }: Props = $props();
+  let { logo, nom, version, familles, page = $bindable(), quitter }: Props = $props();
 </script>
 
 <aside class="menu">
   <div class="marque" data-tauri-drag-region>
-    <Logo />
+    <Logo {logo} />
     <div class="noms" data-tauri-drag-region>
       <strong data-tauri-drag-region>Aria</strong>
       <span data-tauri-drag-region>{nom}</span>

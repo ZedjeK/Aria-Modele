@@ -40,6 +40,16 @@ updates:
       squelette-cargo-mineures:
         update-types: ["minor", "patch"]
   - package-ecosystem: "npm"
+    directory: "/socle/interface"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      socle-npm-mineures:
+        update-types: ["minor", "patch"]
+  - package-ecosystem: "npm"
     directory: "/stacks/rust-tauri/interface"
     schedule:
       interval: "weekly"

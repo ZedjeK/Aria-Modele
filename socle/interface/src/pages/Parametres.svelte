@@ -4,13 +4,13 @@
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { lireDemarrageAuto, messageErreur, reglerDemarrageAuto } from '../lib/api';
-  import type { Identite, Reglages } from '../lib/api';
+  import { lireDemarrageAuto, messageErreur, reglerDemarrageAuto } from '../api';
+  import type { Identite, Reglages } from '../api';
   import DialogueDesinstallation from '../dialogues/Desinstallation.svelte';
-  import ASavoir from '../lib/composants/ASavoir.svelte';
-  import Bouton from '../lib/composants/Bouton.svelte';
-  import CarteChoix from '../lib/composants/CarteChoix.svelte';
-  import Panneau from '../lib/composants/Panneau.svelte';
+  import ASavoir from '../composants/ASavoir.svelte';
+  import Bouton from '../composants/Bouton.svelte';
+  import CarteChoix from '../composants/CarteChoix.svelte';
+  import Panneau from '../composants/Panneau.svelte';
 
   interface Props {
     identite: Identite;

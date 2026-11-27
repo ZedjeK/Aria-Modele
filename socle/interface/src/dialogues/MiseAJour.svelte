@@ -2,13 +2,13 @@
   Le dialogue de mise à jour, posé sur la fenêtre de l'appli : ouvert depuis le bandeau ou le menu de l'icône.
 -->
 <script lang="ts">
-  import { installerMiseAJour, messageErreur, voirNotes } from '../lib/api';
-  import type { InfosMiseAJour } from '../lib/api';
-  import { octetsLisibles } from '../lib/jauge';
-  import ASavoir from '../lib/composants/ASavoir.svelte';
-  import Bouton from '../lib/composants/Bouton.svelte';
-  import Dialogue from '../lib/composants/Dialogue.svelte';
-  import Panneau from '../lib/composants/Panneau.svelte';
+  import { installerMiseAJour, messageErreur, voirNotes } from '../api';
+  import type { InfosMiseAJour } from '../api';
+  import { octetsLisibles } from '../jauge';
+  import ASavoir from '../composants/ASavoir.svelte';
+  import Bouton from '../composants/Bouton.svelte';
+  import Dialogue from '../composants/Dialogue.svelte';
+  import Panneau from '../composants/Panneau.svelte';
 
   interface Props {
     infos: InfosMiseAJour;

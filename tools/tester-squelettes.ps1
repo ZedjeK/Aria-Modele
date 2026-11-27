@@ -5,8 +5,9 @@ Tests des squelettes de stack du dépôt modèle : init.ps1, compilation et zip,
 .DESCRIPTION
 Fichier du dépôt modèle seulement : init.ps1 le supprime dans l'appli créée, avec .github\workflows\squelettes.yml.
 
-D'abord le socle partagé (socle\coeur, crate aria-coeur) : rustfmt, clippy et ses tests, avec sa fenêtre Tauri ; ses
-fichiers de réglage de Rust sont ceux de chaque stack Rust.
+D'abord le socle partagé : la crate aria-coeur (socle\coeur : rustfmt, clippy et ses tests, avec sa fenêtre Tauri ;
+ses fichiers de réglage de Rust sont ceux de chaque stack Rust) et le paquet aria-interface (socle\interface :
+svelte-check et ses tests), à la même version.
 
 Puis, pour chaque dossier de stacks\ qui a un _socle\stack.json (ou seulement celui donné par -Stack) :
   1. init.ps1 crée une appli « Essai » dans une copie jetable du dépôt, sur le socle de ce clone (-Socle), et lance
@@ -101,12 +102,27 @@ foreach ($fichier in 'rust-toolchain.toml', 'clippy.toml', 'rustfmt.toml') {
         Verifier ($lu -ceq $attendu) "socle : $fichier est celui de stacks\$($_.Name)"
     }
 }
+# La crate et le paquet de l'interface ont la version du dépôt modèle : une seule, pour un seul tag.
+$versionCrate = ''
+foreach ($ligne in (Get-Content -LiteralPath (Join-Path $socle 'Cargo.toml') -Encoding UTF8)) {
+    if ($ligne -match '^version\s*=\s*"(\d+\.\d+\.\d+)"') { $versionCrate = $Matches[1]; break }
+}
+$interfaceSocle = Join-Path $racine 'socle\interface'
+$versionPaquet = (Get-Content -LiteralPath (Join-Path $interfaceSocle 'package.json') -Raw -Encoding UTF8 | ConvertFrom-Json).version
+Verifier ($versionCrate -and $versionCrate -eq $versionPaquet) "socle : la crate ($versionCrate) et le paquet de l'interface ($versionPaquet) ont la même version"
 if (-not $Stack -or $Stack -eq 'rust-tauri') {
     Push-Location -LiteralPath $socle
     try {
         Verifier (Reussit { cargo fmt --check }) 'socle : mise en forme (rustfmt)'
         Verifier (Reussit { cargo clippy --all-targets --all-features --locked -- -D warnings }) 'socle : contrôles (clippy, fenêtre comprise)'
         Verifier (Reussit { cargo test --all-features --locked }) 'socle : tests, fenêtre comprise'
+    }
+    finally { Pop-Location }
+    Push-Location -LiteralPath $interfaceSocle
+    try {
+        Verifier (Reussit { npm ci --no-audit --no-fund }) 'socle : paquets de l''interface'
+        Verifier (Reussit { npm run check }) 'socle : types et composants de l''interface (svelte-check)'
+        Verifier (Reussit { npm test }) 'socle : tests de l''interface (vitest)'
     }
     finally { Pop-Location }
 }
