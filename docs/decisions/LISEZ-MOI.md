@@ -20,7 +20,7 @@ Une décision ne se réécrit pas : une nouvelle page la remplace, et l'ancienne
 | [0004](0004-mises-a-jour.md) | Les mises à jour : release GitHub, SHA-256, attestation, signature minisign |
 | [0005](0005-aucune-telemetrie.md) | Aucune télémétrie |
 | [0006](0006-signature-signpath.md) | La signature Authenticode par SignPath Foundation |
-| [0007](0007-socle-partage.md) | Un socle partagé et versionné, publié depuis Aria-Modele |
+| [0007](0007-socle-partage.md) | Un socle partagé et versionné, publié depuis le dépôt modèle |
 | [0008](0008-installation-pour-toutes.md) | Chaque appli s'installe, sans lancement portable |
 | [0009](0009-modeles-et-moteurs-partages.md) | Les modèles et les moteurs locaux partagés entre les applis |
 | [0010](0010-windows-x64-seul.md) | Windows x64 seulement |
