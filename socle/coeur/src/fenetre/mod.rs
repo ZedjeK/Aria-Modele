@@ -293,9 +293,10 @@ mod tests {
     /// Les commandes de `generate_handler!`, lues dans ce fichier.
     fn commandes_du_gestionnaire() -> Vec<String> {
         let source = include_str!("mod.rs");
-        // La liste du gestionnaire, pas l'exemple de la documentation : celle qui va à la ligne.
-        let marque = "tauri::generate_handler![\n";
-        let debut = source.find(marque).unwrap() + marque.len();
+        // La liste du gestionnaire, pas l'exemple de la documentation : celle de `commandes_du_socle`.
+        let fonction = source.find("fn commandes_du_socle").unwrap();
+        let marque = "generate_handler![";
+        let debut = fonction + source[fonction..].find(marque).unwrap() + marque.len();
         let fin = debut + source[debut..].find(']').unwrap();
         source[debut..fin]
             .split(',')
