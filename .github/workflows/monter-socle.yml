@@ -57,7 +57,7 @@ jobs:
           $tag = gh api "repos/$modele/releases/latest" --jq .tag_name
           if ($LASTEXITCODE -ne 0 -or $tag -notmatch '^v(\d+\.\d+\.\d+)$') { throw "Dernière release du dépôt modèle illisible : « $tag »." }
           $derniere = $Matches[1]
-          $branche = "socle/v$derniere"
+          $branche = "deps/socle-v$derniere"
           gh api "repos/$env:GITHUB_REPOSITORY/branches/$branche" --silent 2>$null
           $dejaLa = $LASTEXITCODE -eq 0
           $plusRecente = [version]$derniere -gt [version]$actuelle.Groups[1].Value
