@@ -19,6 +19,13 @@ default = []
 # La fenêtre Tauri du socle : lancement, commandes, installation, mises à jour, icône, désinstallation. Toute appli
 # l'active ; sans elle, le reste se teste sur n'importe quel système, sans moteur d'affichage.
 fenetre = ["dep:tauri", "dep:tauri-plugin-single-instance", "dep:ureq"]
+# Modules en option (docs/CONTRAT.md, « Modules en option »), à activer un par un dans appli/Cargo.toml.
+# Téléchargement vérifié : source HTTPS épinglée, taille et SHA-256 contrôlés, reprise d'un téléchargement coupé.
+telechargement = ["dep:ureq"]
+# Moteur local : moteurs partagés dans le dossier commun, plage de versions, essai après mise à jour (décision 0009).
+moteur = []
+# Partage de la carte graphique : la mémoire vidéo occupée, déclarée dans le dossier commun.
+carte-graphique = []
 
 [dependencies]
 serde = { version = "1.0.229", features = ["derive"] }
