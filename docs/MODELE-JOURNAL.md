@@ -24,6 +24,7 @@ Socle partagé au lieu de copié, installation pour toutes les applis, modèles 
 | #82 | Installation pour toutes (décision 0008) : plus de lancement sans installation ni de `--portable`, « Annuler » ferme l'appli, l'aperçu du zip demande de décompresser d'abord ; `init.ps1` perd l'option `-Installation` et les squelettes la clé `nonFournis` |
 | #83 | Parcours communs du socle : assistant de premier lancement, bouton « Restaurer » des sauvegardes, tâches longues (progression, annulation, pastille), reprise des données d'une ancienne version, focus visible sur les boutons et les onglets, contraste de la palette vérifié |
 | #84 | Modules du dossier commun (décision 0009) : `telechargement` (téléchargement vérifié), `moteur` (moteurs partagés, plage de versions, essai après mise à jour, registre d'usage), `carte-graphique` ; `socle/LISEZ-MOI.md` |
+| #85 | Guide commun des applis (`docs/GUIDE.md`, au socle) et fiche projet v2 (socle, modules, moteurs et modèles, données reprises) |
 
 ### À reporter dans les applis
 
@@ -31,7 +32,7 @@ Socle partagé au lieu de copié, installation pour toutes les applis, modèles 
 
 - nouveaux : `docs/decisions/0007-socle-partage.md`, `0008-installation-pour-toutes.md`,
   `0009-modeles-et-moteurs-partages.md`, `0010-windows-x64-seul.md` ;
-- nouveau : `docs/RECETTE.md` ;
+- nouveaux : `docs/RECETTE.md`, `docs/GUIDE.md` ;
 - modifiés : `docs/CONTRAT.md` (v2), `docs/decisions/0002-exe-portable.md`, `docs/decisions/LISEZ-MOI.md`,
   `tools/socle.txt`, `.github/pull_request_template.md`.
 

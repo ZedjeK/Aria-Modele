@@ -10,12 +10,16 @@ jour quand l'appli change.
 | Élément orange du logo | {{ELEMENT_ORANGE}} |
 | Fond animé | à renseigner : motif, ce qui est aléatoire, nombre par défaut |
 | Stack | {{STACK}} |
+| Socle | la version épinglée dans `appli/Cargo.toml` et `interface/package.json` |
+| Modules en option | aucun, sauf mention ici : à renseigner (fonctions de `aria-coeur` activées) |
+| Moteurs et modèles | aucun, sauf mention ici : à renseigner (moteur, plage de versions acceptée, modèles) |
 | Droits administrateur | non, sauf mention ici : à renseigner |
 | Démarrage automatique | {{DEMARRAGE_AUTO}} |
 | Installation | dans `%USERPROFILE%\.Aria-{{NOM}}\programme`, comme toute appli Aria (décision 0008) |
 | Port local (interface web) | {{PORT}} |
 | Données de l'utilisateur | `%USERPROFILE%\.Aria-{{NOM}}` ; secrètes : à renseigner |
-| Écritures hors du dossier de données | à renseigner : démarrage automatique, raccourci du Bureau, et ce que l'appli modifie |
+| Écritures hors du dossier de données | à renseigner : démarrage automatique, raccourci du Bureau, dossier commun `%USERPROFILE%\.Aria` s'il sert, et ce que l'appli modifie |
+| Données reprises d'une ancienne version | aucune, sauf mention ici : à renseigner (ancien dossier, ce qui est repris) |
 | Connexions sortantes | à renseigner : liste complète, destination par destination (les mises à jour intégrées en ajoutent deux : `api.github.com` pour chercher une nouvelle version, et `github.com` avec son hôte de téléchargement pour le zip) |
 | Composants tiers embarqués | à renseigner |
 | Réussite de la v0.1 | à renseigner : un critère mesurable |
