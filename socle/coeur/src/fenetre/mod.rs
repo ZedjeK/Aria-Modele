@@ -23,8 +23,9 @@ pub mod installation;
 mod liste;
 pub mod mise_a_jour;
 pub mod raccourci;
+pub mod taches;
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::AtomicBool;
 
 use tauri::ipc::Invoke;
@@ -35,7 +36,7 @@ use tauri::{
 
 use crate::identite::{self, Identite};
 use crate::installation::Lancement;
-use crate::{Dossier, demarrage, journal};
+use crate::{Dossier, demarrage, journal, reprise};
 
 pub use liste::COMMANDES;
 
@@ -57,11 +58,15 @@ type Commandes = Box<dyn Fn(Invoke<Wry>) -> bool + Send + Sync + 'static>;
 /// Ce que l'appli ajoute au constructeur Tauri (son état, un greffon).
 type Preparation = Box<dyn FnOnce(Builder<Wry>) -> Builder<Wry>>;
 
+/// La reprise des données d'une ancienne version : l'ancien dossier, et ce qui en reprend les données.
+type Reprise = (PathBuf, Box<dyn FnOnce(&Path, &Dossier, &mut reprise::Bilan)>);
+
 /// Ce que l'appli apporte au socle : son contexte Tauri, ses commandes et, au besoin, ses ajouts au constructeur.
 pub struct Appli {
     contexte: Context<Wry>,
     commandes: Commandes,
     preparation: Option<Preparation>,
+    reprise: Option<Reprise>,
 }
 
 impl Appli {
@@ -75,6 +80,7 @@ impl Appli {
             contexte,
             commandes: Box::new(commandes),
             preparation: None,
+            reprise: None,
         }
     }
 
@@ -82,6 +88,18 @@ impl Appli {
     #[must_use]
     pub fn preparer(mut self, preparation: impl FnOnce(Builder<Wry>) -> Builder<Wry> + 'static) -> Self {
         self.preparation = Some(Box::new(preparation));
+        self
+    }
+
+    /// Reprend une fois les données d'une ancienne version de l'appli, rangées dans `ancien` (voir
+    /// [`reprise::une_fois`]) : au premier lancement de l'appli installée, avant sa fenêtre.
+    #[must_use]
+    pub fn reprendre(
+        mut self,
+        ancien: impl Into<PathBuf>,
+        reprendre: impl FnOnce(&Path, &Dossier, &mut reprise::Bilan) + 'static,
+    ) -> Self {
+        self.reprise = Some((ancien.into(), Box::new(reprendre)));
         self
     }
 }
@@ -144,7 +162,18 @@ fn demarrer(appli: Appli) -> Result<(), String> {
         contexte,
         commandes,
         preparation,
+        reprise: a_reprendre,
     } = appli;
+    // La reprise se fait dans l'appli installée, pas pendant la proposition d'installation.
+    if let Some((ancien, reprendre)) = a_reprendre.filter(|_| !proposer)
+        && let Err(e) = reprise::une_fois(&dossier, &ancien, reprendre)
+    {
+        journal::consigner(
+            &dossier,
+            "reprise",
+            &format!("reportée au prochain lancement : {e}"),
+        );
+    }
 
     let mut constructeur = Builder::default()
         // Toujours le premier greffon : relancer l'exe ramène la fenêtre existante au lieu d'en ouvrir une autre.
@@ -160,6 +189,7 @@ fn demarrer(appli: Appli) -> Result<(), String> {
             desinstallee: AtomicBool::new(false),
         })
         .manage(icone::Presence::default())
+        .manage(taches::Taches::default())
         .manage(mise_a_jour::Disponible::default());
     if let Some(preparation) = preparation {
         constructeur = preparation(constructeur);
@@ -217,6 +247,10 @@ fn commandes_du_socle() -> impl Fn(Invoke<Wry>) -> bool + Send + Sync + 'static 
         mise_a_jour::installer_mise_a_jour,
         desinstallation::desinstaller,
         desinstallation::fermer_apres_desinstallation,
+        commandes::lister_sauvegardes,
+        commandes::restaurer_sauvegarde,
+        commandes::bilan_reprise,
+        taches::annuler_tache,
     ]
 }
 

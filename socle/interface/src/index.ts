@@ -18,3 +18,5 @@ export { default as Dialogue } from './composants/Dialogue.svelte';
 export { default as Jauge } from './composants/Jauge.svelte';
 export { default as Panneau } from './composants/Panneau.svelte';
 export { default as SousOnglets } from './composants/SousOnglets.svelte';
+export { default as TacheEnCours } from './composants/TacheEnCours.svelte';
+export { taches, tachesEnCours } from './taches.svelte';

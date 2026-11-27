@@ -91,7 +91,8 @@ elle-même.
 
 ## Premiers pas
 
-Le premier lancement, étape par étape.
+Au premier lancement, un assistant présente l'appli et règle l'essentiel ; il se
+rouvre depuis les Paramètres. Ce que l'appli fait ensuite, étape par étape.
 
 ## Au quotidien
 
@@ -103,7 +104,8 @@ Tout est dans `%USERPROFILE%\.Aria-{{NOM}}` :
 
 - `reglages.json` : tes réglages ;
 - `journal.json` : les 500 dernières opérations ;
-- `sauvegardes\` : une copie datée avant chaque modification, et la version précédente de l'appli ;
+- `sauvegardes\` : une copie datée avant chaque modification, et la version précédente de l'appli ; une copie
+  se restaure depuis la page « Journal », après une copie de l'état actuel ;
 - `secrets\` : ce que l'appli garde de secret, chiffré pour ton compte Windows (supprime la ligne si elle n'en garde pas) ;
 - `cache\` : données de l'interface et fichiers de travail, recréés au besoin ;
 - `programme\` : l'appli installée.

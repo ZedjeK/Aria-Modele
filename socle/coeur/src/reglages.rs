@@ -96,6 +96,10 @@ pub struct Reglages {
     #[serde(rename = "chercherMisesAJour")]
     pub chercher_mises_a_jour: bool,
 
+    /// L'assistant de premier lancement a été vu (terminé ou passé) : il ne s'ouvre plus de lui-même.
+    #[serde(rename = "assistantVu")]
+    pub assistant_vu: bool,
+
     /// Les réglages propres à l'appli, gardés tels quels : un objet JSON.
     pub appli: serde_json::Map<String, Value>,
 }
@@ -106,6 +110,7 @@ impl Default for Reglages {
             format: FORMAT,
             fond: ReglagesFond::default(),
             chercher_mises_a_jour: true,
+            assistant_vu: false,
             appli: serde_json::Map::new(),
         }
     }
@@ -192,6 +197,7 @@ impl Reglages {
                 defaut.chercher_mises_a_jour,
                 &mut intacte,
             ),
+            assistant_vu: champ(objet, "assistantVu", defaut.assistant_vu, &mut intacte),
             appli: champ(objet, "appli", defaut.appli, &mut intacte),
         };
         Lecture {
@@ -343,6 +349,7 @@ mod tests {
             "\"vitesse\": \"normale\"",
             "\"chercherMisesAJour\"",
             "\"format\": 1",
+            "\"assistantVu\": false",
             "\"appli\": {}",
         ] {
             assert!(texte.contains(cle), "{cle} absent de {texte}");
@@ -425,7 +432,7 @@ mod tests {
         assert!(Reglages::lire(&dossier).intacte);
         // Un fichier intact n'est pas recopié à chaque enregistrement.
         Reglages::default().enregistrer(&dossier).unwrap();
-        assert_eq!(fs::read_dir(dossier.sauvegardes()).unwrap().count(), 1);
+        assert_eq!(sauvegardes::lister(&dossier).len(), 1);
     }
 
     #[test]
