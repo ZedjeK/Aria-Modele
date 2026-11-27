@@ -14,6 +14,6 @@
 
       # cargo-deny (tools\tester.ps1, deny.toml) et cargo-about (tools\licences-rust.ps1), à des versions exactes,
       # binaires vérifiés par l'action : à monter à la main, par une PR (Dependabot ne suit que l'action).
-      - uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
+      - uses: taiki-e/install-action@75a7c0f87bd666af3cdb75c5b9e9d03ab6044e6f # v2.90.6
         with:
           tool: cargo-deny@0.20.2,cargo-about@0.9.3
