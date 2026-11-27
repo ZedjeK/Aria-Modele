@@ -236,7 +236,8 @@ Les règles communes à toutes les applis Aria (données, réseau, installation,
 à jour, interface) sont dans [docs/CONTRAT.md](docs/CONTRAT.md). Le socle partagé
 qui les tient (crate `aria-coeur` : dossier de données, réglages, journal, secrets,
 installation, mises à jour, icône, désinstallation) vient du dépôt modèle, à la
-version épinglée dans `appli/Cargo.toml`.
+version épinglée dans `appli/Cargo.toml`. Chaque semaine, le workflow « Monter le
+socle » ouvre une PR quand une version plus récente est publiée.
 
 ## Licence
 

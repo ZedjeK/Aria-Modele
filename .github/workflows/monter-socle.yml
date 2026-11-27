@@ -1,0 +1,134 @@
+# Monter le socle : chaque semaine, regarde la dernière version publiée du dépôt modèle. Si elle est plus récente que
+# celle de l'appli, ouvre une seule PR qui monte la crate aria-coeur (tag de la dépendance git, appli/Cargo.toml) et
+# le paquet aria-interface (archive de la release, interface/package.json), avec leurs fichiers de verrouillage
+# (décision 0007). Rien d'autre ne change ; la CI de l'appli teste la PR, tu la relis et tu la fusionnes.
+#
+# Une PR ouverte par ce workflow ne déclenche pas d'elle-même les workflows de la PR (règle de GitHub pour son jeton) :
+# il lance donc « Tests » et « CodeQL » sur la branche. Si un check manque quand même, ferme puis rouvre la PR.
+#
+# Lancer à la main :
+#
+#     gh workflow run "Monter le socle" --ref main
+name: Monter le socle
+
+on:
+  schedule:
+    - cron: "43 4 * * 2"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: pwsh
+
+concurrency:
+  group: monter-socle
+  cancel-in-progress: false
+
+jobs:
+  monter:
+    # <!-- MODELE:debut -->
+    # Dans le dépôt modèle lui-même : le socle est sur place, rien à monter. Ce bloc disparaît des applis.
+    if: github.repository != 'ZedjeK/Aria-Modele'
+    # <!-- MODELE:fin -->
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Dernière version du socle
+        id: version
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $manifeste = Get-Content -LiteralPath appli/Cargo.toml -Raw -Encoding UTF8
+          $actuelle = [regex]::Match($manifeste, 'aria-coeur\s*=\s*\{[^}]*tag\s*=\s*"v(\d+\.\d+\.\d+)"')
+          if (-not $actuelle.Success) { throw "appli/Cargo.toml ne prend pas aria-coeur par un tag vX.Y.Z du dépôt modèle." }
+          # Écrit en deux morceaux : init.ps1 remplace le nom du dépôt modèle par celui de l'appli partout ailleurs.
+          $modele = 'ZedjeK/Aria-' + 'Modele'
+          $tag = gh api "repos/$modele/releases/latest" --jq .tag_name
+          if ($LASTEXITCODE -ne 0 -or $tag -notmatch '^v(\d+\.\d+\.\d+)$') { throw "Dernière release du dépôt modèle illisible : « $tag »." }
+          $derniere = $Matches[1]
+          $branche = "deps/socle-v$derniere"
+          gh api "repos/$env:GITHUB_REPOSITORY/branches/$branche" --silent 2>$null
+          $dejaLa = $LASTEXITCODE -eq 0
+          $plusRecente = [version]$derniere -gt [version]$actuelle.Groups[1].Value
+          Write-Host "Socle de l'appli : v$($actuelle.Groups[1].Value) ; dernier publié : v$derniere."
+          if ($dejaLa) { Write-Host "La branche $branche existe déjà : sa PR attend." }
+          "actuelle=$($actuelle.Groups[1].Value)" >> $env:GITHUB_OUTPUT
+          "derniere=$derniere" >> $env:GITHUB_OUTPUT
+          "branche=$branche" >> $env:GITHUB_OUTPUT
+          "monter=$($plusRecente -and -not $dejaLa)".ToLowerInvariant() >> $env:GITHUB_OUTPUT
+          # Une branche absente fait échouer « gh api » : c'est la réponse attendue, pas une erreur du pas.
+          exit 0
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        if: steps.version.outputs.monter == 'true'
+        with:
+          node-version-file: .node-version
+
+      - name: Rust (la version de rust-toolchain.toml)
+        if: steps.version.outputs.monter == 'true'
+        run: rustup toolchain install
+
+      - name: Monter la crate et le paquet
+        if: steps.version.outputs.monter == 'true'
+        env:
+          ACTUELLE: ${{ steps.version.outputs.actuelle }}
+          DERNIERE: ${{ steps.version.outputs.derniere }}
+        run: |
+          $manifeste = Get-Content -LiteralPath appli/Cargo.toml -Raw -Encoding UTF8
+          $manifeste = $manifeste.Replace("tag = `"v$env:ACTUELLE`"", "tag = `"v$env:DERNIERE`"")
+          [IO.File]::WriteAllText("$PWD/appli/Cargo.toml", $manifeste)
+          cargo update -p aria-coeur
+          if ($LASTEXITCODE -ne 0) { throw "cargo update a échoué." }
+          $paquets = Get-Content -LiteralPath interface/package.json -Raw -Encoding UTF8
+          $paquets = $paquets.Replace("/v$env:ACTUELLE/aria-interface-$env:ACTUELLE.tgz", "/v$env:DERNIERE/aria-interface-$env:DERNIERE.tgz")
+          [IO.File]::WriteAllText("$PWD/interface/package.json", $paquets)
+          Push-Location interface
+          npm install --package-lock-only --no-audit --no-fund
+          $code = $LASTEXITCODE
+          Pop-Location
+          if ($code -ne 0) { throw "npm install a échoué." }
+          git status --short
+
+      - name: Branche, PR et checks
+        if: steps.version.outputs.monter == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ACTUELLE: ${{ steps.version.outputs.actuelle }}
+          DERNIERE: ${{ steps.version.outputs.derniere }}
+          BRANCHE: ${{ steps.version.outputs.branche }}
+        run: |
+          gh auth setup-git
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c $env:BRANCHE
+          git add appli/Cargo.toml Cargo.lock interface/package.json interface/package-lock.json
+          git commit -m "Monter le socle de v$env:ACTUELLE à v$env:DERNIERE"
+          git push origin $env:BRANCHE
+          if ($LASTEXITCODE -ne 0) { throw "La branche $env:BRANCHE n'a pas pu être poussée." }
+          $majeure = ([version]$env:DERNIERE).Major -gt ([version]$env:ACTUELLE).Major
+          $corps = @(
+            "Monte le socle partagé de v$env:ACTUELLE à v$env:DERNIERE : crate aria-coeur et paquet aria-interface.",
+            '',
+            "Notes : https://github.com/ZedjeK/Aria-$('Modele')/releases/tag/v$env:DERNIERE",
+            ''
+          )
+          if ($majeure) {
+            $corps += 'Version majeure : des fonctions dépréciées ont pu être retirées. Lis les notes avant de fusionner.'
+            $corps += ''
+          }
+          $corps += 'Si un check manque, ferme puis rouvre la PR.'
+          gh pr create --base main --head $env:BRANCHE --title "Monter le socle à v$env:DERNIERE" --body ($corps -join "`n")
+          if ($LASTEXITCODE -ne 0) { throw "La PR n'a pas pu être ouverte." }
+          gh workflow run tests.yml --ref $env:BRANCHE
+          gh workflow run codeql.yml --ref $env:BRANCHE

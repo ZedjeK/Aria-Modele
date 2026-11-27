@@ -9,6 +9,8 @@ on:
     branches: [main]
   push:
     branches: [main]
+  # Lancé par « Monter le socle » sur sa branche : une PR ouverte par le jeton d'un workflow ne déclenche rien.
+  workflow_dispatch:
 
 permissions:
   contents: read
