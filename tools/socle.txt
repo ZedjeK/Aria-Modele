@@ -18,6 +18,10 @@ docs/decisions/0003-secrets-dpapi.md
 docs/decisions/0004-mises-a-jour.md
 docs/decisions/0005-aucune-telemetrie.md
 docs/decisions/0006-signature-signpath.md
+docs/decisions/0007-socle-partage.md
+docs/decisions/0008-installation-pour-toutes.md
+docs/decisions/0009-modeles-et-moteurs-partages.md
+docs/decisions/0010-windows-x64-seul.md
 docs/decisions/LISEZ-MOI.md
 docs/releases/LISEZ-MOI.md
 tools/proteger-depot.ps1
