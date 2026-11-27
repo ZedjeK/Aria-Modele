@@ -6,6 +6,25 @@ Une section par version du modèle, la plus récente en haut. Chaque section dit
 faut reporter dans les applis déjà créées** : `.\tools\verifier-socle.ps1` signale les fichiers du socle en retard,
 mais pas les fichiers à marqueurs (workflows, README, fiche, squelette) ni les gestes à faire à la main.
 
+## v2.0.0 (en préparation)
+
+Socle partagé au lieu de copié, installation pour toutes les applis, modèles et moteurs partagés : décisions 0007
+à 0010. La v1 est gelée : plus aucune appli n'est créée avec elle.
+
+### Ce qui change
+
+| PR | Sujet |
+| --- | --- |
+| #76 | Décisions d'architecture : 0007 à 0010, la v2 du modèle |
+
+### À reporter dans les applis
+
+**Socle commun** (`.\tools\verifier-socle.ps1` les signale ; à recopier tels quels) :
+
+- nouveaux : `docs/decisions/0007-socle-partage.md`, `0008-installation-pour-toutes.md`,
+  `0009-modeles-et-moteurs-partages.md`, `0010-windows-x64-seul.md` ;
+- modifiés : `docs/decisions/0002-exe-portable.md`, `docs/decisions/LISEZ-MOI.md`, `tools/socle.txt`.
+
 ## v1.1.0 (proposée, pas encore taguée)
 
 ### Ce qui change
