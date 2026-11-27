@@ -14,8 +14,6 @@ pub struct Identite {
     pub version: &'static str,
     /// L'appli sert-elle en arrière-plan (icône de notification, démarrage avec Windows) ?
     pub en_fond: bool,
-    /// L'exe propose-t-il de s'installer dans le dossier de données ?
-    pub installable: bool,
 }
 
 /// L'identité retenue et ses noms dérivés.
@@ -45,7 +43,6 @@ const PAR_DEFAUT: Identite = Identite {
     promesse: "Une appli pour essayer le socle.",
     version: "0.0.0",
     en_fond: false,
-    installable: true,
 };
 
 /// Retient l'identité de l'appli. Seul le premier appel compte : un nom ne change pas en cours de route.
@@ -106,11 +103,6 @@ pub fn version() -> &'static str {
 /// L'appli sert-elle en arrière-plan ?
 pub fn en_fond() -> bool {
     retenue().identite.en_fond
-}
-
-/// L'exe propose-t-il de s'installer ?
-pub fn installable() -> bool {
-    retenue().identite.installable
 }
 
 /// La version du socle lui-même, celle de cette crate.

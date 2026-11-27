@@ -14,12 +14,12 @@
     nom: string;
     /** Le dossier de données, gardé. */
     donnees: string;
-    /** L'appli peut s'être installée dans programme\. */
-    installable: boolean;
+    /** L'appli sert en arrière-plan : elle a pu s'inscrire au démarrage de Windows. */
+    enFond: boolean;
     fermer: () => void;
   }
 
-  let { nom, donnees, installable, fermer }: Props = $props();
+  let { nom, donnees, enFond, fermer }: Props = $props();
   let enCours = $state(false);
   let bilan = $state<BilanDesinstallation | null>(null);
   let etat = $state('');
@@ -67,14 +67,12 @@
 
     <Panneau titre="Ce qui sera retiré" accentue>
       <ul>
-        <li>Le démarrage avec Windows.</li>
+        {#if enFond}<li>Le démarrage avec Windows.</li>{/if}
         <li>Le raccourci du Bureau, s'il pointe vers cette appli.</li>
-        {#if installable}
-          <li>
-            Le programme installé (<span class="code">programme\</span>), s'il existe : une fois l'appli fermée si
-            elle tourne depuis là.
-          </li>
-        {/if}
+        <li>
+          Le programme installé (<span class="code">programme\</span>) : une fois l'appli fermée si elle tourne depuis
+          là.
+        </li>
       </ul>
     </Panneau>
   {:else}

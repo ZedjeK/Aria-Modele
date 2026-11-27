@@ -1,4 +1,4 @@
-# Release : pousser un tag « vX.Y.Z » teste, construit l'exe portable, en fait le zip et son empreinte, atteste sa
+# Release : pousser un tag « vX.Y.Z » teste, construit l'exe, en fait le zip et son empreinte, atteste sa
 # provenance, puis crée la release en BROUILLON. Tu relis les notes, tu vérifies l'empreinte et tu publies : publier
 # est le geste qui prévient les utilisateurs, aucun workflow ne le fait à ta place.
 #
@@ -100,7 +100,7 @@ jobs:
       - name: Tests
         run: ./tools/tester.ps1
 
-      - name: Construire l'exe portable
+      - name: Construire l'exe
         run: ./build.ps1
 
       # Signature Authenticode de l'exe par SignPath Foundation, avant le zip, l'empreinte et l'attestation, qui portent

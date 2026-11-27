@@ -139,19 +139,12 @@ try {
         Write-Host "Squelette « $($s.Name) »"
         $c = Nouvelle-Copie
 
-        # Toutes les options que le squelette fournit ; celles de nonFournis (stack.json) restent à « non ».
-        $reglagesStack = Get-Content -LiteralPath (Join-Path $s.FullName '_socle\stack.json') -Raw -Encoding UTF8 | ConvertFrom-Json
-        $nonFournis = @()
-        if ($reglagesStack.PSObject.Properties['nonFournis']) { $nonFournis = @($reglagesStack.nonFournis | ForEach-Object { [string]$_ }) }
-        $demarrage = if ($nonFournis -contains 'demarrageAuto') { 'non' } else { 'oui' }
-        $installation = if ($nonFournis -contains 'installation') { 'non' } else { 'oui' }
-
         # Une promesse plus longue que la largeur des lignes de code (110 caractères pour rustfmt) : elle est recopiée
         # dans le code de la stack, dont la mise en forme est contrôlée par ses tests.
         $promesse = "Une appli pour essayer le squelette, avec une promesse assez longue pour dépasser la largeur qu'un formateur de code accepte sur une ligne."
         & $hote -NoProfile -ExecutionPolicy Bypass -File (Join-Path $c 'init.ps1') `
             -Nom Essai -Stack $s.Name -Promesse $promesse -ElementOrange 'une clé' `
-            -DemarrageAuto $demarrage -Installation $installation -Port 0 -Socle $racine | Out-Host
+            -DemarrageAuto oui -Port 0 -Socle $racine | Out-Host
         Verifier ($LASTEXITCODE -eq 0) "$($s.Name) : init.ps1 crée l'appli et ses tests passent"
         if ($LASTEXITCODE -ne 0) { continue }
 
@@ -188,8 +181,8 @@ try {
         $exeSortie = Join-Path $c '.work\sortie\Aria-Essai.exe'
         Verifier (Test-Path $exeSortie) "$($s.Name) : Aria-Essai.exe est dans .work\sortie\"
 
-        # L'exe se lance et tient : un plantage au démarrage (capacité refusée, panique) l'arrêterait aussitôt. Lancé
-        # hors de son dossier, il montre la proposition d'installation et attend ; on l'arrête ensuite.
+        # L'exe se lance et tient : un plantage au démarrage (capacité refusée, panique) l'arrêterait aussitôt. Compilé
+        # sans fichiers.txt à côté de lui, il ouvre sa fenêtre et attend ; on l'arrête ensuite.
         if ((Test-Path $exeSortie) -and $env:OS -eq 'Windows_NT') {
             $journal = Join-Path $env:USERPROFILE '.Aria-Essai\journal.json'
             $avant = if (Test-Path $journal) { (Get-Item $journal).LastWriteTimeUtc } else { [datetime]::MinValue }

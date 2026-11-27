@@ -5,6 +5,6 @@
   "permissions": [
     "allow-infos-installation",
     "allow-installer",
-    "allow-lancer-sans-installer"
+    "allow-refuser-installation"
   ]
 }

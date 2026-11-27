@@ -5,7 +5,7 @@
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { infosInstallation, installer, lancerSansInstaller, messageErreur } from '../api';
+  import { infosInstallation, installer, messageErreur, refuserInstallation } from '../api';
   import type { InfosInstallation } from '../api';
   import ASavoir from '../composants/ASavoir.svelte';
   import Bouton from '../composants/Bouton.svelte';
@@ -13,7 +13,6 @@
 
   let infos = $state<InfosInstallation | null>(null);
   let raccourci = $state(false);
-  let nePlusProposer = $state(false);
   let enCours = $state(false);
   let etat = $state('');
   let erreur = $state(false);
@@ -44,8 +43,8 @@
 <div class="dialogue">
   <h1>{infos ? `Installer ${infos.nom}` : 'Installer'}</h1>
   <ASavoir>
-    L'appli peut se ranger dans ton dossier de données et se lancer de là. Rien n'est installé ailleurs, et rien ne
-    change dans Windows.
+    L'appli s'installe dans ton dossier de données avant de s'ouvrir, et se lance ensuite de là. Rien n'est installé
+    ailleurs, et rien ne change dans Windows. Annuler ferme l'appli sans rien installer.
   </ASavoir>
 
   <Panneau titre="Dossier d'installation" accentue>
@@ -75,26 +74,12 @@
     {#if infos?.raccourciExistant === 'ailleurs'}
       <p class="aide">Un raccourci du même nom pointe vers un autre programme : il reste tel quel.</p>
     {/if}
-
-    <label class="ligne">
-      <input type="checkbox" bind:checked={nePlusProposer} />
-      Ne plus me proposer l'installation
-    </label>
-    <p class="aide">
-      Pris en compte avec « Lancer sans installer ». La proposition se réactive dans les paramètres de l'appli.
-    </p>
   </div>
 
   <p class="etat" class:erreur role="status">{etat}</p>
 
   <div class="boutons">
-    <Bouton
-      genre="secondaire"
-      desactive={enCours}
-      onclick={() => agir(() => lancerSansInstaller(nePlusProposer), 'Ouverture…')}
-    >
-      Lancer sans installer
-    </Bouton>
+    <Bouton genre="discret" desactive={enCours} onclick={() => agir(refuserInstallation, 'Fermeture…')}>Annuler</Bouton>
     <Bouton
       genre="principal"
       desactive={enCours || !infos}

@@ -24,7 +24,6 @@ const IDENTITE: Identite = Identite {
     // La version de `[workspace.package]` dans Cargo.toml : celle de l'appli, pas celle du socle.
     version: env!("CARGO_PKG_VERSION"),
     en_fond: {{EN_FOND}},
-    installable: {{INSTALLABLE}},
 };
 
 fn main() {

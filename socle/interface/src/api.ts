@@ -18,7 +18,6 @@ export interface Reglages {
   /** Le numéro du format de reglages.json. */
   format: number;
   fond: ReglagesFond;
-  proposerInstallation: boolean;
   chercherMisesAJour: boolean;
   /** Les réglages propres à l'appli, sous la clé « appli » du fichier. */
   appli: Record<string, unknown>;
@@ -29,7 +28,6 @@ export interface Identite {
   version: string;
   promesse: string;
   enFond: boolean;
-  installable: boolean;
   dossier: string;
 }
 
@@ -111,8 +109,8 @@ export const infosInstallation = (): Promise<InfosInstallation> => invoke<InfosI
 /** Installe, puis l'appli se relance depuis son dossier et ce lancement se ferme : seul un échec revient ici. */
 export const installer = (raccourci: boolean): Promise<void> => invoke<void>('installer', { raccourci });
 
-export const lancerSansInstaller = (nePlusProposer: boolean): Promise<void> =>
-  invoke<void>('lancer_sans_installer', { nePlusProposer });
+/** Installation refusée : l'appli se ferme. */
+export const refuserInstallation = (): Promise<void> => invoke<void>('refuser_installation');
 
 export interface InfosMiseAJour {
   nom: string;

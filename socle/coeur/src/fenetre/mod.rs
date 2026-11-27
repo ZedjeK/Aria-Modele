@@ -34,7 +34,8 @@ use tauri::{
 };
 
 use crate::identite::{self, Identite};
-use crate::{Dossier, Reglages, demarrage, journal};
+use crate::installation::Lancement;
+use crate::{Dossier, demarrage, journal};
 
 pub use liste::COMMANDES;
 
@@ -126,11 +127,18 @@ fn demarrer(appli: Appli) -> Result<(), String> {
     }
     // Lancé à l'ouverture de session : l'icône seule, la fenêtre reste rangée jusqu'à ce qu'on l'ouvre.
     let silencieux = identite::en_fond() && demarrage::est_silencieux(&arguments);
-    // Exe lancé hors de programme\ (zip décompressé) : proposition de s'installer, avant la fenêtre de l'appli.
-    let proposer = !silencieux
-        && std::env::current_exe().is_ok_and(|exe| {
-            crate::installation::doit_proposer(&exe, &dossier, &Reglages::charger(&dossier), &arguments)
-        });
+    // D'où vient l'exe (décision 0008) : installée, zip décompressé à installer, aperçu du zip, ou compilé à la main.
+    let exe = std::env::current_exe().map_err(|e| format!("l'exe de l'appli est introuvable : {e}"))?;
+    let temporaire = std::env::temp_dir();
+    let proposer = match crate::installation::lancement(&exe, &dossier, Some(&temporaire)) {
+        Lancement::ADecompresser => {
+            journal::consigner(&dossier, "lancement", DEPUIS_L_APERCU);
+            erreur_fatale::decompresser_d_abord();
+            return Ok(());
+        }
+        Lancement::AInstaller => !silencieux,
+        Lancement::Installee | Lancement::Developpement => false,
+    };
     let cache_webview = dossier.cache_webview();
     let Appli {
         contexte,
@@ -203,7 +211,7 @@ fn commandes_du_socle() -> impl Fn(Invoke<Wry>) -> bool + Send + Sync + 'static 
         icone::taille_menu,
         installation::infos_installation,
         installation::installer,
-        installation::lancer_sans_installer,
+        installation::refuser_installation,
         mise_a_jour::mise_a_jour_disponible,
         mise_a_jour::voir_notes,
         mise_a_jour::installer_mise_a_jour,
@@ -227,6 +235,9 @@ fn autoriser(app: &AppHandle) -> tauri::Result<()> {
     }
     Ok(())
 }
+
+/// La ligne du journal quand l'exe est lancé depuis l'aperçu du zip.
+const DEPUIS_L_APERCU: &str = "lancé depuis l'aperçu du zip : décompresser d'abord";
 
 /// La ligne du journal quand WebView2 manque.
 const WEBVIEW2_ABSENT: &str = "WebView2 absent : l'appli ne peut pas s'ouvrir";

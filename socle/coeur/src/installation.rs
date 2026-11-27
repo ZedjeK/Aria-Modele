@@ -10,7 +10,7 @@ use std::fs::{self, File};
 use std::io;
 use std::path::{Path, PathBuf};
 
-use crate::{Dossier, Reglages, identite};
+use crate::{Dossier, identite};
 
 /// Le fichier qui liste ce que livre une version, un nom par ligne (écrit par `tools\empaqueter.ps1`).
 pub const LISTE: &str = "fichiers.txt";
@@ -20,9 +20,6 @@ pub const INFOS_BUILD: &str = "BUILDINFO.txt";
 
 /// Le dossier des versions gardées, dans les sauvegardes.
 pub const DOSSIER_VERSIONS: &str = "versions";
-
-/// Argument qui dispense l'appli de proposer l'installation, pour ce lancement.
-pub const ARGUMENT_PORTABLE: &str = "--portable";
 
 pub(crate) const SUFFIXE_NOUVEAU: &str = ".nouveau";
 pub(crate) const SUFFIXE_ANCIEN: &str = ".ancien";
@@ -115,22 +112,56 @@ pub fn copier_contenu(de: &Path, vers: &Path) -> io::Result<()> {
     sortie.sync_all()
 }
 
-/// Proposer l'installation : appli installable, proposition non coupée, pas de `--portable`, exe lancé hors de
-/// `programme\` et accompagné de son `fichiers.txt` (un exe compilé à la main, sans zip, ne propose rien).
-pub fn doit_proposer<I, S>(exe: &Path, dossier: &Dossier, reglages: &Reglages, arguments: I) -> bool
-where
-    I: IntoIterator<Item = S>,
-    S: AsRef<str>,
-{
-    identite::installable()
-        && reglages.proposer_installation
-        && !arguments
-            .into_iter()
-            .any(|a| a.as_ref().eq_ignore_ascii_case(ARGUMENT_PORTABLE))
-        && place_de(exe, &dossier.programme()) == Place::Ailleurs
-        && exe
-            .parent()
-            .is_some_and(|d| lire_liste(d).ok().flatten().is_some())
+/// Ce que fait un lancement, selon d'où vient l'exe (décision 0008).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Lancement {
+    /// L'exe tourne depuis `programme\` : l'appli s'ouvre.
+    Installee,
+    /// Zip décompressé en entier, hors de `programme\` : l'exe propose de s'installer, et l'appli se ferme s'il est
+    /// refusé.
+    AInstaller,
+    /// Lancé depuis l'aperçu du zip de l'Explorateur (ou un zip décompressé à moitié) : l'exe demande de
+    /// décompresser d'abord, et s'arrête.
+    ADecompresser,
+    /// Un exe compilé à la main (sans `fichiers.txt`, hors du dossier temporaire) : il s'ouvre sur place.
+    Developpement,
+}
+
+/// Un dossier temporaire où l'Explorateur extrait un fichier ouvert dans l'aperçu d'un zip
+/// (`%TEMP%\Temp1_Aria-Nom-1.0.0.zip\…`) ? Le nom du dossier dit d'où il vient.
+fn dossier_d_apercu(chemin: &Path) -> bool {
+    chemin.components().any(|partie| {
+        let nom = partie.as_os_str().to_string_lossy().to_lowercase();
+        nom.strip_prefix("temp")
+            .and_then(|reste| reste.split_once('_'))
+            .is_some_and(|(numero, zip)| {
+                !numero.is_empty() && numero.bytes().all(|c| c.is_ascii_digit()) && zip.ends_with(".zip")
+            })
+    })
+}
+
+/// Ce que fait ce lancement de `exe`, `temporaire` étant le dossier temporaire de l'utilisateur.
+pub fn lancement(exe: &Path, dossier: &Dossier, temporaire: Option<&Path>) -> Lancement {
+    if place_de(exe, &dossier.programme()) == Place::Installee {
+        return Lancement::Installee;
+    }
+    let Some(dossier_exe) = exe.parent() else {
+        return Lancement::Developpement;
+    };
+    let liste = lire_liste(dossier_exe).ok().flatten();
+    let complet = liste
+        .as_ref()
+        .is_some_and(|noms| manquants(dossier_exe, noms).is_empty());
+    let dans_le_temporaire = temporaire.is_some_and(|t| dossier_exe.starts_with(t));
+    if dossier_d_apercu(dossier_exe) || (dans_le_temporaire && !complet) {
+        return Lancement::ADecompresser;
+    }
+    match liste {
+        Some(_) if complet => Lancement::AInstaller,
+        // La liste est là mais des fichiers manquent : un zip décompressé à moitié.
+        Some(_) => Lancement::ADecompresser,
+        None => Lancement::Developpement,
+    }
 }
 
 /// La version installée dans `programme\`, lue dans son `BUILDINFO.txt` ; rien s'il n'y a pas d'appli installée.
@@ -471,25 +502,70 @@ mod tests {
     }
 
     #[test]
-    fn la_proposition_suit_les_reglages_et_portable() {
+    fn le_lancement_suit_l_origine_de_l_exe() {
         let temp = tempfile::tempdir().unwrap();
         let dossier = Dossier::a(temp.path().join("donnees"));
         let source = temp.path().join("zip");
         zip(&source, "1.0.0", "exe");
         let exe = source.join(nom_exe());
-        let reglages = Reglages::default();
+        let temporaire = temp.path().join("temp");
         assert_eq!(
-            doit_proposer(&exe, &dossier, &reglages, ["x"]),
-            identite::installable()
+            lancement(&exe, &dossier, Some(&temporaire)),
+            Lancement::AInstaller
         );
-        assert!(!doit_proposer(&exe, &dossier, &reglages, ["--PORTABLE"]));
-        let coupe = Reglages {
-            proposer_installation: false,
-            ..Reglages::default()
-        };
-        assert!(!doit_proposer(&exe, &dossier, &coupe, ["x"]));
+        // Installée : l'appli s'ouvre.
+        fs::create_dir_all(dossier.programme()).unwrap();
+        assert_eq!(
+            lancement(&dossier.programme().join(nom_exe()), &dossier, None),
+            Lancement::Installee
+        );
+        // Un fichier de la liste manque : zip décompressé à moitié.
+        let liste = lire_liste(&source).unwrap().unwrap();
+        let autre = liste.iter().find(|n| **n != nom_exe()).cloned();
+        if let Some(autre) = autre {
+            fs::remove_file(source.join(autre)).unwrap();
+            assert_eq!(lancement(&exe, &dossier, None), Lancement::ADecompresser);
+        }
+        // Sans liste : exe compilé à la main.
         fs::remove_file(source.join(LISTE)).unwrap();
-        assert!(!doit_proposer(&exe, &dossier, &reglages, ["x"]));
+        assert_eq!(lancement(&exe, &dossier, None), Lancement::Developpement);
+        // Le même exe, extrait par l'aperçu du zip : à décompresser d'abord.
+        let apercu = temporaire
+            .join("Temp1_Aria-Essai-1.0.0.zip")
+            .join("Aria-Essai-1.0.0");
+        fs::create_dir_all(&apercu).unwrap();
+        fs::write(apercu.join(nom_exe()), "exe").unwrap();
+        assert_eq!(
+            lancement(&apercu.join(nom_exe()), &dossier, Some(&temporaire)),
+            Lancement::ADecompresser
+        );
+        // Ailleurs dans le dossier temporaire, sans liste complète : à décompresser aussi.
+        let ailleurs = temporaire.join("7zO1234");
+        fs::create_dir_all(&ailleurs).unwrap();
+        fs::write(ailleurs.join(nom_exe()), "exe").unwrap();
+        assert_eq!(
+            lancement(&ailleurs.join(nom_exe()), &dossier, Some(&temporaire)),
+            Lancement::ADecompresser
+        );
+    }
+
+    #[test]
+    fn les_dossiers_d_apercu_se_reconnaissent() {
+        let chemin = |parties: &[&str]| parties.iter().collect::<PathBuf>();
+        for parties in [
+            ["Temp", "Temp1_Aria-X-1.0.0.zip", "Aria-X.exe"],
+            ["tmp", "temp12_a.zip", "x"],
+        ] {
+            assert!(dossier_d_apercu(&chemin(&parties)), "{parties:?}");
+        }
+        for parties in [
+            ["Downloads", "Aria-X-1.0.0", "Aria-X.exe"],
+            ["tmp", "Temp_a.zip", "x"],
+            ["tmp", "Tempx_a.zip", "x"],
+            ["tmp", "Temp1_a.rar", "x"],
+        ] {
+            assert!(!dossier_d_apercu(&chemin(&parties)), "{parties:?}");
+        }
     }
 
     #[test]

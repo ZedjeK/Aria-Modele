@@ -12,7 +12,7 @@ jour quand l'appli change.
 | Stack | {{STACK}} |
 | Droits administrateur | non, sauf mention ici : à renseigner |
 | Démarrage automatique | {{DEMARRAGE_AUTO}} |
-| Installation par l'exe | {{INSTALLATION}} |
+| Installation | dans `%USERPROFILE%\.Aria-{{NOM}}\programme`, comme toute appli Aria (décision 0008) |
 | Port local (interface web) | {{PORT}} |
 | Données de l'utilisateur | `%USERPROFILE%\.Aria-{{NOM}}` ; secrètes : à renseigner |
 | Écritures hors du dossier de données | à renseigner : démarrage automatique, raccourci du Bureau, et ce que l'appli modifie |

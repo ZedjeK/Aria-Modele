@@ -45,6 +45,38 @@ pub fn avertir(message: &str) {
     eprintln!("{} : {message}", identite::nom());
 }
 
+/// Ce que dit l'exe lancé depuis l'aperçu du zip : décompresser d'abord, puis le relancer.
+fn texte_decompresser() -> String {
+    format!(
+        "{} doit d'abord être décompressé.\n\n\
+         L'exe a été lancé depuis l'aperçu du zip : Windows n'en a extrait que l'exe, sans les fichiers livrés à \
+         côté de lui. Ferme cette fenêtre, fais un clic droit sur le zip, « Extraire tout », puis lance l'exe du \
+         dossier obtenu : il te proposera de s'installer.",
+        identite::nom()
+    )
+}
+
+/// L'exe a été lancé depuis l'aperçu du zip : le dit, puis l'appli s'arrête.
+#[cfg(windows)]
+pub fn decompresser_d_abord() {
+    use windows::Win32::UI::WindowsAndMessaging::{MB_ICONINFORMATION, MB_OK, MessageBoxW};
+    use windows::core::HSTRING;
+
+    let titre = HSTRING::from(identite::nom());
+    let texte = HSTRING::from(texte_decompresser());
+    // SAFETY : les deux textes sont des HSTRING valides jusqu'à la fin de l'appel ; aucune fenêtre parente.
+    #[allow(unsafe_code)]
+    unsafe {
+        MessageBoxW(None, &texte, &titre, MB_OK | MB_ICONINFORMATION);
+    }
+}
+
+/// Hors de Windows : sur la sortie d'erreur.
+#[cfg(not(windows))]
+pub fn decompresser_d_abord() {
+    eprintln!("{}", texte_decompresser());
+}
+
 /// La page de Microsoft qui installe WebView2 (« Microsoft Edge WebView2 Runtime ») sur le PC d'un utilisateur.
 pub const PAGE_WEBVIEW2: &str = "https://developer.microsoft.com/microsoft-edge/webview2/consumer/";
 

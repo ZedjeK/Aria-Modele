@@ -21,6 +21,7 @@ Socle partagé au lieu de copié, installation pour toutes les applis, modèles 
 | #79 | Interface partagée : paquet `aria-interface` dans `socle/interface` (thème, composants, fenêtre, dialogues, Journal, Paramètres, installation, menu de l'icône) |
 | #80 | Publication du socle : release du dépôt modèle avec l'archive `aria-interface-X.Y.Z.tgz` (`socle-release.yml`), PR hebdomadaire « Monter le socle » dans chaque appli (`monter-socle.yml`), CodeQL du modèle sur le Rust et le TypeScript du socle |
 | #81 | Corrections de l'audit : raccourci du Bureau jamais remplacé s'il pointe ailleurs (I1), réglages au format versionné, lus champ par champ et sauvegardés avant réécriture (I2), tailles plafonnées des mises à jour (M4), copies et mesures hors du fil de la fenêtre (M5), noms réservés de Windows refusés pour les secrets (M6), notes, init.ps1 et modèle de PR (M3, M8 à M12) |
+| #82 | Installation pour toutes (décision 0008) : plus de lancement sans installation ni de `--portable`, « Annuler » ferme l'appli, l'aperçu du zip demande de décompresser d'abord ; `init.ps1` perd l'option `-Installation` et les squelettes la clé `nonFournis` |
 
 ### À reporter dans les applis
 
