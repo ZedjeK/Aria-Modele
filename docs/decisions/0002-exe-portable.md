@@ -1,6 +1,6 @@
 # 0002 : un exe portable, sans installeur ni service
 
-Date : 2026-11-26.
+Date : 2026-11-26. Remplacée par [0008](0008-installation-pour-toutes.md) le 2026-11-27.
 
 ## Contexte
 
