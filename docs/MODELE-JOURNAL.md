@@ -16,6 +16,7 @@ Socle partagé au lieu de copié, installation pour toutes les applis, modèles 
 | PR | Sujet |
 | --- | --- |
 | #76 | Décisions d'architecture : 0007 à 0010, la v2 du modèle |
+| #77 | Contrat v2 et recette commune (`docs/RECETTE.md`) |
 
 ### À reporter dans les applis
 
@@ -23,7 +24,9 @@ Socle partagé au lieu de copié, installation pour toutes les applis, modèles 
 
 - nouveaux : `docs/decisions/0007-socle-partage.md`, `0008-installation-pour-toutes.md`,
   `0009-modeles-et-moteurs-partages.md`, `0010-windows-x64-seul.md` ;
-- modifiés : `docs/decisions/0002-exe-portable.md`, `docs/decisions/LISEZ-MOI.md`, `tools/socle.txt`.
+- nouveau : `docs/RECETTE.md` ;
+- modifiés : `docs/CONTRAT.md` (v2), `docs/decisions/0002-exe-portable.md`, `docs/decisions/LISEZ-MOI.md`,
+  `tools/socle.txt`.
 
 ## v1.1.0 (proposée, pas encore taguée)
 
