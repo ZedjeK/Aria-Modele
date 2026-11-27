@@ -4,6 +4,9 @@
 //! marqués `cfg(windows)` et testés par la CI Windows. Le module `fenetre` (fonction `fenetre`, que toute appli
 //! active) porte la fenêtre Tauri, ses commandes et le lancement de l'appli.
 
+#[cfg(feature = "carte-graphique")]
+pub mod carte_graphique;
+pub mod commun;
 pub mod demarrage;
 pub mod desinstallation;
 pub mod diagnostic;
@@ -14,11 +17,15 @@ pub mod identite;
 pub mod installation;
 pub mod journal;
 pub mod mises_a_jour;
+#[cfg(feature = "moteur")]
+pub mod moteurs;
 pub mod presence;
 pub mod reglages;
 pub mod reprise;
 pub mod sauvegardes;
 pub mod secrets;
+#[cfg(feature = "telechargement")]
+pub mod telechargement;
 
 pub use donnees::Dossier;
 pub use reglages::{Reglages, ReglagesFond, Vitesse};

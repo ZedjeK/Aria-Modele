@@ -150,7 +150,9 @@ Tout ce qui suit est fourni par le socle : l'appli l'active ou le règle, elle n
 
 ### Modules en option
 
-Chaque module s'active dans `appli/Cargo.toml` (fonction de la crate `aria-coeur`) et se déclare dans la fiche.
+Chaque module s'active dans `appli/Cargo.toml` (fonction de la crate `aria-coeur`), sauf le démarrage avec Windows
+et l'icône, que donne `en_fond` dans l'identité de l'appli, et se déclare dans la fiche. Les modules disponibles sont
+dans `socle/LISEZ-MOI.md` du dépôt modèle.
 
 | Module | Règles |
 | --- | --- |
