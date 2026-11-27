@@ -9,15 +9,15 @@ use std::process::Command;
 use std::sync::atomic::Ordering;
 use std::time::Duration;
 
-use aria_coeur::desinstallation::{self, Programme};
-use aria_coeur::installation::nom_exe;
-use aria_coeur::{Dossier, journal};
+use crate::desinstallation::{self, Programme};
+use crate::installation::nom_exe;
+use crate::{Dossier, journal};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, State};
 
-use crate::Etat;
-use crate::icone::MENU;
-use crate::installation::chemin_raccourci;
+use super::Etat;
+use super::icone::MENU;
+use super::installation::chemin_raccourci;
 
 /// Le genre des lignes du journal.
 const GENRE: &str = "désinstallation";
@@ -220,7 +220,7 @@ mod systeme {
 
     /// Retire le démarrage automatique : `Run` et `StartupApproved`.
     pub fn oublier_demarrage() -> io::Result<()> {
-        aria_coeur::demarrage::windows::oublier()
+        crate::demarrage::windows::oublier()
     }
 
     /// La cible d'un raccourci `.lnk`. Sur un fil à part, qui prépare COM pour lui seul.

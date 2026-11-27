@@ -5,8 +5,12 @@ Tests des squelettes de stack du dépôt modèle : init.ps1, compilation et zip,
 .DESCRIPTION
 Fichier du dépôt modèle seulement : init.ps1 le supprime dans l'appli créée, avec .github\workflows\squelettes.yml.
 
-Pour chaque dossier de stacks\ qui a un _socle\stack.json (ou seulement celui donné par -Stack) :
-  1. init.ps1 crée une appli « Essai » dans une copie jetable du dépôt, et lance les tests de la stack ;
+D'abord le socle partagé (socle\coeur, crate aria-coeur) : rustfmt, clippy et ses tests, avec sa fenêtre Tauri ; ses
+fichiers de réglage de Rust sont ceux de chaque stack Rust.
+
+Puis, pour chaque dossier de stacks\ qui a un _socle\stack.json (ou seulement celui donné par -Stack) :
+  1. init.ps1 crée une appli « Essai » dans une copie jetable du dépôt, sur le socle de ce clone (-Socle), et lance
+     les tests de la stack ;
   2. tools\icone.ps1, si la stack le fournit, tire l'icône Windows de docs\logo.svg ; build.ps1 compile l'exe ;
      tools\empaqueter.ps1 en fait le zip et son empreinte ;
   3. le zip contient l'exe, BUILDINFO.txt et LICENCES-TIERS.txt ; tools\version.ps1 répond X.Y.Z.
@@ -76,6 +80,39 @@ function Nouvelle-Copie {
     return $copie
 }
 
+# Lance un programme natif et dit s'il a réussi. Sous PowerShell 5.1, sa sortie d'erreur redirigée arrêterait le
+# script : on lit son code de retour à la place.
+function Reussit([scriptblock]$commande) {
+    $ErrorActionPreference = 'Continue'
+    & $commande | Out-Host
+    $code = $LASTEXITCODE
+    $ErrorActionPreference = 'Stop'
+    return ($code -eq 0)
+}
+
+# ----- Le socle partagé -----
+
+$socle = Join-Path $racine 'socle\coeur'
+Write-Host "Socle partagé (socle\coeur)"
+foreach ($fichier in 'rust-toolchain.toml', 'clippy.toml', 'rustfmt.toml') {
+    $attendu = [IO.File]::ReadAllText((Join-Path $socle $fichier))
+    Get-ChildItem -LiteralPath $dossierStacks -Directory | Where-Object { Test-Path (Join-Path $_.FullName $fichier) } | ForEach-Object {
+        $lu = [IO.File]::ReadAllText((Join-Path $_.FullName $fichier))
+        Verifier ($lu -ceq $attendu) "socle : $fichier est celui de stacks\$($_.Name)"
+    }
+}
+if (-not $Stack -or $Stack -eq 'rust-tauri') {
+    Push-Location -LiteralPath $socle
+    try {
+        Verifier (Reussit { cargo fmt --check }) 'socle : mise en forme (rustfmt)'
+        Verifier (Reussit { cargo clippy --all-targets --all-features --locked -- -D warnings }) 'socle : contrôles (clippy, fenêtre comprise)'
+        Verifier (Reussit { cargo test --all-features --locked }) 'socle : tests, fenêtre comprise'
+    }
+    finally { Pop-Location }
+}
+
+# ----- Les squelettes -----
+
 $stacks = @(Get-ChildItem -LiteralPath $dossierStacks -Directory |
     Where-Object { Test-Path -LiteralPath (Join-Path $_.FullName '_socle\stack.json') } |
     Where-Object { -not $Stack -or $_.Name -eq $Stack })
@@ -98,9 +135,11 @@ try {
         $promesse = "Une appli pour essayer le squelette, avec une promesse assez longue pour dépasser la largeur qu'un formateur de code accepte sur une ligne."
         & $hote -NoProfile -ExecutionPolicy Bypass -File (Join-Path $c 'init.ps1') `
             -Nom Essai -Stack $s.Name -Promesse $promesse -ElementOrange 'une clé' `
-            -DemarrageAuto $demarrage -Installation $installation -Port 0 | Out-Host
+            -DemarrageAuto $demarrage -Installation $installation -Port 0 -Socle $racine | Out-Host
         Verifier ($LASTEXITCODE -eq 0) "$($s.Name) : init.ps1 crée l'appli et ses tests passent"
         if ($LASTEXITCODE -ne 0) { continue }
+
+        Verifier (-not (Test-Path (Join-Path $c 'socle'))) "$($s.Name) : le code du socle n'est pas copié dans l'appli"
 
         Verifier (-not (Test-Path (Join-Path $c 'tools\tester-squelettes.ps1'))) "$($s.Name) : tester-squelettes.ps1 n'est pas copié dans l'appli"
         Verifier (-not (Test-Path (Join-Path $c '.github\workflows\squelettes.yml'))) "$($s.Name) : squelettes.yml n'est pas copié dans l'appli"
@@ -127,7 +166,23 @@ try {
 
         & $hote -NoProfile -ExecutionPolicy Bypass -File (Join-Path $c 'build.ps1') | Out-Host
         Verifier ($LASTEXITCODE -eq 0) "$($s.Name) : build.ps1 compile l'exe"
-        Verifier (Test-Path (Join-Path $c '.work\sortie\Aria-Essai.exe')) "$($s.Name) : Aria-Essai.exe est dans .work\sortie\"
+        $exeSortie = Join-Path $c '.work\sortie\Aria-Essai.exe'
+        Verifier (Test-Path $exeSortie) "$($s.Name) : Aria-Essai.exe est dans .work\sortie\"
+
+        # L'exe se lance et tient : un plantage au démarrage (capacité refusée, panique) l'arrêterait aussitôt. Lancé
+        # hors de son dossier, il montre la proposition d'installation et attend ; on l'arrête ensuite.
+        if ((Test-Path $exeSortie) -and $env:OS -eq 'Windows_NT') {
+            $journal = Join-Path $env:USERPROFILE '.Aria-Essai\journal.json'
+            $avant = if (Test-Path $journal) { (Get-Item $journal).LastWriteTimeUtc } else { [datetime]::MinValue }
+            $processus = Start-Process -FilePath $exeSortie -PassThru
+            Start-Sleep -Seconds 15
+            $tient = -not $processus.HasExited
+            Verifier $tient "$($s.Name) : l'exe se lance et tient 15 secondes (code de sortie : $(if ($tient) { 'aucun' } else { $processus.ExitCode }))"
+            $ecrit = (Test-Path $journal) -and (Get-Item $journal).LastWriteTimeUtc -gt $avant -and
+                ([IO.File]::ReadAllText($journal) -match '"lancement"')
+            Verifier $ecrit "$($s.Name) : l'exe note son lancement dans son journal"
+            if ($tient) { Stop-Process -Id $processus.Id -Force -ErrorAction SilentlyContinue }
+        }
 
         & $hote -NoProfile -ExecutionPolicy Bypass -File (Join-Path $c 'tools\empaqueter.ps1') | Out-Host
         $zip = Join-Path $c ".work\release\Aria-Essai-$version.zip"

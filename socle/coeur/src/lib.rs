@@ -1,12 +1,15 @@
-//! Le cœur d'Aria {{NOM}} : ce que toute appli Aria doit tenir, sans rien qui dépende de l'interface.
+//! Le socle des applis Aria : ce que toute appli doit tenir (docs/CONTRAT.md du dépôt modèle).
 //!
-//! Tout ici se teste sur n'importe quel système, sauf les accès à Windows (registre, DPAPI), marqués
-//! `cfg(windows)` et testés par la CI Windows.
+//! Hors du module `fenetre`, tout se teste sur n'importe quel système, sauf les accès à Windows (registre, DPAPI),
+//! marqués `cfg(windows)` et testés par la CI Windows. Le module `fenetre` (fonction `fenetre`, que toute appli
+//! active) porte la fenêtre Tauri, ses commandes et le lancement de l'appli.
 
 pub mod demarrage;
 pub mod desinstallation;
 pub mod diagnostic;
 pub mod donnees;
+#[cfg(feature = "fenetre")]
+pub mod fenetre;
 pub mod identite;
 pub mod installation;
 pub mod journal;

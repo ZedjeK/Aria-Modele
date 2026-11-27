@@ -1,7 +1,7 @@
 //! Les boîtes de dialogue de Windows, pour ce qui doit être dit hors de toute fenêtre de l'appli : l'appli ne peut
 //! pas démarrer (WebView2 absent, par exemple), ou un avertissement au moment de se relancer.
 
-use aria_coeur::identite;
+use crate::identite;
 
 /// Affiche pourquoi l'appli n'a pas pu démarrer.
 #[cfg(windows)]
@@ -9,8 +9,8 @@ pub fn afficher(message: &str) {
     use windows::Win32::UI::WindowsAndMessaging::{MB_ICONERROR, MB_OK, MessageBoxW};
     use windows::core::HSTRING;
 
-    let titre = HSTRING::from(identite::NOM);
-    let texte = HSTRING::from(format!("{} n'a pas pu démarrer.\n\n{message}", identite::NOM));
+    let titre = HSTRING::from(identite::nom());
+    let texte = HSTRING::from(format!("{} n'a pas pu démarrer.\n\n{message}", identite::nom()));
     // SAFETY : les deux textes sont des HSTRING valides jusqu'à la fin de l'appel ; aucune fenêtre parente.
     #[allow(unsafe_code)]
     unsafe {
@@ -21,7 +21,7 @@ pub fn afficher(message: &str) {
 /// Hors de Windows (tests, outils) : sur la sortie d'erreur.
 #[cfg(not(windows))]
 pub fn afficher(message: &str) {
-    eprintln!("{} n'a pas pu démarrer : {message}", identite::NOM);
+    eprintln!("{} n'a pas pu démarrer : {message}", identite::nom());
 }
 
 /// Prévient d'un problème qui n'empêche pas de continuer (un raccourci non créé, par exemple).
@@ -30,7 +30,7 @@ pub fn avertir(message: &str) {
     use windows::Win32::UI::WindowsAndMessaging::{MB_ICONWARNING, MB_OK, MessageBoxW};
     use windows::core::HSTRING;
 
-    let titre = HSTRING::from(identite::NOM);
+    let titre = HSTRING::from(identite::nom());
     let texte = HSTRING::from(message);
     // SAFETY : comme pour `afficher`.
     #[allow(unsafe_code)]
@@ -42,7 +42,7 @@ pub fn avertir(message: &str) {
 /// Hors de Windows : sur la sortie d'erreur.
 #[cfg(not(windows))]
 pub fn avertir(message: &str) {
-    eprintln!("{} : {message}", identite::NOM);
+    eprintln!("{} : {message}", identite::nom());
 }
 
 /// La page de Microsoft qui installe WebView2 (« Microsoft Edge WebView2 Runtime ») sur le PC d'un utilisateur.
@@ -57,7 +57,7 @@ fn texte_webview2_absent() -> String {
          Installe « Microsoft Edge WebView2 Runtime » depuis la page de Microsoft, puis relance l'appli :\n\
          {PAGE_WEBVIEW2}\n\n\
          Ouvrir cette page maintenant ?",
-        identite::NOM
+        identite::nom()
     )
 }
 
@@ -69,7 +69,7 @@ pub fn webview2_absent() {
     use windows::Win32::UI::WindowsAndMessaging::{IDYES, MB_ICONERROR, MB_YESNO, MessageBoxW};
     use windows::core::HSTRING;
 
-    let titre = HSTRING::from(identite::NOM);
+    let titre = HSTRING::from(identite::nom());
     let texte = HSTRING::from(texte_webview2_absent());
     // SAFETY : les deux textes sont des HSTRING valides jusqu'à la fin de l'appel ; aucune fenêtre parente.
     #[allow(unsafe_code)]

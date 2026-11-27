@@ -5,13 +5,13 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use aria_coeur::installation::{self, Chemins};
-use aria_coeur::{Reglages, identite, journal};
+use crate::installation::{self, Chemins};
+use crate::{Reglages, identite, journal};
 use serde::Serialize;
 use tauri::window::Color;
 use tauri::{AppHandle, Manager, State, Theme, WebviewUrl, WebviewWindowBuilder};
 
-use crate::{Etat, erreur_fatale, ouvrir_principale};
+use super::{Etat, erreur_fatale, ouvrir_principale};
 
 /// L'étiquette de la fenêtre, citée par capabilities\installation.json.
 pub const FENETRE_INSTALLATION: &str = "installation";
@@ -20,7 +20,7 @@ pub const FENETRE_INSTALLATION: &str = "installation";
 pub fn ouvrir_fenetre(app: &AppHandle) -> tauri::Result<()> {
     let cache_webview = app.state::<Etat>().cache_webview.clone();
     WebviewWindowBuilder::new(app, FENETRE_INSTALLATION, WebviewUrl::default())
-        .title(format!("Installer {}", identite::NOM))
+        .title(format!("Installer {}", identite::nom()))
         .inner_size(620.0, 560.0)
         .resizable(false)
         .maximizable(false)
@@ -48,15 +48,15 @@ pub fn chemin_raccourci(app: &AppHandle) -> Option<PathBuf> {
     app.path()
         .desktop_dir()
         .ok()
-        .map(|bureau| bureau.join(format!("{}.lnk", identite::NOM)))
+        .map(|bureau| bureau.join(format!("{}.lnk", identite::nom())))
 }
 
 #[tauri::command]
 pub fn infos_installation(app: AppHandle, etat: State<'_, Etat>) -> InfosInstallation {
     let programme = etat.dossier.programme();
     InfosInstallation {
-        nom: identite::NOM,
-        version: identite::VERSION,
+        nom: identite::nom(),
+        version: identite::version(),
         dossier: programme.display().to_string(),
         version_installee: installation::version_installee(&programme),
         raccourci: chemin_raccourci(&app).map(|c| c.display().to_string()),
@@ -80,7 +80,7 @@ pub fn installer(app: AppHandle, etat: State<'_, Etat>, raccourci: bool) -> Resu
     let installe = installation::installer(&exe, &Chemins::du_dossier(&etat.dossier)).map_err(|e| e.0)?;
     let mut bilan = format!(
         "version {} installée dans {}",
-        identite::VERSION,
+        identite::version(),
         etat.dossier.programme().display()
     );
     if raccourci {
@@ -148,7 +148,7 @@ mod systeme {
     use std::io;
     use std::path::Path;
 
-    use aria_coeur::identite;
+    use crate::identite;
     use windows::Win32::System::Com::{
         CLSCTX_INPROC_SERVER, COINIT_APARTMENTTHREADED, CoCreateInstance, CoInitializeEx, CoUninitialize,
         IPersistFile,
@@ -186,7 +186,7 @@ mod systeme {
                     raccourci.SetWorkingDirectory(&HSTRING::from(dossier))?;
                 }
                 raccourci.SetIconLocation(&HSTRING::from(cible), 0)?;
-                raccourci.SetDescription(&HSTRING::from(identite::NOM))?;
+                raccourci.SetDescription(&HSTRING::from(identite::nom()))?;
                 raccourci.cast::<IPersistFile>()?.Save(lien, true)
             })();
             CoUninitialize();

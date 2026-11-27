@@ -13,6 +13,10 @@
 > Le détail est dans [stacks/LISEZ-MOI.md](stacks/LISEZ-MOI.md). Pour construire :
 > Rust (rustup) et Node.js 24 (version exacte dans `stacks/rust-tauri/.node-version`).
 >
+> Le socle partagé, dans `socle/`, n'est pas copié dans l'appli : elle le reçoit
+> par une dépendance épinglée sur le tag de la version du modèle (décision 0007),
+> et une PR de montée par semaine le met à jour.
+>
 > Le contrat des applis Aria, [docs/CONTRAT.md](docs/CONTRAT.md), fait foi : en
 > cas de doute, c'est lui qui tranche, pour le modèle comme pour chaque appli.
 >
@@ -220,9 +224,8 @@ obtenu est le bon.
 ## Structure
 
 ```text
-coeur/        le contrat en Rust (données, réglages, journal, secrets, mises à jour), testable partout
-appli/        l'exe Tauri : fenêtres, icône de notification, appels à Windows
-  capabilities/   ce que chaque fenêtre a le droit d'appeler
+appli/        l'exe Tauri : identité de l'appli et ses propres commandes, posées sur le socle partagé
+  capabilities/   ce que la fenêtre principale a le droit d'appeler, en plus de ce que le socle autorise
 interface/    l'interface en Svelte et TypeScript (pages, dialogues, composants)
 tools/        contrôles, version, zip de release
 docs/         logo, fiche du projet, contrat, notes de version
@@ -230,7 +233,10 @@ build.ps1     construction de l'exe
 ```
 
 Les règles communes à toutes les applis Aria (données, réseau, installation, mises
-à jour, interface) sont dans [docs/CONTRAT.md](docs/CONTRAT.md).
+à jour, interface) sont dans [docs/CONTRAT.md](docs/CONTRAT.md). Le socle partagé
+qui les tient (crate `aria-coeur` : dossier de données, réglages, journal, secrets,
+installation, mises à jour, icône, désinstallation) vient du dépôt modèle, à la
+version épinglée dans `appli/Cargo.toml`.
 
 ## Licence
 

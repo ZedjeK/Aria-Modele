@@ -1,5 +1,5 @@
 {
-  "identifier": "menu",
+  "identifier": "socle-menu",
   "description": "Le menu de l'icône de notification : ses seules commandes, et l'écoute des événements de l'appli.",
   "windows": ["menu"],
   "permissions": [

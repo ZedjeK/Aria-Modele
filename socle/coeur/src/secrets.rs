@@ -153,7 +153,7 @@ mod dpapi {
         #[allow(unsafe_code)]
         fn proteger(&self, clair: &[u8]) -> io::Result<Vec<u8>> {
             let entree = bloc(clair)?;
-            let entropie = bloc(identite::NOM_EXE.as_bytes())?;
+            let entropie = bloc(identite::nom_exe().as_bytes())?;
             let mut sortie = CRYPT_INTEGER_BLOB::default();
             // SAFETY : les blocs d'entrée pointent sur des tranches vivantes pendant l'appel, que DPAPI ne modifie
             // pas ; la sortie est un bloc vide que DPAPI remplit, rendu par `recopier`.
@@ -175,7 +175,7 @@ mod dpapi {
         #[allow(unsafe_code)]
         fn deproteger(&self, chiffre: &[u8]) -> io::Result<Vec<u8>> {
             let entree = bloc(chiffre)?;
-            let entropie = bloc(identite::NOM_EXE.as_bytes())?;
+            let entropie = bloc(identite::nom_exe().as_bytes())?;
             let mut sortie = CRYPT_INTEGER_BLOB::default();
             // SAFETY : comme pour `proteger` ; aucune description demandée en retour.
             unsafe {

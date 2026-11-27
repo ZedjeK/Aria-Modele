@@ -7,14 +7,14 @@ use std::process::Command;
 use std::sync::Mutex;
 use std::time::Duration;
 
-use aria_coeur::mises_a_jour::{self, MiseAJour};
-use aria_coeur::{Dossier, Reglages, identite, journal};
+use crate::mises_a_jour::{self, MiseAJour};
+use crate::{Dossier, Reglages, identite, journal};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, State};
 use ureq::Agent;
 use ureq::tls::{RootCerts, TlsConfig, TlsProvider};
 
-use crate::{Etat, FENETRE, icone, installation};
+use super::{Etat, FENETRE, icone, installation};
 
 /// La mise à jour trouvée au lancement, s'il y en a une.
 #[derive(Default)]
@@ -31,7 +31,7 @@ fn client(delai: Duration) -> Agent {
     Agent::config_builder()
         .https_only(true)
         .timeout_global(Some(delai))
-        .user_agent(format!("{}/{}", identite::NOM_EXE, identite::VERSION))
+        .user_agent(format!("{}/{}", identite::nom_exe(), identite::version()))
         .tls_config(
             TlsConfig::builder()
                 .provider(TlsProvider::NativeTls)
@@ -49,7 +49,7 @@ pub fn chercher_au_lancement(app: &AppHandle, dossier: &Dossier) {
     if !Reglages::charger(dossier).chercher_mises_a_jour {
         return;
     }
-    let Some(actuelle) = mises_a_jour::lire_version(identite::VERSION) else {
+    let Some(actuelle) = mises_a_jour::lire_version(identite::version()) else {
         return;
     };
     let app = app.clone();
@@ -87,8 +87,8 @@ pub struct InfosMiseAJour {
 #[tauri::command]
 pub fn mise_a_jour_disponible(disponible: State<'_, Disponible>) -> Option<InfosMiseAJour> {
     disponible.lire().map(|maj| InfosMiseAJour {
-        nom: identite::NOM,
-        actuelle: identite::VERSION,
+        nom: identite::nom(),
+        actuelle: identite::version(),
         version: mises_a_jour::ecrire_version(maj.version),
         taille: maj.paquet.taille,
     })
@@ -96,7 +96,7 @@ pub fn mise_a_jour_disponible(disponible: State<'_, Disponible>) -> Option<Infos
 
 /// Montre la mise à jour : la fenêtre de l'appli revient au premier plan et ouvre son dialogue.
 pub fn montrer(app: &AppHandle) {
-    crate::ramener(app);
+    super::ramener(app);
     let _ = app.emit_to(FENETRE, "aller-a", "mise-a-jour");
 }
 
@@ -156,16 +156,14 @@ fn installer(maj: &MiseAJour, dossier: &Dossier, exe: &std::path::Path) -> Resul
         &zip,
     )
     .map_err(|e| format!("téléchargement refusé : {e}"))?;
-    let versions = dossier
-        .sauvegardes()
-        .join(aria_coeur::installation::DOSSIER_VERSIONS);
+    let versions = dossier.sauvegardes().join(crate::installation::DOSSIER_VERSIONS);
     let installe = mises_a_jour::installer_zip(&zip, dossier_exe, &versions, &travail).map_err(|e| e.0)?;
     journal::consigner(
         dossier,
         "mise à jour",
         &format!(
             "version {} remplacée par la {} ; l'ancienne est gardée dans les sauvegardes",
-            identite::VERSION,
+            identite::version(),
             mises_a_jour::ecrire_version(maj.version)
         ),
     );

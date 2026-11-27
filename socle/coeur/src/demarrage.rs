@@ -19,7 +19,9 @@ pub const CLE_RUN: &str = r"Software\Microsoft\Windows\CurrentVersion\Run";
 pub const CLE_APPROUVES: &str = r"Software\Microsoft\Windows\CurrentVersion\Explorer\StartupApproved\Run";
 
 /// Le nom de la valeur dans le registre : celui de l'exe.
-pub const NOM_VALEUR: &str = identite::NOM_EXE;
+pub fn nom_valeur() -> &'static str {
+    identite::nom_exe()
+}
 
 /// La ligne de commande enregistrée : l'exe entre guillemets, puis l'argument silencieux.
 pub fn commande_pour(exe: &Path) -> String {
@@ -58,7 +60,7 @@ pub mod windows {
     use winreg::RegKey;
     use winreg::enums::{HKEY_CURRENT_USER, KEY_SET_VALUE};
 
-    use super::{CLE_APPROUVES, CLE_RUN, NOM_VALEUR, commande_pour, est_actif};
+    use super::{CLE_APPROUVES, CLE_RUN, commande_pour, est_actif, nom_valeur};
 
     /// Windows lancera-t-il l'appli à l'ouverture de session ? Relu à chaque fois.
     pub fn est_inscrit() -> bool {
@@ -96,11 +98,11 @@ pub mod windows {
         let commande: Option<String> = hkcu
             .open_subkey(run)
             .ok()
-            .and_then(|cle| cle.get_value(NOM_VALEUR).ok());
+            .and_then(|cle| cle.get_value(nom_valeur()).ok());
         let approuve = hkcu
             .open_subkey(approuves)
             .ok()
-            .and_then(|cle| cle.get_raw_value(NOM_VALEUR).ok())
+            .and_then(|cle| cle.get_raw_value(nom_valeur()).ok())
             .map(|valeur| valeur.bytes.to_vec());
         est_actif(commande.as_deref(), approuve.as_deref())
     }
@@ -114,7 +116,7 @@ pub mod windows {
         }
         let hkcu = RegKey::predef(HKEY_CURRENT_USER);
         let (cle, _) = hkcu.create_subkey(run)?;
-        cle.set_value(NOM_VALEUR, &commande_pour(exe))?;
+        cle.set_value(nom_valeur(), &commande_pour(exe))?;
         if let Ok(approuve) = hkcu.open_subkey_with_flags(approuves, KEY_SET_VALUE) {
             supprimer_valeur(&approuve)?;
         }
@@ -139,7 +141,7 @@ pub mod windows {
 
     /// Supprime la valeur ; sans effet si elle n'existe pas.
     fn supprimer_valeur(cle: &RegKey) -> io::Result<()> {
-        match cle.delete_value(NOM_VALEUR) {
+        match cle.delete_value(nom_valeur()) {
             Err(e) if e.kind() != io::ErrorKind::NotFound => Err(e),
             _ => Ok(()),
         }
@@ -183,7 +185,7 @@ pub mod windows {
             let lue: String = RegKey::predef(HKEY_CURRENT_USER)
                 .open_subkey(&cles.run)
                 .unwrap()
-                .get_value(NOM_VALEUR)
+                .get_value(nom_valeur())
                 .unwrap();
             assert_eq!(lue, commande_pour(exe));
             desinscrire_sous(&cles.run).unwrap();
@@ -203,7 +205,7 @@ pub mod windows {
                 vtype: winreg::enums::RegType::REG_BINARY,
                 bytes: vec![3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0].into(),
             };
-            approuve.set_raw_value(NOM_VALEUR, &desactivee).unwrap();
+            approuve.set_raw_value(nom_valeur(), &desactivee).unwrap();
             assert!(!est_inscrit_sous(&cles.run, &cles.approuves));
             inscrire_sous(&cles.run, &cles.approuves, exe).unwrap();
             assert!(est_inscrit_sous(&cles.run, &cles.approuves));
@@ -222,12 +224,12 @@ pub mod windows {
                 vtype: winreg::enums::RegType::REG_BINARY,
                 bytes: vec![3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0].into(),
             };
-            approuve.set_raw_value(NOM_VALEUR, &desactivee).unwrap();
+            approuve.set_raw_value(nom_valeur(), &desactivee).unwrap();
             oublier_sous(&cles.run, &cles.approuves).unwrap();
             let run = hkcu.open_subkey(&cles.run).unwrap();
-            assert!(run.get_raw_value(NOM_VALEUR).is_err());
+            assert!(run.get_raw_value(nom_valeur()).is_err());
             let approuves = hkcu.open_subkey(&cles.approuves).unwrap();
-            assert!(approuves.get_raw_value(NOM_VALEUR).is_err());
+            assert!(approuves.get_raw_value(nom_valeur()).is_err());
             oublier_sous(&cles.run, &cles.approuves).unwrap();
         }
 

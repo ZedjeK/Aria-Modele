@@ -1,5 +1,5 @@
 {
-  "identifier": "installation",
+  "identifier": "socle-installation",
   "description": "La proposition d'installation : ses seules commandes.",
   "windows": ["installation"],
   "permissions": [

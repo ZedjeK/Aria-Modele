@@ -17,6 +17,7 @@ Socle partagé au lieu de copié, installation pour toutes les applis, modèles 
 | --- | --- |
 | #76 | Décisions d'architecture : 0007 à 0010, la v2 du modèle |
 | #77 | Contrat v2 et recette commune (`docs/RECETTE.md`) |
+| #78 | Socle Rust partagé : crate `aria-coeur` dans `socle/coeur`, fenêtre Tauri comprise ; le squelette ne garde que son identité et ses commandes |
 
 ### À reporter dans les applis
 
