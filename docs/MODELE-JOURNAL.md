@@ -6,7 +6,7 @@ Une section par version du modèle, la plus récente en haut. Chaque section dit
 faut reporter dans les applis déjà créées** : `.\tools\verifier-socle.ps1` signale les fichiers du socle en retard,
 mais pas les fichiers à marqueurs (workflows, README, fiche, squelette) ni les gestes à faire à la main.
 
-## v2.0.0 (en préparation)
+## v2.0.0
 
 Socle partagé au lieu de copié, installation pour toutes les applis, modèles et moteurs partagés : décisions 0007
 à 0010. La v1 est gelée : plus aucune appli n'est créée avec elle.
