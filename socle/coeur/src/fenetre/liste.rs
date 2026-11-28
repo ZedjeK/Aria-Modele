@@ -27,3 +27,21 @@ pub const COMMANDES: &[&str] = &[
     "bilan_reprise",
     "annuler_tache",
 ];
+
+/// Les commandes du module « Fichiers et dossiers », présentes seulement avec la fonction `fichiers`.
+// Lue par build.rs et, avec la fonction, par l'aiguillage des appels : sans elle, seulement par build.rs.
+#[allow(dead_code)]
+pub const COMMANDES_FICHIERS: &[&str] = &[
+    "choisir_fichiers",
+    "choisir_dossier",
+    "choisir_enregistrement",
+    "fichiers_ouverts",
+    "lire_associations",
+    "regler_association",
+];
+
+/// Les modules en option et leurs commandes : la variable `CARGO_FEATURE_*` de la fonction, puis la liste. build.rs
+/// publie les commandes d'un module seulement si sa fonction est activée.
+// Lue par build.rs et par les tests.
+#[allow(dead_code)]
+pub const MODULES: &[(&str, &[&str])] = &[("CARGO_FEATURE_FICHIERS", COMMANDES_FICHIERS)];

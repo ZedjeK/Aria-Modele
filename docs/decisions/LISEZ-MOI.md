@@ -24,3 +24,4 @@ Une décision ne se réécrit pas : une nouvelle page la remplace, et l'ancienne
 | [0008](0008-installation-pour-toutes.md) | Chaque appli s'installe, sans lancement portable |
 | [0009](0009-modeles-et-moteurs-partages.md) | Les modèles et les moteurs locaux partagés entre les applis |
 | [0010](0010-windows-x64-seul.md) | Windows x64 seulement |
+| [0011](0011-modules-par-windows.md) | Les modules en option passent par Windows, sans greffon Tauri |

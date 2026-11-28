@@ -55,6 +55,17 @@ Page « Journal », « Exporter le diagnostic » : le texte copié (version, Win
 journal) ne contient aucun secret, et le chemin de ton profil y devient `%USERPROFILE%`. Relis-le, puis colle-le dans
 le formulaire de bug du dépôt de l'appli. Aucune appli Aria n'envoie rien d'elle-même.
 
+## Fichiers
+
+Une appli qui travaille sur tes fichiers ne touche que ceux que tu lui désignes : par la fenêtre « Ouvrir » ou
+« Enregistrer » de Windows, en les déposant sur sa fenêtre, ou en les ouvrant depuis l'Explorateur. Avant de réécrire
+un fichier, elle en garde une copie dans ses sauvegardes : le Journal permet de la restaurer.
+
+Si l'appli sait ouvrir des types de fichiers, les Paramètres les montrent dans « Fichiers associés ». Une case cochée
+ajoute l'appli à « Ouvrir avec » pour ce type ; elle ne prend le double-clic que si aucune autre appli ne l'a déjà, et
+Windows te laisse changer ce choix (clic droit, « Ouvrir avec », « Choisir une autre application »). La désinstallation
+retire ces associations.
+
 ## Désinstaller
 
 Paramètres, « Désinstaller » : l'appli retire le démarrage avec Windows (s'il existe), le raccourci du Bureau s'il

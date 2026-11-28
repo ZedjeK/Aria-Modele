@@ -4,8 +4,8 @@
 -->
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { lireDemarrageAuto, messageErreur, reglerDemarrageAuto } from '../api';
-  import type { Identite, Reglages } from '../api';
+  import { lireAssociations, lireDemarrageAuto, messageErreur, reglerAssociation, reglerDemarrageAuto } from '../api';
+  import type { EtatAssociation, Identite, Reglages } from '../api';
   import DialogueDesinstallation from '../dialogues/Desinstallation.svelte';
   import ASavoir from '../composants/ASavoir.svelte';
   import Bouton from '../composants/Bouton.svelte';
@@ -24,6 +24,28 @@
   let { identite, reglages = $bindable(), enregistrer, signaler, ouvrirAssistant }: Props = $props();
   let demarrageAuto = $state(false);
   let dialogueDesinstallation = $state(false);
+  const avecFichiers = $derived(identite.modules.includes('fichiers'));
+  let associations = $state<EtatAssociation[]>([]);
+
+  async function relireAssociations() {
+    if (!avecFichiers) return;
+    try {
+      associations = await lireAssociations();
+    } catch (e) {
+      signaler(messageErreur(e), true);
+    }
+  }
+
+  async function changerAssociation(type: EtatAssociation, evenement: Event) {
+    const active = (evenement.currentTarget as HTMLInputElement).checked;
+    try {
+      associations = await reglerAssociation(type.extension, active);
+      signaler(active ? `.${type.extension} associé à l'appli.` : `.${type.extension} n'est plus associé à l'appli.`);
+    } catch (e) {
+      signaler(messageErreur(e), true);
+      await relireAssociations();
+    }
+  }
 
   async function relireDemarrageAuto() {
     if (!identite.enFond) return;
@@ -63,6 +85,7 @@
 
   onMount(() => {
     void relireDemarrageAuto();
+    void relireAssociations();
     // « Démarrer avec Windows » se change aussi dans Windows et dans le menu de l'icône : relu au retour.
     const auRetour = () => void relireDemarrageAuto();
     window.addEventListener('focus', auRetour);
@@ -87,13 +110,31 @@
   </Panneau>
 {/if}
 
+{#if associations.length > 0}
+  <Panneau titre="Fichiers associés">
+    {#each associations as type (type.extension)}
+      <label class="ligne">
+        <input type="checkbox" checked={type.associee} onchange={(e) => changerAssociation(type, e)} />
+        Ouvrir les fichiers <span class="code">.{type.extension}</span> ({type.description}) avec {identite.nom}
+        {#if type.associee}
+          <span class="aide">{type.parDefaut ? '— par un double-clic' : '— par « Ouvrir avec »'}</span>
+        {/if}
+      </label>
+    {/each}
+    <p class="aide note">
+      L'appli s'ajoute à « Ouvrir avec » ; elle ne prend le double-clic que si aucune autre appli ne l'a déjà, et
+      Windows te laisse changer ce choix. La désinstallation retire tout.
+    </p>
+  </Panneau>
+{/if}
+
 <Panneau titre="Installation">
   <p class="code discret">{identite.dossier}\programme</p>
   <div class="ligne desinstaller">
     <Bouton onclick={() => (dialogueDesinstallation = true)}>Désinstaller</Bouton>
     <span class="aide">
-      Retire {identite.enFond ? 'le démarrage avec Windows, ' : ''}le raccourci du Bureau et le programme installé. Tes
-      données restent.
+      Retire {identite.enFond ? 'le démarrage avec Windows, ' : ''}{avecFichiers ? 'les fichiers associés, ' : ''}le
+      raccourci du Bureau et le programme installé. Tes données restent, sauf si tu demandes de les supprimer.
     </span>
   </div>
 </Panneau>
@@ -163,10 +204,12 @@
     nom={identite.nom}
     donnees={identite.dossier}
     enFond={identite.enFond}
+    associations={avecFichiers}
     fermer={() => {
       dialogueDesinstallation = false;
       // La désinstallation a pu retirer le démarrage avec Windows : la case suit.
       void relireDemarrageAuto();
+      void relireAssociations();
     }}
   />
 {/if}
@@ -185,6 +228,14 @@
 
   .aide {
     color: var(--texte-2);
+  }
+
+  .note {
+    margin: 10px 0 0;
+  }
+
+  .code {
+    font-family: var(--police-code);
   }
 
   .etiquette {

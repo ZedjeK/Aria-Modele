@@ -26,14 +26,30 @@ Fonctions (`features`) à activer dans `appli/Cargo.toml` :
 | `telechargement` | téléchargement vérifié : HTTPS, taille et SHA-256 contrôlés, reprise d'un téléchargement coupé | disponible |
 | `moteur` | moteurs locaux partagés : versions côte à côte, plage acceptée, essai après mise à jour, registre d'usage, effacement sur demande | disponible |
 | `carte-graphique` | mémoire vidéo occupée, déclarée dans le dossier commun | disponible |
-| notifications, raccourcis globaux, fichiers et associations, échanges entre applis, droits administrateur | voir le contrat, « Modules en option » | à venir |
+| `fichiers` | fenêtres « Ouvrir », « Enregistrer » et « Choisir un dossier » de Windows, glisser-déposer (`ZoneDepot`), fichiers ouverts depuis l'Explorateur, copie avant réécriture (`fichiers::reecrire`), associations de types de fichiers réglées dans les Paramètres | disponible |
+| notifications, raccourcis globaux, échanges entre applis, droits administrateur | voir le contrat, « Modules en option » | à venir |
 
 Le démarrage avec Windows et l'icône de notification ne sont pas des fonctions : ils viennent de `en_fond` dans
 l'identité de l'appli.
 
-Les modules qui passent par un greffon Tauri (notifications, raccourcis, fenêtres « Ouvrir » et « Enregistrer »)
-demandent que le greffon soit une dépendance directe de l'appli : Tauri ne lit les autorisations d'un greffon que
-dans les dépendances directes. Ils restent donc à concevoir avec la première appli qui en a besoin.
+Les modules passent par l'API de Windows, sans greffon Tauri (décision 0011) : une appli n'ajoute que la fonction
+dans `appli/Cargo.toml`. Les commandes et la capacité d'un module ne sont publiées que si sa fonction est activée
+(`MODULES` dans `src/fenetre/liste.rs`).
+
+### Fichiers et dossiers
+
+```toml
+aria-coeur = { …, features = ["fenetre", "fichiers"] }
+```
+
+- **Types de fichiers** : `Appli::new(…).types_de_fichiers(&[TypeFichier { extension: "md", description: "Document
+  Markdown" }])`. Les Paramètres proposent de les associer, case par case ; rien n'est associé sans la case cochée.
+- **Fenêtres de Windows** : `choisirFichiers`, `choisirDossier`, `choisirEnregistrement` dans l'interface.
+- **Dépôt** : le composant `ZoneDepot` ; les fichiers ouverts depuis l'Explorateur arrivent par `fichiersOuverts()`
+  au lancement, puis par l'événement `fichiers-ouverts`.
+- **Chemins accordés** : une commande de l'appli qui touche un fichier de l'utilisateur vérifie
+  `fenetre::fichiers::accorde(&app, &chemin)` et réécrit par `fichiers::reecrire`, qui copie d'abord l'ancien
+  contenu dans `sauvegardes\`.
 
 ### Les commandes du socle
 
