@@ -38,9 +38,13 @@ virtuelle.
 
 ## Restauration et désinstallation
 
-- [ ] Une sauvegarde se restaure depuis l'interface, après une sauvegarde de l'état actuel.
+- [ ] Un réglage changé laisse au journal une ligne qui dit quel champ a changé, et de quoi à quoi.
+- [ ] Une sauvegarde se restaure depuis l'interface, après une sauvegarde de l'état actuel ; avant de restaurer, le
+  dialogue montre les réglages qui changeraient.
 - [ ] « Désinstaller » retire le démarrage avec Windows, le raccourci et `programme\` ; les données restent, et
   l'appli dit où elles sont.
+- [ ] « Désinstaller » avec « Supprimer aussi mes données » cochée : une fois l'appli fermée,
+  `%USERPROFILE%\.Aria-<Nom>` a disparu, et `%USERPROFILE%\.Aria` est intact.
 
 ## Accessibilité
 
