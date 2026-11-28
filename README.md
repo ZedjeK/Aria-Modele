@@ -220,7 +220,9 @@ build.ps1     construction de l'exe
 ```
 
 Les règles communes à toutes les applis Aria (données, réseau, installation, mises
-à jour, interface) sont dans [docs/CONTRAT.md](docs/CONTRAT.md). Le socle partagé
+à jour, interface) sont dans [docs/CONTRAT.md](docs/CONTRAT.md), et le guide commun
+(installer, mettre à jour, revenir en arrière, désinstaller) dans
+[docs/GUIDE.md](docs/GUIDE.md). Le socle partagé
 qui les tient (crate `aria-coeur` : dossier de données, réglages, journal, secrets,
 installation, mises à jour, icône, désinstallation) vient du dépôt modèle, à la
 version épinglée dans `appli/Cargo.toml`. Chaque semaine, le workflow « Monter le

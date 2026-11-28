@@ -12,6 +12,7 @@
 CONTRIBUTING.md
 PSScriptAnalyzerSettings.psd1
 docs/CONTRAT.md
+docs/GUIDE.md
 docs/RECETTE.md
 docs/decisions/0001-stack-unique-rust-tauri.md
 docs/decisions/0002-exe-portable.md

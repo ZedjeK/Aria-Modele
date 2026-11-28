@@ -19,11 +19,12 @@ Socle partagé au lieu de copié, installation pour toutes les applis, modèles 
 | #77 | Contrat v2 et recette commune (`docs/RECETTE.md`) |
 | #78 | Socle Rust partagé : crate `aria-coeur` dans `socle/coeur`, fenêtre Tauri comprise ; le squelette ne garde que son identité et ses commandes |
 | #79 | Interface partagée : paquet `aria-interface` dans `socle/interface` (thème, composants, fenêtre, dialogues, Journal, Paramètres, installation, menu de l'icône) |
-| #80 | Publication du socle : release du dépôt modèle avec l'archive `aria-interface-X.Y.Z.tgz` (`socle-release.yml`), PR hebdomadaire « Monter le socle » dans chaque appli (`monter-socle.yml`), CodeQL du modèle sur le Rust et le TypeScript du socle |
-| #81 | Corrections de l'audit : raccourci du Bureau jamais remplacé s'il pointe ailleurs (I1), réglages au format versionné, lus champ par champ et sauvegardés avant réécriture (I2), tailles plafonnées des mises à jour (M4), copies et mesures hors du fil de la fenêtre (M5), noms réservés de Windows refusés pour les secrets (M6), notes, init.ps1 et modèle de PR (M3, M8 à M12) |
-| #82 | Installation pour toutes (décision 0008) : plus de lancement sans installation ni de `--portable`, « Annuler » ferme l'appli, l'aperçu du zip demande de décompresser d'abord ; `init.ps1` perd l'option `-Installation` et les squelettes la clé `nonFournis` |
-| #83 | Parcours communs du socle : assistant de premier lancement, bouton « Restaurer » des sauvegardes, tâches longues (progression, annulation, pastille), reprise des données d'une ancienne version, focus visible sur les boutons et les onglets, contraste de la palette vérifié |
-| #84 | Modules du dossier commun (décision 0009) : `telechargement` (téléchargement vérifié), `moteur` (moteurs partagés, plage de versions, essai après mise à jour, registre d'usage), `carte-graphique` ; `socle/LISEZ-MOI.md` |
+| #81 | Publication du socle : release du dépôt modèle avec l'archive `aria-interface-X.Y.Z.tgz` (`socle-release.yml`), PR hebdomadaire « Monter le socle » dans chaque appli (`monter-socle.yml`), CodeQL du modèle sur le Rust et le TypeScript du socle |
+| #83 | Corrections de l'audit : raccourci du Bureau jamais remplacé s'il pointe ailleurs (I1), réglages au format versionné, lus champ par champ et sauvegardés avant réécriture (I2), tailles plafonnées des mises à jour (M4), copies et mesures hors du fil de la fenêtre (M5), noms réservés de Windows refusés pour les secrets (M6), notes, init.ps1 et modèle de PR (M3, M8 à M12) |
+| #84 | Installation pour toutes (décision 0008) : plus de lancement sans installation ni de `--portable`, « Annuler » ferme l'appli, l'aperçu du zip demande de décompresser d'abord ; `init.ps1` perd l'option `-Installation` et les squelettes la clé `nonFournis` |
+| #85 | Parcours communs du socle : assistant de premier lancement, bouton « Restaurer » des sauvegardes, tâches longues (progression, annulation, pastille), reprise des données d'une ancienne version, focus visible sur les boutons et les onglets, contraste de la palette vérifié |
+| #86 | Modules du dossier commun (décision 0009) : `telechargement` (téléchargement vérifié), `moteur` (moteurs partagés, plage de versions, essai après mise à jour, registre d'usage), `carte-graphique` ; `socle/LISEZ-MOI.md` |
+| #87 | Guide commun des applis (`docs/GUIDE.md`, au socle) et fiche projet v2 (socle, modules, moteurs et modèles, données reprises) |
 
 ### À reporter dans les applis
 
@@ -31,7 +32,7 @@ Socle partagé au lieu de copié, installation pour toutes les applis, modèles 
 
 - nouveaux : `docs/decisions/0007-socle-partage.md`, `0008-installation-pour-toutes.md`,
   `0009-modeles-et-moteurs-partages.md`, `0010-windows-x64-seul.md` ;
-- nouveau : `docs/RECETTE.md` ;
+- nouveaux : `docs/RECETTE.md`, `docs/GUIDE.md` ;
 - modifiés : `docs/CONTRAT.md` (v2), `docs/decisions/0002-exe-portable.md`, `docs/decisions/LISEZ-MOI.md`,
   `tools/socle.txt`, `.github/pull_request_template.md`.
 

@@ -39,7 +39,7 @@ Chaque appli est faite de son métier, posé sur le socle partagé du dépôt mo
 | --- | --- | --- |
 | crate `aria-coeur` | ce que toute appli a toujours (ce contrat, sections suivantes), et les modules en option, à activer un par un | dépendance git du dépôt modèle, épinglée par tag, dans `appli/Cargo.toml` |
 | paquet `aria-interface` | thème, composants, dialogues, fond animé, assistant de premier lancement | archive `.tgz` jointe à la release du dépôt modèle, à la même version |
-| workflows réutilisables | tests, release, CodeQL, montée du socle | appelés par leur SHA depuis `.github/workflows/` |
+| workflows | tests, release, CodeQL, montée du socle | posés par `init.ps1` dans `.github/workflows/` ; Dependabot tient leurs actions à jour |
 
 - L'appli ne recopie ni ne modifie le code du socle. Un correctif du socle passe par le dépôt modèle, puis arrive
   dans chaque appli par la PR de montée.
