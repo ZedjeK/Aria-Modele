@@ -249,6 +249,7 @@ fn commandes_du_socle() -> impl Fn(Invoke<Wry>) -> bool + Send + Sync + 'static 
         desinstallation::fermer_apres_desinstallation,
         commandes::lister_sauvegardes,
         commandes::restaurer_sauvegarde,
+        commandes::comparer_sauvegarde,
         commandes::bilan_reprise,
         taches::annuler_tache,
     ]

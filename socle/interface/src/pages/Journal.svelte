@@ -6,11 +6,13 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import {
+    comparerSauvegarde,
     diagnostic,
     lireJournal,
     listerSauvegardes,
     messageErreur,
     restaurerSauvegarde,
+    type Comparaison,
     type Operation,
     type Sauvegarde,
   } from '../api';
@@ -29,6 +31,7 @@
   let operations = $state<Operation[] | null>(null);
   let sauvegardes = $state<Sauvegarde[] | null>(null);
   let aRestaurer = $state<Sauvegarde | null>(null);
+  let comparaison = $state<Comparaison | null>(null);
   let restauration = $state(false);
   let texteDiagnostic = $state<string | null>(null);
   let zoneDiagnostic = $state<HTMLTextAreaElement | null>(null);
@@ -46,6 +49,17 @@
   async function relire() {
     try {
       [operations, sauvegardes] = await Promise.all([lireJournal(), listerSauvegardes()]);
+    } catch (e) {
+      signaler(messageErreur(e), true);
+    }
+  }
+
+  /** Ouvre la boîte de restauration, avec ce que la restauration changerait. */
+  async function proposer(sauvegarde: Sauvegarde) {
+    aRestaurer = sauvegarde;
+    comparaison = null;
+    try {
+      comparaison = await comparerSauvegarde(sauvegarde.nom);
     } catch (e) {
       signaler(messageErreur(e), true);
     }
@@ -134,7 +148,7 @@
             <td>{octetsLisibles(sauvegarde.taille)}</td>
             <td>
               {#if sauvegarde.origine}
-                <Bouton petit onclick={() => (aRestaurer = sauvegarde)}>Restaurer</Bouton>
+                <Bouton petit onclick={() => void proposer(sauvegarde)}>Restaurer</Bouton>
               {/if}
             </td>
           </tr>
@@ -150,6 +164,26 @@
     <Panneau titre="Ce qui sera remis" accentue>
       <p class="code">{aRestaurer.origine}</p>
       <p class="discret">depuis la copie <span class="code">{aRestaurer.nom}</span></p>
+      {#if comparaison === null}
+        <p class="discret">Comparaison avec l'état actuel…</p>
+      {:else if !comparaison.json}
+        <p class="discret">Ce fichier n'est pas un JSON lisible : pas de comparaison champ par champ.</p>
+      {:else if comparaison.differences.length === 0}
+        <p class="discret">La copie est identique à l'état actuel : la restauration ne changera rien.</p>
+      {:else}
+        <table>
+          <thead><tr><th>Champ</th><th>Maintenant</th><th>Après restauration</th></tr></thead>
+          <tbody>
+            {#each comparaison.differences as difference (difference.champ)}
+              <tr>
+                <td class="code">{difference.champ}</td>
+                <td class="code">{difference.avant ?? '(absent)'}</td>
+                <td class="code">{difference.apres ?? '(absent)'}</td>
+              </tr>
+            {/each}
+          </tbody>
+        </table>
+      {/if}
     </Panneau>
     {#snippet pied()}
       <Bouton genre="discret" desactive={restauration} onclick={() => (aRestaurer = null)}>Annuler</Bouton>

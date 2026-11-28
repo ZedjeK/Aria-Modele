@@ -170,6 +170,23 @@ export const listerSauvegardes = (): Promise<Sauvegarde[]> => invoke<Sauvegarde[
 /** Sauvegarde l'état actuel, puis remet la copie à sa place ; renvoie le fichier restauré. */
 export const restaurerSauvegarde = (nom: string): Promise<string> => invoke<string>('restaurer_sauvegarde', { nom });
 
+/** Un champ qui diffère ; null : absent de ce côté. Les champs qui évoquent un secret sont masqués. */
+export interface Difference {
+  champ: string;
+  avant: string | null;
+  apres: string | null;
+}
+
+/** Ce qu'une restauration changerait : `avant` est l'état actuel, `apres` celui de la copie. */
+export interface Comparaison {
+  /** La copie et l'état actuel se lisent en JSON : la liste est complète. */
+  json: boolean;
+  differences: Difference[];
+}
+
+export const comparerSauvegarde = (nom: string): Promise<Comparaison> =>
+  invoke<Comparaison>('comparer_sauvegarde', { nom });
+
 /** Ce que la reprise des données d'une ancienne version a fait. */
 export interface BilanReprise {
   ancien: string;

@@ -45,7 +45,7 @@ pub fn enregistrer_reglages(etat: State<'_, Etat>, reglages: Reglages) -> Result
     reglages
         .enregistrer(&etat.dossier)
         .map_err(|e| format!("réglages non enregistrés : {e}"))?;
-    journal::consigner(&etat.dossier, "réglages", "réglages enregistrés");
+    // Le journal dit déjà quels réglages ont changé (Reglages::enregistrer).
     Ok(reglages)
 }
 
@@ -93,6 +93,12 @@ pub fn restaurer_sauvegarde(app: AppHandle, etat: State<'_, Etat>, nom: String) 
     let fichier = sauvegardes::restaurer(&etat.dossier, &nom)?;
     let _ = app.emit("restauree", fichier.display().to_string());
     Ok(fichier.display().to_string())
+}
+
+/// Ce que la restauration d'une sauvegarde changerait, champ par champ, pour un fichier JSON.
+#[tauri::command]
+pub fn comparer_sauvegarde(etat: State<'_, Etat>, nom: String) -> Result<sauvegardes::Comparaison, String> {
+    sauvegardes::comparer(&etat.dossier, &nom)
 }
 
 /// Le bilan de la reprise des données d'une ancienne version, si elle a eu lieu.

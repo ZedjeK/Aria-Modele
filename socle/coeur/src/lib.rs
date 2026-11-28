@@ -10,6 +10,7 @@ pub mod commun;
 pub mod demarrage;
 pub mod desinstallation;
 pub mod diagnostic;
+pub mod differences;
 pub mod donnees;
 #[cfg(feature = "fenetre")]
 pub mod fenetre;

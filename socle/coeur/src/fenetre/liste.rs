@@ -23,6 +23,7 @@ pub const COMMANDES: &[&str] = &[
     "fermer_apres_desinstallation",
     "lister_sauvegardes",
     "restaurer_sauvegarde",
+    "comparer_sauvegarde",
     "bilan_reprise",
     "annuler_tache",
 ];

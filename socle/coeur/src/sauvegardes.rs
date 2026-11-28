@@ -95,13 +95,17 @@ pub fn lister(dossier: &Dossier) -> Vec<Sauvegarde> {
     copies
 }
 
-/// Remet la copie `nom` à sa place d'origine : l'état actuel est d'abord sauvegardé (s'il existe), puis la copie
-/// est recopiée. Rien n'est supprimé. Renvoie le fichier restauré.
-///
-/// # Errors
-/// Un nom qui n'est pas une copie de `sauvegardes\`, une origine inconnue, ou une copie qui échoue ; l'état actuel
-/// n'a alors pas changé.
-pub fn restaurer(dossier: &Dossier, nom: &str) -> Result<PathBuf, String> {
+/// Ce qu'une restauration changerait.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Comparaison {
+    /// La copie et l'état actuel se lisent tous deux en JSON : `differences` est complète.
+    pub json: bool,
+    /// Champ par champ : `avant` est l'état actuel, `apres` celui qu'apporterait la restauration.
+    pub differences: Vec<crate::differences::Difference>,
+}
+
+/// La copie `nom` et le fichier d'origine, s'ils sont tous deux connus et lisibles.
+fn copie_et_origine(dossier: &Dossier, nom: &str) -> Result<(PathBuf, PathBuf), String> {
     let racine = dossier.sauvegardes();
     let simple = Path::new(nom).file_name().is_some_and(|n| n == nom);
     let copie = racine.join(nom);
@@ -112,6 +116,52 @@ pub fn restaurer(dossier: &Dossier, nom: &str) -> Result<PathBuf, String> {
         .get(nom)
         .cloned()
         .ok_or_else(|| format!("on ne sait pas d'où vient « {nom} » : restaure-la à la main"))?;
+    Ok((copie, origine))
+}
+
+/// Ce que la restauration de `nom` changerait, pour un fichier JSON : l'état actuel (absent si le fichier
+/// n'existe plus) comparé à la copie. Pour un autre fichier, `json` est faux et la liste vide.
+///
+/// # Errors
+/// Un nom qui n'est pas une copie de `sauvegardes\`, ou une origine inconnue.
+pub fn comparer(dossier: &Dossier, nom: &str) -> Result<Comparaison, String> {
+    let (copie, origine) = copie_et_origine(dossier, nom)?;
+    let lire = |chemin: &Path| -> Option<serde_json::Value> {
+        serde_json::from_str(&fs::read_to_string(chemin).ok()?).ok()
+    };
+    let Some(ancienne) = lire(&copie) else {
+        return Ok(Comparaison {
+            json: false,
+            differences: Vec::new(),
+        });
+    };
+    let actuelle = if origine.is_file() {
+        match lire(&origine) {
+            Some(valeur) => valeur,
+            None => {
+                return Ok(Comparaison {
+                    json: false,
+                    differences: Vec::new(),
+                });
+            }
+        }
+    } else {
+        serde_json::Value::Object(serde_json::Map::new())
+    };
+    Ok(Comparaison {
+        json: true,
+        differences: crate::differences::entre(&actuelle, &ancienne),
+    })
+}
+
+/// Remet la copie `nom` à sa place d'origine : l'état actuel est d'abord sauvegardé (s'il existe), puis la copie
+/// est recopiée. Rien n'est supprimé. Renvoie le fichier restauré.
+///
+/// # Errors
+/// Un nom qui n'est pas une copie de `sauvegardes\`, une origine inconnue, ou une copie qui échoue ; l'état actuel
+/// n'a alors pas changé.
+pub fn restaurer(dossier: &Dossier, nom: &str) -> Result<PathBuf, String> {
+    let (copie, origine) = copie_et_origine(dossier, nom)?;
     if origine.is_file() {
         sauvegarder(dossier, &origine)
             .map_err(|e| format!("l'état actuel n'a pas pu être sauvegardé : {e}"))?;
@@ -264,5 +314,30 @@ mod tests {
         for nom in ["../reglages.json", INDEX, "absente.txt", "orpheline.txt"] {
             assert!(restaurer(&dossier, nom).is_err(), "{nom}");
         }
+    }
+
+    #[test]
+    fn la_comparaison_dit_ce_que_la_restauration_changerait() {
+        let temp = tempfile::tempdir().unwrap();
+        let dossier = Dossier::a(temp.path().join("donnees"));
+        dossier.preparer().unwrap();
+        let fichier = dossier.racine().join("reglages.json");
+        fs::write(&fichier, r#"{ "fond": { "vitesse": "lente" } }"#).unwrap();
+        let copie = sauvegarder(&dossier, &fichier).unwrap();
+        fs::write(&fichier, r#"{ "fond": { "vitesse": "rapide" } }"#).unwrap();
+        let nom = copie.file_name().unwrap().to_string_lossy().into_owned();
+        let comparaison = comparer(&dossier, &nom).unwrap();
+        assert!(comparaison.json);
+        assert_eq!(comparaison.differences.len(), 1);
+        assert_eq!(comparaison.differences[0].champ, "fond.vitesse");
+        assert_eq!(comparaison.differences[0].avant.as_deref(), Some("rapide"));
+        assert_eq!(comparaison.differences[0].apres.as_deref(), Some("lente"));
+        // Un fichier qui n'est pas du JSON : pas de comparaison champ par champ.
+        let texte = dossier.racine().join("notes.txt");
+        fs::write(&texte, "a").unwrap();
+        let copie = sauvegarder(&dossier, &texte).unwrap();
+        let nom = copie.file_name().unwrap().to_string_lossy().into_owned();
+        assert!(!comparer(&dossier, &nom).unwrap().json);
+        assert!(comparer(&dossier, "../reglages.json").is_err());
     }
 }
