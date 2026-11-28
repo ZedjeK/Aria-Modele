@@ -1,6 +1,6 @@
 {
   "name": "aria-interface",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "L'interface commune des applis Aria : thème, composants, fenêtre, dialogues et pages du socle.",
   "license": "MIT",
   "private": true,

@@ -6,6 +6,37 @@ Une section par version du modèle, la plus récente en haut. Chaque section dit
 faut reporter dans les applis déjà créées** : `.\tools\verifier-socle.ps1` signale les fichiers du socle en retard,
 mais pas les fichiers à marqueurs (workflows, README, fiche, squelette) ni les gestes à faire à la main.
 
+## v2.1.0
+
+Deux retours de la recette de la v2.0.0 et une protection de la chaîne d'outils. Rien ne casse : une appli passe de
+la v2.0.0 à la v2.1.0 par la PR « Monter le socle ».
+
+### Ce qui change
+
+| PR | Sujet |
+| --- | --- |
+| #91 | Dependabot ne monte plus `aria-coeur` ni `aria-interface` seul (le workflow « Monter le socle » les monte ensemble) ; `build.ps1` et `tools\tester.ps1` refusent un Rust installé pour l'hôte GNU et disent comment passer à MSVC (décision 0010) |
+| #92 | Réglages : le journal dit quels champs ont changé (`fond.vitesse : normale → rapide`, secrets masqués) ; avant de restaurer une sauvegarde, le Journal montre ce qui changerait (commande `comparer_sauvegarde`) |
+| #93 | Désinstallation : case « Supprimer aussi mes données », décochée d'office ; cochée, tout le dossier de données est effacé une fois l'appli fermée, jamais le dossier commun `.Aria` |
+
+### À reporter dans les applis
+
+**Socle** : la PR « Monter le socle » passe `aria-coeur` et `aria-interface` à la v2.1.0 ; rien d'autre à faire dans
+le code de l'appli.
+
+**Socle commun** (`.\tools\verifier-socle.ps1` les signale ; à recopier tels quels) : modifiés `docs/CONTRAT.md`
+(Désinstallation), `docs/GUIDE.md` (Désinstaller) et `docs/RECETTE.md` (réglages changés, restauration, effacement des
+données).
+
+**Fichiers du squelette, à reporter à la main** :
+
+| Fichier | Ce qui change |
+| --- | --- |
+| `.github/dependabot.yml` | `ignore: - dependency-name: "aria-coeur"` dans le bloc `cargo`, `ignore: - dependency-name: "aria-interface"` dans le bloc `npm` |
+| `build.ps1`, `tools/tester.ps1` | contrôle de l'hôte Rust (MSVC) au début, sous Windows |
+
+**Recette** : les trois nouvelles lignes de `docs/RECETTE.md` (« Restauration et désinstallation »).
+
 ## v2.0.0
 
 Socle partagé au lieu de copié, installation pour toutes les applis, modèles et moteurs partagés : décisions 0007
