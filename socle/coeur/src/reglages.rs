@@ -100,6 +100,9 @@ pub struct Reglages {
     #[serde(rename = "assistantVu")]
     pub assistant_vu: bool,
 
+    /// Les notifications de Windows (module `notifications`) : décochées, l'appli n'en montre plus aucune.
+    pub notifications: bool,
+
     /// Les réglages propres à l'appli, gardés tels quels : un objet JSON.
     pub appli: serde_json::Map<String, Value>,
 }
@@ -111,6 +114,7 @@ impl Default for Reglages {
             fond: ReglagesFond::default(),
             chercher_mises_a_jour: true,
             assistant_vu: false,
+            notifications: true,
             appli: serde_json::Map::new(),
         }
     }
@@ -198,6 +202,7 @@ impl Reglages {
                 &mut intacte,
             ),
             assistant_vu: champ(objet, "assistantVu", defaut.assistant_vu, &mut intacte),
+            notifications: champ(objet, "notifications", defaut.notifications, &mut intacte),
             appli: champ(objet, "appli", defaut.appli, &mut intacte),
         };
         Lecture {

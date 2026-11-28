@@ -113,6 +113,8 @@ pub fn desinstaller(
         "Associations de fichiers",
         super::fichiers::retirer_associations(),
     );
+    #[cfg(feature = "notifications")]
+    suivi.noter("Notifications", super::notifications::retirer_inscription());
 
     let sort = desinstallation::sort_de_programme(&exe, &programme);
     let issue = match sort {

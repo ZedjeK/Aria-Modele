@@ -21,6 +21,8 @@ export interface Reglages {
   chercherMisesAJour: boolean;
   /** L'assistant de premier lancement a été vu : il ne s'ouvre plus de lui-même. */
   assistantVu: boolean;
+  /** Les notifications de Windows (module « notifications ») : décochées, aucune n'est montrée. */
+  notifications: boolean;
   /** Les réglages propres à l'appli, sous la clé « appli » du fichier. */
   appli: Record<string, unknown>;
 }
@@ -267,6 +269,13 @@ export const ecouterFichiers = (
   genre: 'fichiers-deposes' | 'fichiers-ouverts',
   rappel: (chemins: string[]) => void,
 ): Promise<UnlistenFn> => listen<string[]>(genre, (e) => rappel(e.payload));
+
+/**
+ * Une notification de Windows (module « notifications ») pour un événement que l'utilisateur doit voir alors qu'il
+ * regarde ailleurs. Rend false sans rien montrer si le réglage est décoché ou si la fenêtre est devant.
+ */
+export const notifier = (titre: string, texte: string): Promise<boolean> =>
+  invoke<boolean>('notifier', { titre, texte });
 
 export const ecouter = <T>(
   evenement: 'etat-icone' | 'aller-a' | 'mise-a-jour' | 'tache' | 'restauree',

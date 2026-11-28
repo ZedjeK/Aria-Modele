@@ -27,7 +27,8 @@ Fonctions (`features`) à activer dans `appli/Cargo.toml` :
 | `moteur` | moteurs locaux partagés : versions côte à côte, plage acceptée, essai après mise à jour, registre d'usage, effacement sur demande | disponible |
 | `carte-graphique` | mémoire vidéo occupée, déclarée dans le dossier commun | disponible |
 | `fichiers` | fenêtres « Ouvrir », « Enregistrer » et « Choisir un dossier » de Windows, glisser-déposer (`ZoneDepot`), fichiers ouverts depuis l'Explorateur, copie avant réécriture (`fichiers::reecrire`), associations de types de fichiers réglées dans les Paramètres | disponible |
-| notifications, raccourcis globaux, échanges entre applis, droits administrateur | voir le contrat, « Modules en option » | à venir |
+| `notifications` | notifications de Windows, réglage `notifications` dans les Paramètres, aucune quand la fenêtre est devant, un clic ramène la fenêtre | disponible |
+| raccourcis globaux, échanges entre applis, droits administrateur | voir le contrat, « Modules en option » | à venir |
 
 Le démarrage avec Windows et l'icône de notification ne sont pas des fonctions : ils viennent de `en_fond` dans
 l'identité de l'appli.
@@ -50,6 +51,18 @@ aria-coeur = { …, features = ["fenetre", "fichiers"] }
 - **Chemins accordés** : une commande de l'appli qui touche un fichier de l'utilisateur vérifie
   `fenetre::fichiers::accorde(&app, &chemin)` et réécrit par `fichiers::reecrire`, qui copie d'abord l'ancien
   contenu dans `sauvegardes\`.
+
+### Notifications
+
+```toml
+aria-coeur = { …, features = ["fenetre", "notifications"] }
+```
+
+- Depuis Rust : `fenetre::notifications::notifier(&app, "Analyse finie", "12 fichiers analysés.")` ; depuis
+  l'interface : `notifier(titre, texte)`. Les deux rendent `false` sans rien montrer si le réglage est décoché ou si
+  la fenêtre est devant : la ligne d'état suffit alors.
+- Titre coupé à 80 caractères, texte à 300, sans son. Une notification dit un événement que l'utilisateur doit voir
+  (une tâche longue finie, une erreur qui l'attend), jamais une invitation à revenir dans l'appli.
 
 ### Les commandes du socle
 

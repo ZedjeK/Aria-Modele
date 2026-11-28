@@ -40,8 +40,16 @@ pub const COMMANDES_FICHIERS: &[&str] = &[
     "regler_association",
 ];
 
+/// Les commandes du module « Notifications », présentes seulement avec la fonction `notifications`.
+// Lue par build.rs et, avec la fonction, par l'aiguillage des appels.
+#[allow(dead_code)]
+pub const COMMANDES_NOTIFICATIONS: &[&str] = &["notifier"];
+
 /// Les modules en option et leurs commandes : la variable `CARGO_FEATURE_*` de la fonction, puis la liste. build.rs
 /// publie les commandes d'un module seulement si sa fonction est activée.
 // Lue par build.rs et par les tests.
 #[allow(dead_code)]
-pub const MODULES: &[(&str, &[&str])] = &[("CARGO_FEATURE_FICHIERS", COMMANDES_FICHIERS)];
+pub const MODULES: &[(&str, &[&str])] = &[
+    ("CARGO_FEATURE_FICHIERS", COMMANDES_FICHIERS),
+    ("CARGO_FEATURE_NOTIFICATIONS", COMMANDES_NOTIFICATIONS),
+];
