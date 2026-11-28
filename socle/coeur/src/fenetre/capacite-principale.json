@@ -18,6 +18,7 @@
     "allow-fermer-apres-desinstallation",
     "allow-lister-sauvegardes",
     "allow-restaurer-sauvegarde",
+    "allow-comparer-sauvegarde",
     "allow-bilan-reprise",
     "allow-annuler-tache",
     "core:event:allow-listen",

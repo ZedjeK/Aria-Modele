@@ -10,7 +10,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Deserializer, Serialize};
 use serde_json::Value;
 
-use crate::{Dossier, Erreur, donnees, journal, sauvegardes};
+use crate::{Dossier, Erreur, differences, donnees, journal, sauvegardes};
 
 /// Vitesse du fond animé. Dans le fichier : « lente », « normale », « rapide ».
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize)]
@@ -272,7 +272,18 @@ impl Reglages {
         let texte = self
             .vers_json()
             .map_err(|e| Erreur::fichier("préparation de", &chemin, e.into()))?;
-        donnees::ecrire_entier(&chemin, texte.as_bytes())
+        let avant: Option<Value> = fs::read_to_string(&chemin)
+            .ok()
+            .and_then(|lu| serde_json::from_str(&lu).ok());
+        donnees::ecrire_entier(&chemin, texte.as_bytes())?;
+        // Le journal dit quels réglages ont changé, avec l'avant et l'après.
+        if let (Some(avant), Ok(apres)) = (avant, serde_json::from_str::<Value>(&texte)) {
+            let differences = differences::entre(&avant, &apres);
+            if !differences.is_empty() {
+                journal::consigner(dossier, "réglages", &differences::resumer(&differences, 8));
+            }
+        }
+        Ok(())
     }
 
     /// Les réglages de l'appli sous sa clé `appli`, dans son propre type ; ses valeurs par défaut si la clé est
@@ -455,5 +466,24 @@ mod tests {
             serde_json::from_str(r#"{ "fond": { "minimum": null, "maximum": 6 } }"#).unwrap();
         assert_eq!(reglages.fond.minimum, ReglagesFond::default().minimum);
         assert_eq!(reglages.fond.maximum, 6);
+    }
+
+    #[test]
+    fn le_journal_dit_ce_qui_a_change() {
+        let temp = tempfile::tempdir().unwrap();
+        let dossier = Dossier::a(temp.path());
+        dossier.preparer().unwrap();
+        let mut reglages = Reglages::default();
+        reglages.enregistrer(&dossier).unwrap();
+        reglages.fond.vitesse = Vitesse::Rapide;
+        reglages.enregistrer(&dossier).unwrap();
+        // Un enregistrement sans changement n'écrit rien de plus.
+        reglages.enregistrer(&dossier).unwrap();
+        let lignes: Vec<String> = journal::lire(&dossier)
+            .into_iter()
+            .filter(|o| o.genre == "réglages")
+            .map(|o| o.bilan)
+            .collect();
+        assert_eq!(lignes, ["fond.vitesse : normale → rapide"]);
     }
 }
