@@ -1,7 +1,9 @@
 //! « Désinstaller », dans les Paramètres (vue `Parametres.svelte`) : retire le démarrage automatique, le raccourci
 //! du Bureau s'il pointe vers l'appli, puis `programme\` : tout de suite si l'exe en cours n'en vient pas, sinon par
 //! une copie de l'exe, une fois l'appli fermée (par « Fermer l'appli », ou de toute autre façon : voir
-//! [`a_la_sortie`]). Les données restent ; l'interface dit où elles sont.
+//! [`a_la_sortie`]). Les données restent, sauf si l'utilisateur coche « Supprimer aussi mes données » : la copie de
+//! l'exe efface alors tout le dossier de données une fois l'appli fermée. Le dossier commun `.Aria` n'est jamais
+//! touché.
 
 use std::fs;
 use std::path::Path;
@@ -33,6 +35,7 @@ const A_LA_FERMETURE: &str = "sera supprimé une fois l'appli fermée";
 const CONFIE: &str = "Programme : confié à une copie de l'exe, supprimé une fois l'appli fermée";
 const HORS_DU_CACHE: &str = "Programme : rien supprimé, la copie de fin ne tourne pas depuis le cache";
 const PAS_FERMEE: &str = "Programme : rien supprimé, l'appli ne s'est pas fermée à temps";
+const EFFACEES_A_LA_FERMETURE: &str = "seront effacées une fois l'appli fermée";
 
 /// Une étape de la désinstallation, telle que l'interface la montre.
 #[derive(Debug, Serialize)]
@@ -50,8 +53,10 @@ pub struct BilanDesinstallation {
     etapes: Vec<Etape>,
     /// Le dossier de données, gardé.
     donnees: String,
-    /// `programme\` sera supprimé une fois l'appli fermée : l'interface propose de la fermer.
+    /// `programme\` ou les données seront supprimés une fois l'appli fermée : l'interface propose de la fermer.
     a_la_fermeture: bool,
+    /// Le dossier de données sera effacé une fois l'appli fermée.
+    donnees_effacees: bool,
 }
 
 /// Les étapes faites, notées au journal au fur et à mesure.
@@ -76,10 +81,15 @@ impl Suivi<'_> {
 }
 
 /// Désinstalle : démarrage automatique, raccourci du Bureau, puis `programme\` (tout de suite, ou une fois l'appli
-/// fermée). Chaque étape est tentée même si une autre échoue ; le bilan dit laquelle. Les données restent.
+/// fermée). Chaque étape est tentée même si une autre échoue ; le bilan dit laquelle. Les données restent, sauf avec
+/// `effacer_donnees` (case cochée par l'utilisateur) : elles sont alors effacées une fois l'appli fermée.
 // Sur un fil à part : la copie ne fige pas la fenêtre.
 #[tauri::command(async)]
-pub fn desinstaller(app: AppHandle, etat: State<'_, Etat>) -> Result<BilanDesinstallation, String> {
+pub fn desinstaller(
+    app: AppHandle,
+    etat: State<'_, Etat>,
+    effacer_donnees: bool,
+) -> Result<BilanDesinstallation, String> {
     let exe = std::env::current_exe().map_err(|e| format!("L'exe de l'appli est introuvable : {e}"))?;
     let programme = etat.dossier.programme();
     let mut suivi = Suivi {
@@ -110,11 +120,42 @@ pub fn desinstaller(app: AppHandle, etat: State<'_, Etat>) -> Result<BilanDesins
         etat.desinstallee.store(true, Ordering::SeqCst);
     }
 
+    let mut donnees_effacees = false;
+    if effacer_donnees {
+        let racine = etat.dossier.racine();
+        let issue = if effacable(racine) {
+            etat.effacer_donnees.store(true, Ordering::SeqCst);
+            donnees_effacees = true;
+            Ok(EFFACEES_A_LA_FERMETURE.to_owned())
+        } else {
+            Err(format!(
+                "gardées : {} n'est pas un dossier de données d'appli Aria",
+                racine.display()
+            ))
+        };
+        suivi.noter("Données", issue);
+    }
+
     Ok(BilanDesinstallation {
         etapes: suivi.etapes,
         donnees: etat.dossier.racine().display().to_string(),
-        a_la_fermeture: sort == Programme::ALaFermeture,
+        a_la_fermeture: sort == Programme::ALaFermeture || donnees_effacees,
+        donnees_effacees,
     })
+}
+
+/// Le dossier de l'utilisateur, parent du dossier de données.
+fn profil() -> Option<std::path::PathBuf> {
+    std::env::var_os("USERPROFILE")
+        .or_else(|| std::env::var_os("HOME"))
+        .filter(|p| !p.is_empty())
+        .map(std::path::PathBuf::from)
+}
+
+/// Le dossier de données est-il bien `<profil>\.Aria-<Nom>` de cette appli ? Sinon, rien ne s'efface.
+fn effacable(racine: &Path) -> bool {
+    racine.file_name().and_then(|n| n.to_str()) == Some(crate::identite::dossier_donnees())
+        && profil().is_some_and(|p| desinstallation::racine_effacable(racine, &p))
 }
 
 /// Retire le raccourci du Bureau s'il pointe vers l'appli ; un raccourci vers autre chose reste.
@@ -137,9 +178,10 @@ fn retirer_raccourci(app: &AppHandle, exes: &[&Path]) -> Result<String, String> 
 /// cache, attend sa fermeture puis vide `programme\`.
 #[tauri::command]
 pub fn fermer_apres_desinstallation(app: AppHandle, etat: State<'_, Etat>) -> Result<(), String> {
-    confier_programme(&etat.dossier)?;
+    confier(&etat.dossier, etat.effacer_donnees.load(Ordering::SeqCst))?;
     // Confié : la fermeture n'a plus à le faire.
     etat.desinstallee.store(false, Ordering::SeqCst);
+    etat.effacer_donnees.store(false, Ordering::SeqCst);
     app.exit(0);
     Ok(())
 }
@@ -147,41 +189,53 @@ pub fn fermer_apres_desinstallation(app: AppHandle, etat: State<'_, Etat>) -> Re
 /// À la fermeture de l'appli : désinstallée sans passer par « Fermer l'appli » (Quitter, croix), `programme\` est
 /// confié maintenant à la copie de fin. Un échec est noté au journal : il n'y a plus de fenêtre pour le dire.
 pub fn a_la_sortie(etat: &Etat) {
-    if !etat.desinstallee.swap(false, Ordering::SeqCst) {
+    let desinstallee = etat.desinstallee.swap(false, Ordering::SeqCst);
+    let effacer = etat.effacer_donnees.swap(false, Ordering::SeqCst);
+    if !desinstallee && !effacer {
         return;
     }
-    if let Err(e) = confier_programme(&etat.dossier) {
+    if let Err(e) = confier(&etat.dossier, effacer) {
         journal::consigner(&etat.dossier, GENRE, &format!("Programme : {e}"));
     }
 }
 
-/// Si l'appli tourne depuis `programme\`, lance la copie de l'exe qui le videra une fois l'appli fermée.
-fn confier_programme(dossier: &Dossier) -> Result<(), String> {
+/// Lance la copie de l'exe qui videra `programme\` (si l'appli tourne depuis là) et, avec `effacer`, tout le dossier
+/// de données, une fois l'appli fermée.
+fn confier(dossier: &Dossier, effacer: bool) -> Result<(), String> {
     let exe = std::env::current_exe().map_err(|e| format!("L'exe de l'appli est introuvable : {e}"))?;
     let programme = dossier.programme();
-    if desinstallation::sort_de_programme(&exe, &programme) != Programme::ALaFermeture {
+    if desinstallation::sort_de_programme(&exe, &programme) != Programme::ALaFermeture && !effacer {
         return Ok(());
     }
+    let a_effacer = if effacer {
+        dossier.racine()
+    } else {
+        programme.as_path()
+    };
     let a_la_main = format!(
         "Supprime {} à la main, une fois l'appli fermée.",
-        programme.display()
+        a_effacer.display()
     );
     let echec = |e: std::io::Error| format!("Préparation impossible : {e}. {a_la_main}");
     let aide = desinstallation::preparer_aide(&exe, &dossier.cache()).map_err(echec)?;
     // La copie tourne seule : l'appli ne l'attend pas, elle se ferme juste après.
-    let _copie = Command::new(&aide)
+    let mut copie = Command::new(&aide);
+    copie
         .arg(desinstallation::ARGUMENT_FINIR)
         .arg(std::process::id().to_string())
-        .current_dir(dossier.racine())
-        .spawn()
-        .map_err(echec)?;
+        .current_dir(dossier.racine());
+    if effacer {
+        copie.arg(desinstallation::ARGUMENT_EFFACER);
+    }
+    let _copie = copie.spawn().map_err(echec)?;
     journal::consigner(dossier, GENRE, CONFIE);
     Ok(())
 }
 
 /// La copie de l'exe, lancée avec `--finir-desinstallation <numéro>` : attend la fin de l'appli, vide
-/// `programme\` et note le bilan au journal. Seulement depuis `cache\desinstallation\` ; ailleurs, rien.
-pub fn finir(dossier: &Dossier, processus: u32) {
+/// `programme\` et note le bilan au journal. Avec `effacer`, efface ensuite tout le dossier de données, elle comprise
+/// (par `cmd`, une fois arrêtée). Seulement depuis `cache\desinstallation\` ; ailleurs, rien.
+pub fn finir(dossier: &Dossier, processus: u32, effacer: bool) {
     let cache = dossier.cache();
     let aide = std::env::current_exe().is_ok_and(|exe| desinstallation::est_l_aide(&exe, &cache));
     if !aide {
@@ -198,6 +252,48 @@ pub fn finir(dossier: &Dossier, processus: u32) {
         Ok(texte) | Err(texte) => texte,
     };
     journal::consigner(dossier, GENRE, &format!("Programme : {texte}"));
+    if effacer {
+        effacer_donnees(dossier);
+    }
+}
+
+/// Efface le dossier de données : tout de suite, sauf la copie de fin, qui tourne ; puis le dossier entier, par
+/// `cmd`, une fois la copie arrêtée. Rien n'est effacé si le dossier n'est pas celui d'une appli Aria.
+fn effacer_donnees(dossier: &Dossier) {
+    let racine = dossier.racine();
+    let Some(profil) = profil().filter(|_| effacable(racine)) else {
+        journal::consigner(
+            dossier,
+            GENRE,
+            "Données : gardées, le dossier n'est pas celui d'une appli Aria",
+        );
+        return;
+    };
+    let restes = desinstallation::effacer_donnees_sauf_aide(racine);
+    let Some(commande) = desinstallation::commande_effacement(racine) else {
+        // Le journal a déjà été effacé : il est recréé pour dire ce qui reste.
+        journal::consigner(
+            dossier,
+            GENRE,
+            "Données : effacées, sauf la copie de fin (chemin que cmd ne peut pas lire) : supprime le dossier à la main",
+        );
+        return;
+    };
+    // Cette ligne part avec le dossier si cmd l'efface ; elle ne reste que si l'effacement a échoué.
+    let mut note = format!(
+        "Données : pas entièrement effacées, supprime {} à la main",
+        racine.display()
+    );
+    if !restes.is_empty() {
+        note.push_str(&format!(
+            " (encore utilisés au premier essai : {})",
+            restes.join(" ; ")
+        ));
+    }
+    if let Err(e) = systeme::effacer_apres(&commande, &profil) {
+        note.push_str(&format!(" (cmd n'a pas pu être lancé : {e})"));
+    }
+    journal::consigner(dossier, GENRE, &note);
 }
 
 /// Ce que la désinstallation demande à Windows.
@@ -212,6 +308,23 @@ mod systeme {
     /// Retire le démarrage automatique : `Run` et `StartupApproved`.
     pub fn oublier_demarrage() -> io::Result<()> {
         crate::demarrage::windows::oublier()
+    }
+
+    /// Lance `cmd` avec cette ligne, sans fenêtre, depuis `dossier`, sans l'attendre.
+    pub fn effacer_apres(ligne: &str, dossier: &std::path::Path) -> io::Result<()> {
+        use std::os::windows::process::CommandExt;
+        /// Pas de console pour cmd.
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        let systeme = std::env::var_os("SystemRoot").map_or_else(
+            || std::path::PathBuf::from(r"C:\Windows"),
+            std::path::PathBuf::from,
+        );
+        std::process::Command::new(systeme.join("System32").join("cmd.exe"))
+            .raw_arg(ligne)
+            .current_dir(dossier)
+            .creation_flags(CREATE_NO_WINDOW)
+            .spawn()
+            .map(|_| ())
     }
 
     /// Attend la fin du processus, au plus `delai`. Vrai s'il s'est terminé, ou si son numéro n'existe plus (déjà
@@ -245,5 +358,9 @@ mod systeme {
 
     pub fn attendre_fin(_processus: u32, _delai: Duration) -> bool {
         true
+    }
+
+    pub fn effacer_apres(_ligne: &str, _dossier: &std::path::Path) -> io::Result<()> {
+        Err(io::Error::new(io::ErrorKind::Unsupported, "Windows seulement"))
     }
 }

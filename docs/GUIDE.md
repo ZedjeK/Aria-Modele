@@ -58,5 +58,7 @@ le formulaire de bug du dépôt de l'appli. Aucune appli Aria n'envoie rien d'el
 ## Désinstaller
 
 Paramètres, « Désinstaller » : l'appli retire le démarrage avec Windows (s'il existe), le raccourci du Bureau s'il
-pointe vers elle, puis `programme\` une fois fermée. Tes données restent dans `%USERPROFILE%\.Aria-<Nom>` ; pour tout
-effacer, supprime ce dossier une fois l'appli fermée.
+pointe vers elle, puis `programme\` une fois fermée. Tes données restent dans `%USERPROFILE%\.Aria-<Nom>`, sauf si tu
+coches « Supprimer aussi mes données » : ce dossier est alors effacé une fois l'appli fermée (réglages, journal,
+sauvegardes et secrets compris, sans retour possible). Le dossier commun `%USERPROFILE%\.Aria`, partagé par les applis
+Aria, reste dans tous les cas. Si le dossier de l'appli est encore là après la fermeture, supprime-le à la main.

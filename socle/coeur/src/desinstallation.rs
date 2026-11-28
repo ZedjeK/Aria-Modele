@@ -221,6 +221,80 @@ where
     None
 }
 
+/// Argument de la copie de fin : effacer aussi le dossier de données, une fois l'appli fermée.
+pub const ARGUMENT_EFFACER: &str = "--effacer-donnees";
+
+/// La copie de fin doit-elle effacer aussi les données ?
+pub fn effacer_demande<I, S>(arguments: I) -> bool
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
+{
+    arguments
+        .into_iter()
+        .any(|a| a.as_ref().eq_ignore_ascii_case(ARGUMENT_EFFACER))
+}
+
+/// Le dossier de données peut-il être effacé en entier ? Seulement `<profil>\.Aria-<Nom>`, jamais le dossier commun
+/// `.Aria` ni autre chose : une erreur de chemin ne doit rien emporter d'autre.
+pub fn racine_effacable(racine: &Path, profil: &Path) -> bool {
+    let Some(nom) = racine.file_name().and_then(|n| n.to_str()) else {
+        return false;
+    };
+    racine.parent() == Some(profil)
+        && nom.len() > ".Aria-".len()
+        && nom.starts_with(".Aria-")
+        && nom[".Aria-".len()..].bytes().all(|c| c.is_ascii_alphanumeric())
+}
+
+/// Efface tout le dossier de données, sauf la copie de fin (`cache\desinstallation\`), qui tourne encore : elle
+/// part ensuite avec le dossier (voir [`commande_effacement`]). Renvoie ce qui n'a pas pu l'être.
+pub fn effacer_donnees_sauf_aide(racine: &Path) -> Vec<String> {
+    let aide = dossier_aide(&racine.join("cache"));
+    let mut restes = Vec::new();
+    let mut effacer = |chemin: &Path| {
+        let resultat = if chemin.is_dir() && !chemin.is_symlink() {
+            fs::remove_dir_all(chemin)
+        } else {
+            fs::remove_file(chemin)
+        };
+        if let Err(e) = resultat {
+            restes.push(format!("{} : {e}", chemin.display()));
+        }
+    };
+    for entree in fs::read_dir(racine).into_iter().flatten().flatten() {
+        let chemin = entree.path();
+        if chemin == racine.join("cache") {
+            for sous in fs::read_dir(&chemin).into_iter().flatten().flatten() {
+                if sous.path() != aide {
+                    effacer(&sous.path());
+                }
+            }
+        } else {
+            effacer(&chemin);
+        }
+    }
+    restes
+}
+
+/// La ligne de commande qui efface le dossier de données une fois la copie de fin arrêtée : `cmd`, qui attend trois
+/// secondes puis supprime le dossier, et réessaie dix secondes plus tard s'il reste. `None` si le chemin contient un caractère que `cmd` interpréterait : rien
+/// n'est alors lancé, et le dossier reste.
+pub fn commande_effacement(racine: &Path) -> Option<String> {
+    let chemin = racine.to_str()?;
+    if chemin
+        .chars()
+        .any(|c| matches!(c, '"' | '&' | '|' | '<' | '>' | '^' | '%' | '!' | '\n' | '\r'))
+    {
+        return None;
+    }
+    // Deux essais : WebView2 peut tenir `cache\` quelques secondes après la fin de l'appli.
+    Some(format!(
+        "/d /c ping -n 4 127.0.0.1 >nul & rmdir /s /q \"{chemin}\" & if exist \"{chemin}\" \
+         (ping -n 11 127.0.0.1 >nul & rmdir /s /q \"{chemin}\")"
+    ))
+}
+
 /// Le dossier de la copie qui finit la désinstallation.
 pub fn dossier_aide(cache: &Path) -> PathBuf {
     cache.join(DOSSIER_AIDE)
@@ -405,5 +479,73 @@ mod tests {
         nettoyer_aide(&cache);
         assert!(!dossier_aide(&cache).exists());
         assert!(exe.is_file());
+    }
+
+    #[test]
+    fn seul_le_dossier_d_une_appli_s_efface() {
+        let profil = Path::new("profil");
+        assert!(racine_effacable(&profil.join(".Aria-Atlas"), profil));
+        for refuse in [
+            profil.join(".Aria"),
+            profil.join(".Aria-"),
+            profil.join("Documents"),
+            profil.join(".Aria-At las"),
+            profil.join("x").join(".Aria-Atlas"),
+            PathBuf::from(".Aria-Atlas"),
+        ] {
+            assert!(!racine_effacable(&refuse, profil), "{}", refuse.display());
+        }
+    }
+
+    #[test]
+    fn l_effacement_garde_la_copie_de_fin() {
+        let temp = tempfile::tempdir().unwrap();
+        let racine = temp.path().join(".Aria-Essai");
+        let aide = dossier_aide(&racine.join("cache"));
+        fs::create_dir_all(&aide).unwrap();
+        fs::write(aide.join("Aria-Essai.exe"), "exe").unwrap();
+        fs::create_dir_all(racine.join("cache").join("webview")).unwrap();
+        fs::create_dir_all(racine.join("sauvegardes")).unwrap();
+        fs::write(racine.join("reglages.json"), "{}").unwrap();
+        fs::write(racine.join("sauvegardes").join("x.json"), "{}").unwrap();
+        assert!(effacer_donnees_sauf_aide(&racine).is_empty());
+        let restes: Vec<_> = fs::read_dir(&racine)
+            .unwrap()
+            .flatten()
+            .map(|e| e.file_name())
+            .collect();
+        assert_eq!(restes, ["cache"]);
+        assert!(aide.join("Aria-Essai.exe").is_file());
+        assert!(!racine.join("cache").join("webview").exists());
+    }
+
+    #[test]
+    fn la_commande_d_effacement_refuse_les_caracteres_de_cmd() {
+        let commande = commande_effacement(Path::new(r"C:\Users\Jean Dupont\.Aria-Atlas")).unwrap();
+        assert!(
+            commande.ends_with(r#"rmdir /s /q "C:\Users\Jean Dupont\.Aria-Atlas")"#),
+            "{commande}"
+        );
+        assert!(
+            commande.starts_with("/d /c ping -n 4 127.0.0.1 >nul & rmdir"),
+            "{commande}"
+        );
+        for chemin in [
+            r"C:\Users\a&b\.Aria-X",
+            r"C:\Users\a%b%\.Aria-X",
+            r#"C:\Users\a"b\.Aria-X"#,
+        ] {
+            assert!(commande_effacement(Path::new(chemin)).is_none(), "{chemin}");
+        }
+    }
+
+    #[test]
+    fn l_argument_d_effacement_se_lit() {
+        assert!(effacer_demande([
+            "--finir-desinstallation",
+            "12",
+            "--effacer-donnees"
+        ]));
+        assert!(!effacer_demande(["--finir-desinstallation", "12"]));
     }
 }

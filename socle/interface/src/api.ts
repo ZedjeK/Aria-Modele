@@ -141,17 +141,21 @@ export interface EtapeDesinstallation {
 
 export interface BilanDesinstallation {
   etapes: EtapeDesinstallation[];
-  /** Le dossier de données, gardé. */
+  /** Le dossier de données. */
   donnees: string;
-  /** programme\ sera supprimé une fois l'appli fermée par fermerApresDesinstallation. */
+  /** programme\ ou les données seront supprimés une fois l'appli fermée par fermerApresDesinstallation. */
   aLaFermeture: boolean;
+  /** Le dossier de données sera effacé une fois l'appli fermée. */
+  donneesEffacees: boolean;
 }
 
 /**
  * Retire le démarrage automatique, le raccourci du Bureau s'il pointe vers l'appli, et programme\ (tout de suite, ou
- * une fois l'appli fermée). Les données restent.
+ * une fois l'appli fermée). Les données restent, sauf avec effacerDonnees : tout le dossier de données est alors
+ * effacé une fois l'appli fermée.
  */
-export const desinstaller = (): Promise<BilanDesinstallation> => invoke<BilanDesinstallation>('desinstaller');
+export const desinstaller = (effacerDonnees = false): Promise<BilanDesinstallation> =>
+  invoke<BilanDesinstallation>('desinstaller', { effacerDonnees });
 
 /** Ferme l'appli ; si elle tourne depuis programme\, une copie de l'exe le supprime ensuite. */
 export const fermerApresDesinstallation = (): Promise<void> => invoke<void>('fermer_apres_desinstallation');
