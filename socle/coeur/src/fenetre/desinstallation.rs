@@ -108,6 +108,12 @@ pub fn desinstaller(
     let raccourci = retirer_raccourci(&app, &[installe.as_path(), exe.as_path()]);
     suivi.noter("Raccourci du Bureau", raccourci);
 
+    #[cfg(feature = "fichiers")]
+    suivi.noter(
+        "Associations de fichiers",
+        super::fichiers::retirer_associations(),
+    );
+
     let sort = desinstallation::sort_de_programme(&exe, &programme);
     let issue = match sort {
         Programme::Absent => Ok(PORTABLE.to_owned()),

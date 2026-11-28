@@ -1,0 +1,13 @@
+{
+  "identifier": "socle-fichiers",
+  "description": "Module « Fichiers et dossiers » : les fenêtres « Ouvrir », « Enregistrer » et « Choisir un dossier » de Windows, les fichiers ouverts depuis l'Explorateur et les associations de types de fichiers. Ajoutée seulement avec la fonction fichiers.",
+  "windows": ["principale"],
+  "permissions": [
+    "allow-choisir-fichiers",
+    "allow-choisir-dossier",
+    "allow-choisir-enregistrement",
+    "allow-fichiers-ouverts",
+    "allow-lire-associations",
+    "allow-regler-association"
+  ]
+}

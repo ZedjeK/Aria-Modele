@@ -20,6 +20,8 @@ pub struct Identite {
     promesse: &'static str,
     en_fond: bool,
     dossier: String,
+    /// Les modules en option activés (`fichiers`…) : l'interface montre leurs réglages.
+    modules: Vec<&'static str>,
 }
 
 #[tauri::command]
@@ -30,6 +32,7 @@ pub fn identite(etat: State<'_, Etat>) -> Identite {
         promesse: identite::promesse(),
         en_fond: identite::en_fond(),
         dossier: etat.dossier.racine().display().to_string(),
+        modules: modules(),
     }
 }
 
@@ -105,4 +108,12 @@ pub fn comparer_sauvegarde(etat: State<'_, Etat>, nom: String) -> Result<sauvega
 #[tauri::command]
 pub fn bilan_reprise(etat: State<'_, Etat>) -> Option<reprise::Bilan> {
     reprise::bilan(&etat.dossier)
+}
+
+/// Les modules en option activés, par leur nom.
+fn modules() -> Vec<&'static str> {
+    vec![
+        #[cfg(feature = "fichiers")]
+        "fichiers",
+    ]
 }

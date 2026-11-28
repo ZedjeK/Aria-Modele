@@ -18,6 +18,8 @@ mod commandes;
 pub mod demarrage_auto;
 pub mod desinstallation;
 pub mod erreur_fatale;
+#[cfg(feature = "fichiers")]
+pub mod fichiers;
 pub mod icone;
 pub mod installation;
 mod liste;
@@ -69,6 +71,8 @@ pub struct Appli {
     commandes: Commandes,
     preparation: Option<Preparation>,
     reprise: Option<Reprise>,
+    #[cfg(feature = "fichiers")]
+    types_fichiers: &'static [crate::fichiers::TypeFichier],
 }
 
 impl Appli {
@@ -83,7 +87,18 @@ impl Appli {
             commandes: Box::new(commandes),
             preparation: None,
             reprise: None,
+            #[cfg(feature = "fichiers")]
+            types_fichiers: &[],
         }
+    }
+
+    /// Les types de fichiers que l'appli sait ouvrir (fonction `fichiers`) : proposés dans les Paramètres, associés
+    /// seulement si l'utilisateur coche la case, retirés à la désinstallation.
+    #[cfg(feature = "fichiers")]
+    #[must_use]
+    pub fn types_de_fichiers(mut self, types: &'static [crate::fichiers::TypeFichier]) -> Self {
+        self.types_fichiers = types;
+        self
     }
 
     /// Ajoute au constructeur Tauri ce que l'appli gère elle-même : son état (`.manage`), un greffon.
@@ -166,6 +181,8 @@ fn demarrer(appli: Appli) -> Result<(), String> {
         commandes,
         preparation,
         reprise: a_reprendre,
+        #[cfg(feature = "fichiers")]
+        types_fichiers,
     } = appli;
     // La reprise se fait dans l'appli installée, pas pendant la proposition d'installation.
     if let Some((ancien, reprendre)) = a_reprendre.filter(|_| !proposer)
@@ -185,6 +202,8 @@ fn demarrer(appli: Appli) -> Result<(), String> {
             if !demarrage::est_silencieux(arguments.iter().skip(1)) {
                 ramener(app);
             }
+            #[cfg(feature = "fichiers")]
+            fichiers::a_la_relance(app, &arguments);
         }))
         .manage(Etat {
             dossier,
@@ -195,17 +214,26 @@ fn demarrer(appli: Appli) -> Result<(), String> {
         .manage(icone::Presence::default())
         .manage(taches::Taches::default())
         .manage(mise_a_jour::Disponible::default());
+    #[cfg(feature = "fichiers")]
+    {
+        constructeur = constructeur.manage(fichiers::Fichiers::new(types_fichiers, &arguments));
+    }
     if let Some(preparation) = preparation {
         constructeur = preparation(constructeur);
     }
     let du_socle = commandes_du_socle();
+    let modules = commandes_des_modules();
     constructeur
-        // Un appel va au socle si sa commande est dans COMMANDES, sinon à l'appli.
+        // Un appel va au socle si sa commande est dans COMMANDES, à un module activé si elle est dans sa liste,
+        // sinon à l'appli.
         .invoke_handler(move |appel: Invoke<Wry>| {
-            if COMMANDES.contains(&appel.message.command()) {
-                du_socle(appel)
-            } else {
-                commandes(appel)
+            let commande = appel.message.command();
+            if COMMANDES.contains(&commande) {
+                return du_socle(appel);
+            }
+            match modules.iter().find(|(liste, _)| liste.contains(&commande)) {
+                Some((_, module)) => module(appel),
+                None => commandes(appel),
             }
         })
         .setup(move |app| {
@@ -259,6 +287,20 @@ fn commandes_du_socle() -> impl Fn(Invoke<Wry>) -> bool + Send + Sync + 'static 
     ]
 }
 
+/// Les commandes des modules activés, avec leur liste.
+type Module = (&'static [&'static str], Commandes);
+
+fn commandes_des_modules() -> Vec<Module> {
+    vec![
+        #[cfg(feature = "fichiers")]
+        (liste::COMMANDES_FICHIERS, Box::new(fichiers::commandes())),
+    ]
+}
+
+/// La capacité du module « Fichiers et dossiers », ajoutée seulement avec sa fonction.
+#[cfg_attr(not(feature = "fichiers"), allow(dead_code))]
+const CAPACITE_FICHIERS: &str = include_str!("capacite-fichiers.json");
+
 /// Les capacités des fenêtres du socle : la fenêtre principale (commandes du socle, barre de titre), la proposition
 /// d'installation et le menu de l'icône. Ajoutées au lancement, à côté de celles de l'appli (`capabilities\`), qui
 /// n'autorisent que ses propres commandes.
@@ -272,6 +314,8 @@ fn autoriser(app: &AppHandle) -> tauri::Result<()> {
     for capacite in CAPACITES {
         app.add_capability(capacite)?;
     }
+    #[cfg(feature = "fichiers")]
+    app.add_capability(CAPACITE_FICHIERS)?;
     Ok(())
 }
 
@@ -306,6 +350,8 @@ pub fn ouvrir_principale(app: &AppHandle, visible: bool) -> tauri::Result<()> {
         .background_color(Color(3, 8, 18, 255))
         .data_directory(cache_webview.clone())
         .build()?;
+    #[cfg(feature = "fichiers")]
+    fichiers::suivre_depots(&fenetre);
     if identite::en_fond() {
         icone::creer(app, cache_webview)?;
         // Fermer la fenêtre ne suffit pas à arrêter l'appli : elle reste dans son icône.
@@ -366,24 +412,51 @@ mod tests {
         assert_eq!(gestionnaire, liste);
     }
 
+    /// Les commandes citées par une capacité, hors `core:`.
+    fn citees(capacite: &str) -> Vec<String> {
+        let json: serde_json::Value = serde_json::from_str(capacite).unwrap();
+        json["permissions"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|p| p.as_str().unwrap())
+            .filter(|p| !p.starts_with("core:"))
+            .map(|p| p.strip_prefix("allow-").unwrap().replace('-', "_"))
+            .collect()
+    }
+
     #[test]
     fn les_capacites_ne_citent_que_des_commandes_du_socle() {
         for capacite in CAPACITES {
-            let json: serde_json::Value = serde_json::from_str(capacite).unwrap();
-            for permission in json["permissions"].as_array().unwrap() {
-                let permission = permission.as_str().unwrap();
-                if permission.starts_with("core:") {
-                    continue;
-                }
-                let commande = permission.strip_prefix("allow-").unwrap().replace('-', "_");
-                assert!(COMMANDES.contains(&commande.as_str()), "{permission}");
+            for commande in citees(capacite) {
+                assert!(COMMANDES.contains(&commande.as_str()), "{commande}");
+            }
+        }
+    }
+
+    #[test]
+    fn chaque_module_a_sa_capacite_complete() {
+        let mut citees_fichiers = citees(CAPACITE_FICHIERS);
+        let mut liste: Vec<String> = liste::COMMANDES_FICHIERS
+            .iter()
+            .map(|c| (*c).to_owned())
+            .collect();
+        citees_fichiers.sort();
+        liste.sort();
+        assert_eq!(citees_fichiers, liste);
+        // Aucune commande d'un module dans la liste toujours publiée, ni dans deux modules.
+        let mut vues = std::collections::HashSet::new();
+        for (_, commandes) in liste::MODULES {
+            for commande in *commandes {
+                assert!(!COMMANDES.contains(commande), "{commande}");
+                assert!(vues.insert(*commande), "{commande}");
             }
         }
     }
 
     #[test]
     fn les_capacites_se_lisent() {
-        for capacite in CAPACITES {
+        for capacite in CAPACITES.iter().chain([&CAPACITE_FICHIERS]) {
             assert!(
                 capacite
                     .parse::<tauri::utils::acl::capability::CapabilityFile>()

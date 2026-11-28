@@ -31,6 +31,8 @@ export interface Identite {
   promesse: string;
   enFond: boolean;
   dossier: string;
+  /** Les modules en option activés dans la crate (« fichiers »…). */
+  modules: string[];
 }
 
 export const identite = (): Promise<Identite> => invoke<Identite>('identite');
@@ -219,6 +221,53 @@ export const annulerTache = (id: number): Promise<boolean> => invoke<boolean>('a
  * montrer : « parametres », « mise-a-jour »), « mise-a-jour » (version disponible), « tache » (une tâche longue
  * avance), « restauree » (un fichier a été restauré).
  */
+// Module « Fichiers et dossiers » (fonction `fichiers` de la crate). Un chemin rendu ici est accordé : les commandes
+// de l'appli peuvent le lire ou l'écrire (fenetre::fichiers::accorde).
+
+/** Un filtre des fenêtres de Windows : un nom et ses extensions, sans point (`{ nom: 'Documents', extensions: ['md'] }`). */
+export interface Filtre {
+  nom: string;
+  extensions: string[];
+}
+
+/** La fenêtre « Ouvrir » de Windows ; une liste vide si l'utilisateur annule. */
+export const choisirFichiers = (options: { titre?: string; filtres?: Filtre[]; plusieurs?: boolean } = {}): Promise<string[]> =>
+  invoke<string[]>('choisir_fichiers', { options });
+
+/** La fenêtre « Choisir un dossier » de Windows ; null si l'utilisateur annule. */
+export const choisirDossier = (titre?: string): Promise<string | null> =>
+  invoke<string | null>('choisir_dossier', { titre: titre ?? null });
+
+/** La fenêtre « Enregistrer sous » de Windows ; null si l'utilisateur annule. Rien n'est écrit ici. */
+export const choisirEnregistrement = (
+  options: { titre?: string; nomPropose?: string; filtres?: Filtre[] } = {},
+): Promise<string | null> => invoke<string | null>('choisir_enregistrement', { options });
+
+/** Les fichiers passés à l'appli au lancement (double-clic dans l'Explorateur), une seule fois. */
+export const fichiersOuverts = (): Promise<string[]> => invoke<string[]>('fichiers_ouverts');
+
+/** Un type de fichier que l'appli déclare, et son association. */
+export interface EtatAssociation {
+  extension: string;
+  description: string;
+  /** L'appli figure dans « Ouvrir avec » pour ce type. */
+  associee: boolean;
+  /** L'appli ouvre aussi ce type par un double-clic. */
+  parDefaut: boolean;
+}
+
+export const lireAssociations = (): Promise<EtatAssociation[]> => invoke<EtatAssociation[]>('lire_associations');
+
+/** Associe ou dissocie un type déclaré ; renvoie l'état relu de tous les types. */
+export const reglerAssociation = (extension: string, active: boolean): Promise<EtatAssociation[]> =>
+  invoke<EtatAssociation[]>('regler_association', { extension, active });
+
+/** Les fichiers déposés sur la fenêtre (`fichiers-deposes`) ou ouverts depuis l'Explorateur appli ouverte (`fichiers-ouverts`). */
+export const ecouterFichiers = (
+  genre: 'fichiers-deposes' | 'fichiers-ouverts',
+  rappel: (chemins: string[]) => void,
+): Promise<UnlistenFn> => listen<string[]>(genre, (e) => rappel(e.payload));
+
 export const ecouter = <T>(
   evenement: 'etat-icone' | 'aller-a' | 'mise-a-jour' | 'tache' | 'restauree',
   rappel: (charge: T) => void,

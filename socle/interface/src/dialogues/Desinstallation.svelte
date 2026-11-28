@@ -16,10 +16,12 @@
     donnees: string;
     /** L'appli sert en arrière-plan : elle a pu s'inscrire au démarrage de Windows. */
     enFond: boolean;
+    /** Le module « Fichiers et dossiers » est activé : l'appli a pu s'associer à des types de fichiers. */
+    associations?: boolean;
     fermer: () => void;
   }
 
-  let { nom, donnees, enFond, fermer }: Props = $props();
+  let { nom, donnees, enFond, associations = false, fermer }: Props = $props();
   let enCours = $state(false);
   let bilan = $state<BilanDesinstallation | null>(null);
   let etat = $state('');
@@ -71,6 +73,7 @@
     <Panneau titre="Ce qui sera retiré" accentue>
       <ul>
         {#if enFond}<li>Le démarrage avec Windows.</li>{/if}
+        {#if associations}<li>Les types de fichiers associés à l'appli.</li>{/if}
         <li>Le raccourci du Bureau, s'il pointe vers cette appli.</li>
         <li>
           Le programme installé (<span class="code">programme\</span>) : une fois l'appli fermée si elle tourne depuis

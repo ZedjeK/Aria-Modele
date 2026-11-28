@@ -19,4 +19,5 @@ export { default as Jauge } from './composants/Jauge.svelte';
 export { default as Panneau } from './composants/Panneau.svelte';
 export { default as SousOnglets } from './composants/SousOnglets.svelte';
 export { default as TacheEnCours } from './composants/TacheEnCours.svelte';
+export { default as ZoneDepot } from './composants/ZoneDepot.svelte';
 export { taches, tachesEnCours } from './taches.svelte';

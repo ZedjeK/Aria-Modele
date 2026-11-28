@@ -153,7 +153,8 @@ Tout ce qui suit est fourni par le socle : l'appli l'active ou le règle, elle n
 ### Modules en option
 
 Chaque module s'active dans `appli/Cargo.toml` (fonction de la crate `aria-coeur`), sauf le démarrage avec Windows
-et l'icône, que donne `en_fond` dans l'identité de l'appli, et se déclare dans la fiche. Les modules disponibles sont
+et l'icône, que donne `en_fond` dans l'identité de l'appli, et se déclare dans la fiche. Les modules passent par
+l'API de Windows, sans greffon Tauri (décision 0011). Les modules disponibles sont
 dans `socle/LISEZ-MOI.md` du dépôt modèle.
 
 | Module | Règles |
@@ -165,7 +166,7 @@ dans `socle/LISEZ-MOI.md` du dépôt modèle.
 | Partage de la carte graphique | l'appli qui charge un modèle déclare ce qu'elle occupe dans le dossier commun, et avertit quand une autre appli occupe déjà la mémoire vidéo |
 | Notifications | désactivables dans les réglages ; une notification par événement que l'utilisateur doit voir, jamais pour attirer l'attention |
 | Raccourcis clavier globaux | modifiables et désactivables ; un conflit avec un autre programme est signalé, jamais forcé |
-| Fichiers et dossiers | fenêtre « Ouvrir » et « Enregistrer » de Windows, glisser-déposer ; un fichier de l'utilisateur réécrit est copié avant ; une association de type de fichier seulement avec accord, retirée à la désinstallation |
+| Fichiers et dossiers | fenêtres « Ouvrir », « Enregistrer » et « Choisir un dossier » de Windows, glisser-déposer ; l'appli ne lit ou n'écrit un fichier de l'utilisateur que s'il l'a désigné (fenêtre, dépôt, ouverture depuis l'Explorateur) ; un fichier réécrit est copié avant dans `sauvegardes\` ; une association de type de fichier seulement avec accord, dans `HKCU\Software\Classes`, jamais à la place d'une autre appli, retirée à la désinstallation |
 | Échanges entre applis | sur la boucle locale seulement, avec un jeton (voir « Service local ») ; en lecture par défaut ; une action qui modifie passe par l'accord de l'utilisateur dans l'appli |
 | Droits administrateur | seulement si la fiche le dit, et pour la seule opération qui l'exige (voir « Réseau et droits ») |
 

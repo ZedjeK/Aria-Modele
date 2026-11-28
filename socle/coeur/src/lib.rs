@@ -14,6 +14,8 @@ pub mod differences;
 pub mod donnees;
 #[cfg(feature = "fenetre")]
 pub mod fenetre;
+#[cfg(feature = "fichiers")]
+pub mod fichiers;
 pub mod identite;
 pub mod installation;
 pub mod journal;

@@ -18,7 +18,7 @@ jour quand l'appli change.
 | Installation | dans `%USERPROFILE%\.Aria-{{NOM}}\programme`, comme toute appli Aria (décision 0008) |
 | Port local (interface web) | {{PORT}} |
 | Données de l'utilisateur | `%USERPROFILE%\.Aria-{{NOM}}` ; secrètes : à renseigner |
-| Écritures hors du dossier de données | à renseigner : démarrage automatique, raccourci du Bureau, dossier commun `%USERPROFILE%\.Aria` s'il sert, et ce que l'appli modifie |
+| Écritures hors du dossier de données | à renseigner : démarrage automatique, raccourci du Bureau, dossier commun `%USERPROFILE%\.Aria` s'il sert, associations de fichiers (`HKCU\Software\Classes`, module `fichiers`), et ce que l'appli modifie |
 | Données reprises d'une ancienne version | aucune, sauf mention ici : à renseigner (ancien dossier, ce qui est repris) |
 | Connexions sortantes | à renseigner : liste complète, destination par destination (les mises à jour intégrées en ajoutent deux : `api.github.com` pour chercher une nouvelle version, et `github.com` avec son hôte de téléchargement pour le zip) |
 | Composants tiers embarqués | à renseigner |
