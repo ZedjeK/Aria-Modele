@@ -66,6 +66,17 @@ foreach ($outil in 'cargo', 'npm') {
     }
 }
 
+# Les applis Aria se compilent pour Windows x64 avec MSVC (décision 0010). Un Rust installé en GNU échoue plus loin,
+# sur un outil absent (dlltool) : on le dit tout de suite, avec la réparation.
+if ($env:OS -eq 'Windows_NT') {
+    $hoteRust = ((& rustc -vV) | Select-String '^host:\s*(\S+)').Matches | ForEach-Object { $_.Groups[1].Value }
+    if ($hoteRust -and $hoteRust -notlike '*-windows-msvc') {
+        throw ("Rust est installé pour $hoteRust ; les applis Aria demandent MSVC. Installe les Build Tools de " +
+            "Visual Studio (composants VC.Tools.x86.x64 et un SDK Windows 11), puis : " +
+            'rustup set default-host x86_64-pc-windows-msvc')
+    }
+}
+
 # Lance un contrôle ; au premier échec, le dit et s'arrête avec un code non nul. Sous PowerShell 5.1, la sortie
 # d'erreur redirigée d'un programme natif arrêterait le script : on lit son code de retour à la place.
 function Controler([string]$quoi, [scriptblock]$commande) {
