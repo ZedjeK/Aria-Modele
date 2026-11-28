@@ -18,10 +18,12 @@
     enFond: boolean;
     /** Le module « Fichiers et dossiers » est activé : l'appli a pu s'associer à des types de fichiers. */
     associations?: boolean;
+    /** Le module « Notifications » est activé : l'appli s'est inscrite auprès de Windows. */
+    notifications?: boolean;
     fermer: () => void;
   }
 
-  let { nom, donnees, enFond, associations = false, fermer }: Props = $props();
+  let { nom, donnees, enFond, associations = false, notifications = false, fermer }: Props = $props();
   let enCours = $state(false);
   let bilan = $state<BilanDesinstallation | null>(null);
   let etat = $state('');
@@ -74,6 +76,7 @@
       <ul>
         {#if enFond}<li>Le démarrage avec Windows.</li>{/if}
         {#if associations}<li>Les types de fichiers associés à l'appli.</li>{/if}
+        {#if notifications}<li>Son inscription aux notifications de Windows.</li>{/if}
         <li>Le raccourci du Bureau, s'il pointe vers cette appli.</li>
         <li>
           Le programme installé (<span class="code">programme\</span>) : une fois l'appli fermée si elle tourne depuis

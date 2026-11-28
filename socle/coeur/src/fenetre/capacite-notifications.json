@@ -1,0 +1,6 @@
+{
+  "identifier": "socle-notifications",
+  "description": "Module « Notifications » : l'interface demande une notification de Windows (montrée seulement si le réglage le permet et si la fenêtre n'est pas devant). Ajoutée seulement avec la fonction notifications.",
+  "windows": ["principale"],
+  "permissions": ["allow-notifier"]
+}

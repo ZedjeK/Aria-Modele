@@ -115,5 +115,7 @@ fn modules() -> Vec<&'static str> {
     vec![
         #[cfg(feature = "fichiers")]
         "fichiers",
+        #[cfg(feature = "notifications")]
+        "notifications",
     ]
 }

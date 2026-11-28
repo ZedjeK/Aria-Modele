@@ -22,6 +22,8 @@ pub mod journal;
 pub mod mises_a_jour;
 #[cfg(feature = "moteur")]
 pub mod moteurs;
+#[cfg(feature = "notifications")]
+pub mod notifications;
 pub mod presence;
 pub mod reglages;
 pub mod reprise;

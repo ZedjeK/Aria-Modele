@@ -24,6 +24,8 @@ pub mod icone;
 pub mod installation;
 mod liste;
 pub mod mise_a_jour;
+#[cfg(feature = "notifications")]
+pub mod notifications;
 pub mod raccourci;
 pub mod taches;
 
@@ -294,12 +296,28 @@ fn commandes_des_modules() -> Vec<Module> {
     vec![
         #[cfg(feature = "fichiers")]
         (liste::COMMANDES_FICHIERS, Box::new(fichiers::commandes())),
+        #[cfg(feature = "notifications")]
+        (
+            liste::COMMANDES_NOTIFICATIONS,
+            Box::new(notifications::commandes()),
+        ),
     ]
 }
 
 /// La capacité du module « Fichiers et dossiers », ajoutée seulement avec sa fonction.
 #[cfg_attr(not(feature = "fichiers"), allow(dead_code))]
 const CAPACITE_FICHIERS: &str = include_str!("capacite-fichiers.json");
+
+/// La capacité du module « Notifications », ajoutée seulement avec sa fonction.
+#[cfg_attr(not(feature = "notifications"), allow(dead_code))]
+const CAPACITE_NOTIFICATIONS: &str = include_str!("capacite-notifications.json");
+
+/// Chaque module, sa liste de commandes et sa capacité (pour les tests).
+#[cfg(test)]
+const MODULES_ET_CAPACITES: [(&[&str], &str); 2] = [
+    (liste::COMMANDES_FICHIERS, CAPACITE_FICHIERS),
+    (liste::COMMANDES_NOTIFICATIONS, CAPACITE_NOTIFICATIONS),
+];
 
 /// Les capacités des fenêtres du socle : la fenêtre principale (commandes du socle, barre de titre), la proposition
 /// d'installation et le menu de l'icône. Ajoutées au lancement, à côté de celles de l'appli (`capabilities\`), qui
@@ -316,6 +334,8 @@ fn autoriser(app: &AppHandle) -> tauri::Result<()> {
     }
     #[cfg(feature = "fichiers")]
     app.add_capability(CAPACITE_FICHIERS)?;
+    #[cfg(feature = "notifications")]
+    app.add_capability(CAPACITE_NOTIFICATIONS)?;
     Ok(())
 }
 
@@ -436,14 +456,14 @@ mod tests {
 
     #[test]
     fn chaque_module_a_sa_capacite_complete() {
-        let mut citees_fichiers = citees(CAPACITE_FICHIERS);
-        let mut liste: Vec<String> = liste::COMMANDES_FICHIERS
-            .iter()
-            .map(|c| (*c).to_owned())
-            .collect();
-        citees_fichiers.sort();
-        liste.sort();
-        assert_eq!(citees_fichiers, liste);
+        assert_eq!(MODULES_ET_CAPACITES.len(), liste::MODULES.len());
+        for (commandes, capacite) in MODULES_ET_CAPACITES {
+            let mut vues = citees(capacite);
+            let mut attendues: Vec<String> = commandes.iter().map(|c| (*c).to_owned()).collect();
+            vues.sort();
+            attendues.sort();
+            assert_eq!(vues, attendues);
+        }
         // Aucune commande d'un module dans la liste toujours publiée, ni dans deux modules.
         let mut vues = std::collections::HashSet::new();
         for (_, commandes) in liste::MODULES {
@@ -456,7 +476,10 @@ mod tests {
 
     #[test]
     fn les_capacites_se_lisent() {
-        for capacite in CAPACITES.iter().chain([&CAPACITE_FICHIERS]) {
+        for capacite in CAPACITES
+            .iter()
+            .chain(MODULES_ET_CAPACITES.iter().map(|(_, c)| c))
+        {
             assert!(
                 capacite
                     .parse::<tauri::utils::acl::capability::CapabilityFile>()

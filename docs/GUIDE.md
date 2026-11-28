@@ -66,6 +66,12 @@ ajoute l'appli à « Ouvrir avec » pour ce type ; elle ne prend le double-clic 
 Windows te laisse changer ce choix (clic droit, « Ouvrir avec », « Choisir une autre application »). La désinstallation
 retire ces associations.
 
+## Notifications
+
+Une appli qui en a besoin peut te prévenir par une notification de Windows : une tâche longue finie, une erreur qui
+t'attend. Elle ne le fait que si sa fenêtre n'est pas devant toi, sans son, et jamais pour te faire revenir. Un clic
+sur la notification ramène la fenêtre ; la case « Notifications » des Paramètres les coupe toutes.
+
 ## Désinstaller
 
 Paramètres, « Désinstaller » : l'appli retire le démarrage avec Windows (s'il existe), le raccourci du Bureau s'il

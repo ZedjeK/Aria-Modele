@@ -139,6 +139,15 @@
   </div>
 </Panneau>
 
+{#if identite.modules.includes('notifications')}
+  <Panneau titre="Notifications">
+    <label class="ligne">
+      <input type="checkbox" bind:checked={reglages.notifications} onchange={enregistrer} />
+      Montrer une notification de Windows quand quelque chose demande ton attention et que la fenêtre n'est pas devant
+    </label>
+  </Panneau>
+{/if}
+
 <Panneau titre="Mises à jour">
   <label class="ligne">
     <input type="checkbox" bind:checked={reglages.chercherMisesAJour} onchange={enregistrer} />
@@ -205,6 +214,7 @@
     donnees={identite.dossier}
     enFond={identite.enFond}
     associations={avecFichiers}
+    notifications={identite.modules.includes('notifications')}
     fermer={() => {
       dialogueDesinstallation = false;
       // La désinstallation a pu retirer le démarrage avec Windows : la case suit.

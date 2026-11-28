@@ -29,6 +29,8 @@ carte-graphique = []
 # Fichiers et dossiers : fenêtres « Ouvrir » et « Enregistrer » de Windows, glisser-déposer, copie avant réécriture,
 # associations de types de fichiers (avec accord, retirées à la désinstallation).
 fichiers = []
+# Notifications de Windows : désactivables dans les réglages, montrées seulement quand la fenêtre n'est pas devant.
+notifications = []
 
 [dependencies]
 serde = { version = "1.0.229", features = ["derive"] }
@@ -54,6 +56,9 @@ windows = { version = "0.62.2", features = [
   "Win32_System_Threading",
   "Win32_UI_Shell",
   "Win32_UI_Shell_Common",
+  "Data_Xml_Dom",
+  "Foundation",
+  "UI_Notifications",
   "Win32_UI_WindowsAndMessaging",
 ] }
 winreg = "0.56.0"
