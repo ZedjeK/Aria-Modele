@@ -23,6 +23,17 @@ foreach ($outil in 'cargo', 'rustc', 'npm', 'node') {
     }
 }
 
+# Les applis Aria se compilent pour Windows x64 avec MSVC (décision 0010). Un Rust installé en GNU échoue plus loin,
+# sur un outil absent (dlltool) : on le dit tout de suite, avec la réparation.
+if ($env:OS -eq 'Windows_NT') {
+    $hoteRust = ((& rustc -vV) | Select-String '^host:\s*(\S+)').Matches | ForEach-Object { $_.Groups[1].Value }
+    if ($hoteRust -and $hoteRust -notlike '*-windows-msvc') {
+        throw ("Rust est installé pour $hoteRust ; les applis Aria demandent MSVC. Installe les Build Tools de " +
+            "Visual Studio (composants VC.Tools.x86.x64 et un SDK Windows 11), puis : " +
+            'rustup set default-host x86_64-pc-windows-msvc')
+    }
+}
+
 $work = Join-Path $racine '.work'
 $sortie = Join-Path $work 'sortie'
 # Une jonction à la place de .work ou de .work\sortie mènerait la suppression qui suit hors du dépôt.

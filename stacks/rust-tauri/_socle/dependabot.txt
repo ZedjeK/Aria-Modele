@@ -5,6 +5,10 @@
     cooldown:
       default-days: 7
     open-pull-requests-limit: 5
+    # Le socle (aria-coeur, par le tag du dépôt modèle) se monte avec le paquet de l'interface, par le workflow
+    # « Monter le socle » : jamais seul.
+    ignore:
+      - dependency-name: "aria-coeur"
     groups:
       cargo-mineures:
         update-types: ["minor", "patch"]
@@ -15,6 +19,9 @@
     cooldown:
       default-days: 7
     open-pull-requests-limit: 5
+    # Le paquet du socle se monte avec la crate, par le workflow « Monter le socle ».
+    ignore:
+      - dependency-name: "aria-interface"
     groups:
       npm-mineures:
         update-types: ["minor", "patch"]
