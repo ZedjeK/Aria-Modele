@@ -146,7 +146,9 @@ Tout ce qui suit est fourni par le socle : l'appli l'active ou le règle, elle n
 - **Désinstallation** : un bouton « Désinstaller » dans les Paramètres retire tout ce que l'appli a écrit hors de
   son dossier de données (démarrage automatique, raccourci du Bureau s'il pointe vers elle, association de fichiers
   qu'elle a posée), puis supprime `programme\` une fois l'appli fermée. Les données restent, et l'appli dit où elles
-  sont : les supprimer est un geste de l'utilisateur.
+  sont. Une case « Supprimer aussi mes données », décochée d'office, dit ce qui part (réglages, journal, sauvegardes,
+  secrets) et que cela ne se récupère pas ; cochée, la copie de fin efface tout `%USERPROFILE%\.Aria-<Nom>` une fois
+  l'appli fermée, elle comprise. Le dossier commun `%USERPROFILE%\.Aria` n'est jamais touché.
 
 ### Modules en option
 

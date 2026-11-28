@@ -50,6 +50,8 @@ pub struct Etat {
     pub cache_webview: PathBuf,
     /// Désinstallée, `programme\` reste à supprimer à la fermeture (voir `desinstallation::a_la_sortie`).
     pub desinstallee: AtomicBool,
+    /// L'utilisateur a demandé d'effacer aussi ses données : fait à la fermeture, par la copie de fin.
+    pub effacer_donnees: AtomicBool,
 }
 
 /// Le gestionnaire des commandes de l'appli, tel que `tauri::generate_handler!` le rend.
@@ -119,7 +121,8 @@ fn demarrer(appli: Appli) -> Result<(), String> {
     let arguments: Vec<String> = std::env::args().skip(1).collect();
     // Copie de l'exe qui finit une désinstallation : ni fenêtre ni Tauri ; elle vide programme\ et s'arrête.
     if let Some(processus) = crate::desinstallation::processus_a_attendre(&arguments) {
-        desinstallation::finir(&dossier, processus);
+        let effacer = crate::desinstallation::effacer_demande(&arguments);
+        desinstallation::finir(&dossier, processus, effacer);
         return Ok(());
     }
     dossier.preparer().map_err(|e| e.to_string())?;
@@ -187,6 +190,7 @@ fn demarrer(appli: Appli) -> Result<(), String> {
             dossier,
             cache_webview,
             desinstallee: AtomicBool::new(false),
+            effacer_donnees: AtomicBool::new(false),
         })
         .manage(icone::Presence::default())
         .manage(taches::Taches::default())
